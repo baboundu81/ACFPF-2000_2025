@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: CC-BY-4.0 -->
+
 # Notebooks
 
 Les notebooks servent à l'exploration, à la visualisation et aux contrôles ponctuels.
