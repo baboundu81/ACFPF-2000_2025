@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: CC-BY-4.0 -->
+
 # Licences du projet
 
 ACFPF est un dépôt **multi-licence**.
