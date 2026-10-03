@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: CC-BY-4.0 -->
+
 # Feuille de route
 
 ## Phase 0 — Socle méthodologique
