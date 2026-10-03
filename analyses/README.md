@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: CC-BY-4.0 -->
+
 # Analyses
 
 Chaque sous-dossier représente une analyse autonome et reproductible.
