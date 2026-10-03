@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: CC-BY-4.0 -->
+
 # Catalogue des sources
 
 Ce document complète le registre machine-readable `config/sources.yml`.

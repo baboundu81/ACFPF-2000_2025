@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: CC-BY-4.0 -->
+
 # ACFPF 2000–2025
 
 **Analyse citoyenne des finances publiques françaises entre 2000 et 2025**
@@ -85,6 +87,12 @@ Le dépôt est en phase d'initialisation. La première étape sera de construire
 
 Les analyses thématiques viendront ensuite.
 
-## Licence
+## Licences
 
-Aucune licence open source n'est accordée pour le moment. Les données externes restent soumises aux licences et conditions de leurs producteurs respectifs.
+ACFPF utilise plusieurs licences selon la nature du contenu :
+
+- **code source, scripts, tests et notebooks exécutables** : [GNU Affero General Public License v3.0 or later](LICENSE) (`AGPL-3.0-or-later`) ;
+- **documentation, textes d'analyse et créations éditoriales originales** : [Creative Commons Attribution 4.0 International](LICENSES/CC-BY-4.0.txt) (`CC-BY-4.0`) ;
+- **données tierces** : elles restent soumises aux licences et conditions de leurs producteurs respectifs et ne sont pas relicenciées par ACFPF.
+
+La portée détaillée des licences et les cas mixtes sont documentés dans [LICENSES/README.md](LICENSES/README.md).

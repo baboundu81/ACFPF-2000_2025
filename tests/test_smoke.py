@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 ACFPF contributors
+
 from acfpf import __version__
 from acfpf.source_registry import load_sources
 
