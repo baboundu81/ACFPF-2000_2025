@@ -91,8 +91,10 @@ Les analyses thématiques viendront ensuite.
 
 ACFPF utilise plusieurs licences selon la nature du contenu :
 
-- **code source, scripts, tests et notebooks exécutables** : [GNU Affero General Public License v3.0 or later](LICENSE) (`AGPL-3.0-or-later`) ;
+- **code source, scripts, tests et notebooks exécutables** : [PolyForm Noncommercial License 1.0.0](LICENSE) (`PolyForm-Noncommercial-1.0.0`) ;
 - **documentation, textes d'analyse et créations éditoriales originales** : [Creative Commons Attribution 4.0 International](LICENSES/CC-BY-4.0.txt) (`CC-BY-4.0`) ;
 - **données tierces** : elles restent soumises aux licences et conditions de leurs producteurs respectifs et ne sont pas relicenciées par ACFPF.
 
-La portée détaillée des licences et les cas mixtes sont documentés dans [LICENSES/README.md](LICENSES/README.md).
+Le logiciel est donc **source-available à usage non commercial**, et non « open source » au sens OSI. Un usage commercial du logiciel nécessite une **licence commerciale écrite distincte** : voir [COMMERCIAL-LICENSING.md](COMMERCIAL-LICENSING.md).
+
+La portée détaillée des licences, les cas mixtes et l'historique de licence sont documentés dans [LICENSES/README.md](LICENSES/README.md).
