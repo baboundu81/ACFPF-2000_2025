@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 # Copyright (C) 2026 ACFPF contributors
 
 [build-system]
@@ -9,7 +9,7 @@ build-backend = "setuptools.build_meta"
 name = "acfpf"
 version = "0.1.0"
 description = "Analyse citoyenne des finances publiques françaises 2000-2025"
-license = "AGPL-3.0-or-later"
+license = "PolyForm-Noncommercial-1.0.0"
 license-files = ["LICENSE"]
 requires-python = ">=3.11"
 dependencies = [

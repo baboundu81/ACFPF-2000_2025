@@ -26,13 +26,16 @@ Les opinions politiques ne constituent ni une source ni une méthode de validati
 - tests avec pytest ;
 - pas de modification manuelle des données brutes.
 
-
 ## Licence des contributions
 
 En proposant une contribution, vous confirmez disposer des droits nécessaires pour la soumettre au projet.
 
-- les contributions de **code** sont proposées sous `AGPL-3.0-or-later` ;
-- les contributions de **documentation, texte d'analyse ou contenu éditorial original** sont proposées sous `CC-BY-4.0` ;
+- les contributions de **code** sont publiées dans le projet sous `PolyForm-Noncommercial-1.0.0` ;
+- les contributions de **documentation, texte d'analyse ou contenu éditorial original** sont publiées sous `CC-BY-4.0` ;
 - les données ou contenus provenant de tiers doivent conserver leur licence d'origine et être accompagnés d'une attribution et d'une provenance suffisantes.
+
+Afin de permettre au projet d'accorder séparément des licences commerciales sur le logiciel, toute contribution de code doit également être soumise selon le [Contributor License Agreement](CONTRIBUTOR_LICENSE_AGREEMENT.md).
+
+Les pull requests de code ne doivent pas être fusionnées tant que le contributeur n'a pas explicitement accepté ce CLA.
 
 Une contribution ne doit pas introduire de contenu dont la licence est incompatible avec le périmètre concerné.
