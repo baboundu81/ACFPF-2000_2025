@@ -1,0 +1,69 @@
+sources:
+  - id: insee
+    name: INSEE
+    base_url: https://www.insee.fr/
+    priority: primary
+    themes:
+      - macroeconomics
+      - public_finance
+      - population
+      - inflation
+      - cofog
+
+  - id: budget_gouv
+    name: Budget de l'État
+    base_url: https://www.budget.gouv.fr/
+    priority: primary
+    themes:
+      - state_budget
+      - budget_execution
+
+  - id: data_gouv
+    name: data.gouv.fr
+    base_url: https://www.data.gouv.fr/
+    priority: catalog
+    themes:
+      - open_data
+
+  - id: cour_comptes
+    name: Cour des comptes
+    base_url: https://www.ccomptes.fr/
+    priority: control
+    themes:
+      - audit
+      - public_policy
+      - fraud
+      - public_finance
+
+  - id: drees
+    name: DREES
+    base_url: https://drees.solidarites-sante.gouv.fr/
+    priority: primary
+    themes:
+      - health
+      - social_protection
+      - pensions
+
+  - id: eurostat
+    name: Eurostat
+    base_url: https://ec.europa.eu/eurostat/
+    priority: harmonized
+    themes:
+      - european_comparison
+      - public_finance
+
+  - id: oecd
+    name: OECD
+    base_url: https://www.oecd.org/
+    priority: harmonized
+    themes:
+      - international_comparison
+      - taxation
+      - public_spending
+
+  - id: european_commission_state_aid
+    name: Commission européenne - aides d'État
+    base_url: https://competition-policy.ec.europa.eu/state-aid/
+    priority: primary
+    themes:
+      - corporate_aid
