@@ -4,9 +4,9 @@
 
 ACFPF est un dépôt **multi-licence**.
 
-## Logiciel — AGPL-3.0-or-later
+## Logiciel — PolyForm Noncommercial 1.0.0
 
-Le code logiciel original du projet est distribué sous **GNU Affero General Public License version 3, ou toute version ultérieure au choix du licencié** (`AGPL-3.0-or-later`).
+Le code logiciel original du projet est distribué sous **PolyForm Noncommercial License 1.0.0** (`PolyForm-Noncommercial-1.0.0`).
 
 Cela couvre notamment :
 
@@ -17,9 +17,13 @@ Cela couvre notamment :
 - les fichiers de code placés sous `analyses/**` ;
 - le code d'une éventuelle application ou API ACFPF.
 
-Le texte de l'AGPLv3 est fourni dans [../LICENSE](../LICENSE) et [AGPL-3.0-or-later.txt](AGPL-3.0-or-later.txt).
+Le texte officiel est fourni dans [../LICENSE](../LICENSE) et [PolyForm-Noncommercial-1.0.0.md](PolyForm-Noncommercial-1.0.0.md).
 
-En pratique, une version modifiée distribuée doit rester sous AGPL et fournir son code source correspondant. Lorsqu'une version modifiée permet à des utilisateurs d'interagir avec elle à distance via un réseau, ces utilisateurs doivent aussi pouvoir obtenir le code source correspondant conformément à la section 13 de l'AGPLv3.
+Cette licence autorise l'utilisation, la modification et la distribution du logiciel pour des usages non commerciaux selon ses termes. Elle autorise notamment certains usages personnels ainsi que les usages par des organisations non commerciales, établissements d'enseignement, organismes publics de recherche, de sécurité ou de santé publique, organismes de protection de l'environnement et institutions gouvernementales dans les conditions prévues par la licence.
+
+**Elle n'accorde pas de droit d'utilisation commerciale.** Toute utilisation commerciale nécessite une licence séparée : voir [../COMMERCIAL-LICENSING.md](../COMMERCIAL-LICENSING.md).
+
+PolyForm Noncommercial est une licence **source-available**, mais elle n'est pas une licence open source approuvée par l'OSI. Contrairement à l'AGPL, elle n'impose pas à elle seule une obligation générale de publier le code source de toute modification privée ou déployée en réseau.
 
 ## Documentation et analyses — CC BY 4.0
 
@@ -47,7 +51,7 @@ Un fichier dérivé peut également rester soumis à des obligations attachées 
 
 Lorsqu'un fichier contient à la fois du code et du contenu éditorial :
 
-- un notebook `.ipynb` est traité par défaut comme du logiciel et placé sous AGPL ;
+- un notebook `.ipynb` est traité par défaut comme du logiciel et placé sous PolyForm Noncommercial ;
 - un rapport Markdown contenant de courts extraits de code reste traité comme documentation sous CC BY 4.0, sauf mention contraire ;
 - une mention SPDX explicite dans le fichier prime sur cette règle générale.
 
@@ -56,10 +60,14 @@ Lorsqu'un fichier contient à la fois du code et du contenu éditorial :
 Les nouveaux fichiers devraient utiliser, lorsque possible, l'un des identifiants :
 
 ```
-SPDX-License-Identifier: AGPL-3.0-or-later
+SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 SPDX-License-Identifier: CC-BY-4.0
 ```
 
-## Copyright
+## Contributions et licences commerciales
 
-Sauf mention contraire, les contributions restent la propriété de leurs auteurs respectifs. La licence accordée au projet permet leur redistribution selon les termes ci-dessus.
+Les contributeurs conservent la propriété de leurs contributions, mais les contributions de code doivent être accompagnées du grant prévu dans [CONTRIBUTOR_LICENSE_AGREEMENT.md](../CONTRIBUTOR_LICENSE_AGREEMENT.md). Ce mécanisme permet au propriétaire du projet de proposer, en parallèle de la licence non commerciale publique, une licence commerciale distincte.
+
+## Historique
+
+Le changement de licence n'annule pas les droits déjà accordés sur les versions antérieurement publiées. Voir [LICENSE_HISTORY.md](LICENSE_HISTORY.md).
