@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: CC-BY-4.0 -->
+
 # Analyse macro 2000–2025
 
 Cette analyse constitue le premier socle du projet.
