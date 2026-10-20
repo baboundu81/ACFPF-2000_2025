@@ -6,67 +6,152 @@ sources:
     name: INSEE
     base_url: https://www.insee.fr/
     priority: primary
-    themes:
-      - macroeconomics
-      - public_finance
-      - population
-      - inflation
-      - cofog
-
-  - id: budget_gouv
-    name: Budget de l'État
-    base_url: https://www.budget.gouv.fr/
-    priority: primary
-    themes:
-      - state_budget
-      - budget_execution
-
-  - id: data_gouv
-    name: data.gouv.fr
-    base_url: https://www.data.gouv.fr/
-    priority: catalog
-    themes:
-      - open_data
-
-  - id: cour_comptes
-    name: Cour des comptes
-    base_url: https://www.ccomptes.fr/
-    priority: control
-    themes:
-      - audit
-      - public_policy
-      - fraud
-      - public_finance
-
-  - id: drees
-    name: DREES
-    base_url: https://drees.solidarites-sante.gouv.fr/
-    priority: primary
-    themes:
-      - health
-      - social_protection
-      - pensions
+    status: integrated
+    access: direct
+    license: Licence Ouverte 2.0 selon les jeux
+    evidence_stages: [statistical_observation]
+    data_types: [numeric_series, methodology]
+    themes: [macroeconomics, public_finance, population, inflation, cofog]
 
   - id: eurostat
     name: Eurostat
     base_url: https://ec.europa.eu/eurostat/
     priority: harmonized
-    themes:
-      - european_comparison
-      - public_finance
+    status: integrated
+    access: api
+    license: Eurostat reuse policy
+    evidence_stages: [statistical_observation]
+    data_types: [numeric_series, methodology]
+    themes: [european_comparison, public_finance, cofog]
+
+  - id: budget_gouv
+    name: Budget.gouv.fr - Direction du Budget
+    base_url: https://www.budget.gouv.fr/
+    priority: primary
+    status: catalogued
+    access: direct
+    license: Vérifier par document
+    evidence_stages: [forecast, execution, evaluation]
+    data_types: [budget_document, pap, rap, finance_bill_document, performance_document]
+    themes: [state_budget, budget_execution, public_policy, performance]
+
+  - id: data_economie_budget
+    name: Data Économie - données budgétaires de l'État
+    base_url: https://data.economie.gouv.fr/
+    priority: primary
+    status: catalogued
+    access: api
+    license: Licence Ouverte 2.0 selon les jeux
+    evidence_stages: [forecast, execution, evaluation]
+    data_types: [budget_execution, performance_indicator, numeric_series]
+    themes: [state_budget, budget_execution, performance]
+
+  - id: legifrance
+    name: Légifrance / DILA
+    base_url: https://www.legifrance.gouv.fr/
+    priority: primary
+    status: catalogued
+    access: api_registration
+    license: Licence Ouverte 2.0
+    evidence_stages: [decision]
+    data_types: [law, decree, code, regulation, legal_text]
+    themes: [legislation, taxation, public_finance, social_protection, public_policy]
+
+  - id: assemblee_nationale_open_data
+    name: Assemblée nationale - Open Data
+    base_url: https://data.assemblee-nationale.fr/
+    priority: primary
+    status: catalogued
+    access: bulk_download
+    license: Licence ouverte selon le portail
+    evidence_stages: [parliamentary_process, decision]
+    data_types: [amendment, legislative_file, vote, debate]
+    themes: [legislation, finance_bill, parliamentary_work]
+
+  - id: senat_open_data
+    name: Sénat - Open Data
+    base_url: https://data.senat.fr/
+    priority: primary
+    status: catalogued
+    access: bulk_download
+    license: Voir conditions data.senat.fr
+    evidence_stages: [parliamentary_process, decision]
+    data_types: [amendment, legislative_file, debate, question]
+    themes: [legislation, finance_bill, parliamentary_work]
+
+  - id: securite_sociale
+    name: Sécurité sociale - lois de financement et évaluations
+    base_url: https://www.securite-sociale.fr/
+    priority: primary
+    status: catalogued
+    access: direct
+    license: Vérifier par ressource
+    evidence_stages: [forecast, decision, execution, evaluation]
+    data_types: [plfss, lfss, repss, annex, numeric_series]
+    themes: [social_protection, health, pensions, family]
+
+  - id: cour_comptes
+    name: Cour des comptes
+    base_url: https://www.ccomptes.fr/
+    priority: control
+    status: catalogued
+    access: direct
+    license: Vérifier par publication
+    evidence_stages: [evaluation]
+    data_types: [audit_report, evaluation_report, certification]
+    themes: [audit, public_policy, fraud, public_finance, social_protection]
+
+  - id: drees
+    name: DREES
+    base_url: https://drees.solidarites-sante.gouv.fr/
+    priority: primary
+    status: catalogued
+    access: direct
+    license: Vérifier par jeu
+    evidence_stages: [statistical_observation, evaluation]
+    data_types: [numeric_series, study, methodology]
+    themes: [health, social_protection, pensions]
+
+  - id: bofip_impots
+    name: BOFiP-Impôts
+    base_url: https://bofip.impots.gouv.fr/
+    priority: primary
+    status: catalogued
+    access: direct
+    license: Vérifier les conditions de réutilisation
+    evidence_stages: [decision, interpretation]
+    data_types: [tax_doctrine, administrative_interpretation]
+    themes: [taxation]
+
+  - id: data_gouv
+    name: data.gouv.fr
+    base_url: https://www.data.gouv.fr/
+    priority: catalog
+    status: catalogued
+    access: api
+    license: Dépend du producteur
+    evidence_stages: [statistical_observation, execution]
+    data_types: [dataset_catalog]
+    themes: [open_data]
 
   - id: oecd
     name: OECD
     base_url: https://www.oecd.org/
     priority: harmonized
-    themes:
-      - international_comparison
-      - taxation
-      - public_spending
+    status: catalogued
+    access: api
+    license: OECD terms
+    evidence_stages: [statistical_observation, evaluation]
+    data_types: [numeric_series, study]
+    themes: [international_comparison, taxation, public_spending]
 
   - id: european_commission_state_aid
     name: Commission européenne - aides d'État
     base_url: https://competition-policy.ec.europa.eu/state-aid/
     priority: primary
-    themes:
-      - corporate_aid
+    status: catalogued
+    access: direct
+    license: European Commission reuse policy
+    evidence_stages: [decision, execution, statistical_observation]
+    data_types: [state_aid_decision, beneficiary_data]
+    themes: [corporate_aid]

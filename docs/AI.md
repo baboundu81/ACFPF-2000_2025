@@ -8,131 +8,128 @@ Permettre à un utilisateur de poser une question en langage naturel sur les fin
 
 L'IA ne remplace ni la collecte des données, ni leur validation, ni les calculs reproductibles. Elle constitue une couche d'interrogation et d'explication au-dessus de ces éléments.
 
-## Architecture cible
+## Architecture actuelle
 
 ```text
 question utilisateur
         ↓
 ACFPF
+        ├── séries macro
+        ├── décomposition COFOG
+        └── retrieval dans un corpus officiel allow-listé
         ↓
-recherche / sélection dans les données et documents autorisés
-        ↓
-contexte traçable + identifiants de source
+contexte traçable + stades de preuve + identifiants de citation
         ↓
 LLMProvider
         ↓
-provider configuré (Groq, Gemini, Mistral, OpenAI, OpenRouter...)
+provider configuré
         ↓
-réponse structurée
+réponse JSON structurée
         ↓
 validation des citations par ACFPF
         ↓
 affichage de la réponse + sources + limites
 ```
 
-Le fournisseur et le modèle doivent rester interchangeables. Les règles de grounding et de citation appartiennent à ACFPF, pas au fournisseur LLM.
+Le fournisseur et le modèle sont interchangeables. Les règles de grounding, le retrieval et la validation des citations appartiennent à ACFPF, pas au fournisseur LLM.
 
-## Premier jalon
+## Données actuellement fournies au modèle
 
-Le premier jalon ne constitue **pas encore un RAG documentaire complet**.
+Le contexte peut contenir :
 
-L'IA reçoit uniquement :
+- dépenses, recettes, solde et dette des administrations publiques ;
+- dix grandes fonctions COFOG et leur variation depuis 2000 ;
+- passages textuels récupérés dans le premier corpus documentaire officiel ;
+- métadonnées indiquant si un élément est une observation, une prévision, une décision, une exécution, une évaluation ou un élément de processus parlementaire.
 
-- les séries macroéconomiques actuellement chargées par ACFPF ;
-- leurs unités ;
-- les années disponibles ;
-- les métadonnées des jeux Eurostat associés.
+L'IA doit toujours refuser de conclure lorsque ce contexte ne suffit pas.
 
-Elle peut donc répondre à des questions simples sur les dépenses publiques, les recettes, le solde et la dette pour les années présentes dans ce socle.
+## Corpus documentaire contrôlé
 
-Elle doit refuser de conclure sur un domaine pour lequel ACFPF n'a pas encore fourni les données nécessaires, par exemple l'éducation, les retraites ou la fiscalité d'un ménage.
+Le corpus n'est pas un moteur de recherche Web.
+
+`config/evidence_documents.yml` constitue l'allow-list. Seules les entrées explicitement marquées `status: seed` peuvent être téléchargées automatiquement par le premier moteur documentaire.
+
+Lors d'une question :
+
+1. ACFPF lit le manifeste ;
+2. les documents autorisés sont chargés depuis le cache ou leur URL officielle ;
+3. le texte visible est extrait et découpé en chunks ;
+4. une recherche lexicale sélectionne quelques passages ;
+5. ces passages sont envoyés au LLM avec leur provenance ;
+6. les citations retournées sont vérifiées côté backend.
+
+Le corpus de départ est volontairement limité. L'absence d'un passage pertinent signifie donc souvent « corpus encore incomplet », pas « ce texte n'existe pas ».
+
+Voir [EVIDENCE.md](EVIDENCE.md).
 
 ## Providers LLM
 
-La configuration générique repose sur trois variables :
+La configuration générique repose sur :
 
 ```bash
 export ACFPF_LLM_PROVIDER="groq"
 export ACFPF_LLM_API_KEY="..."
-export ACFPF_LLM_MODEL="openai/gpt-oss-120b"  # facultatif
+export ACFPF_LLM_MODEL="..."  # facultatif
 ```
 
-`ACFPF_LLM_PROVIDER` vaut `groq` par défaut. `ACFPF_LLM_MODEL` est facultatif : chaque provider possède un modèle par défaut.
-
-Providers intégrés :
-
-| Provider | API | Modèle par défaut | Remarque |
-| --- | --- | --- | --- |
-| `groq` | OpenAI-compatible | `openai/gpt-oss-120b` | provider gratuit recommandé pour le développement |
-| `gemini` | OpenAI-compatible | `gemini-3.8-flash` | free tier Google disponible |
-| `mistral` | Chat Completions compatible | `mistral-small-latest` | disponibilité du free tier selon le compte |
-| `openai` | OpenAI Chat Completions | `gpt-4.1-mini` | facturation API distincte de ChatGPT |
-| `openrouter` | OpenAI-compatible | `openrouter/free` | routeur vers des modèles gratuits |
-
-Pour simplifier la migration depuis l'ancien fonctionnement, ACFPF accepte aussi `GROQ_API_KEY`, `GEMINI_API_KEY`, `MISTRAL_API_KEY`, `OPENAI_API_KEY` et `OPENROUTER_API_KEY`. La variable générique `ACFPF_LLM_API_KEY` reste recommandée.
+Providers intégrés : Groq, Gemini, Mistral, OpenAI et OpenRouter. Les presets et instructions sont documentés dans [PROVIDERS.md](PROVIDERS.md).
 
 La clé reste exclusivement côté serveur Flask. Elle n'est jamais exposée au navigateur.
 
-Si aucune clé n'est configurée, l'application principale reste utilisable ; seule la fonction de questions IA est désactivée.
+Si aucune clé n'est configurée, le dashboard reste utilisable ; seule la fonction de questions IA est désactivée.
 
 ## Contraintes de réponse
 
 Le prompt système impose notamment :
 
 - utilisation exclusive du contexte ACFPF fourni ;
-- aucune recherche Web ;
+- aucune recherche Web ou appel d'outil par le LLM ;
 - aucune utilisation volontaire du savoir général du modèle pour combler un manque ;
 - réponse `insufficient` si le contexte ne permet pas de répondre ;
 - citations obligatoires pour une réponse factuelle ;
-- distinction entre constat, calcul et interprétation ;
-- absence de causalité non démontrée.
+- distinction entre observation, prévision, décision, exécution et évaluation ;
+- absence de causalité non démontrée ;
+- interdiction d'appeler automatiquement « économie » une baisse exprimée seulement en points de PIB.
 
-Le fournisseur renvoie un objet JSON. ACFPF valide ensuite les identifiants de citation et refuse une réponse qui cite une source non fournie.
+ACFPF rejette une citation qui n'existe pas dans le contexte transmis au modèle.
 
-Cette validation limite certaines hallucinations mais **ne garantit pas à elle seule qu'une phrase est factuellement exacte**. C'est pourquoi un benchmark spécifique ACFPF devra être construit avant de présenter cette couche comme hautement fiable.
+Cette validation réduit certaines hallucinations mais **ne garantit pas à elle seule la vérité de chaque phrase**. Le benchmark ACFPF reste indispensable.
 
-## Étape suivante : RAG documentaire
+## Prochaines étapes du RAG
 
-Lorsque le corpus aura suffisamment grandi :
+Le moteur lexical actuel valide le pipeline, mais il n'est pas la cible finale.
 
-1. téléchargement ou ingestion des documents autorisés ;
-2. extraction du texte avec conservation des pages/sections ;
-3. découpage en passages traçables ;
-4. embeddings via une abstraction `EmbeddingProvider` ;
-5. index vectoriel local ou serveur ;
-6. recherche des passages pertinents ;
-7. reranking éventuel ;
-8. génération d'une réponse à partir des seuls passages récupérés ;
-9. citations vers le document, la page et la source originale.
+Évolutions prioritaires :
 
-Le choix du provider d'embeddings doit rester indépendant de celui du LLM.
+1. ingestion structurée Légifrance via l'API PISTE ;
+2. PAP/RAP et données d'exécution du budget de l'État ;
+3. amendements et dossiers législatifs de l'Assemblée nationale et du Sénat ;
+4. LFSS, annexes et REPSS ;
+5. rapports de la Cour des comptes ;
+6. extraction PDF avec page/section ;
+7. `EmbeddingProvider` abstrait ;
+8. index vectoriel et reranking ;
+9. benchmark du retrieval et des réponses.
 
 ## Gratuité et déploiement
 
-Pour le développement et la bêta locale, ACFPF recommande un provider disposant d'un vrai free tier, actuellement Groq. Gemini et OpenRouter offrent également des options gratuites utilisables pour tester l'application.
+Pour le développement local, ACFPF privilégie un provider disposant d'un free tier. Pour un service public hébergé, la gratuité pour l'utilisateur ne signifie pas nécessairement l'absence de coût d'infrastructure.
 
-Pour un service public hébergé, la gratuité pour l'utilisateur ne signifie pas nécessairement l'absence de coût d'infrastructure. Avant une ouverture publique, il faudra mettre en place :
-
-- quotas par utilisateur/IP ;
-- limitation de débit ;
-- suivi des tokens et du coût ;
-- cache de certaines réponses ou recherches ;
-- protection de la clé serveur ;
-- politique de confidentialité ;
-- éventuellement possibilité pour un utilisateur avancé de fournir sa propre clé.
+Avant une ouverture publique, il faudra notamment : quotas, limitation de débit, suivi des tokens/coûts, protection de la clé serveur, politique de confidentialité et éventuellement prise en charge d'une clé utilisateur.
 
 ## Benchmark ACFPF
 
 Le choix final du modèle ne doit pas reposer uniquement sur des benchmarks généraux.
 
-ACFPF devra disposer de son propre jeu de tests :
+Le benchmark devra couvrir :
 
 - questions dont la réponse est présente dans les données ;
+- questions nécessitant chiffres + documents ;
 - questions volontairement impossibles avec le corpus ;
-- questions ambiguës ;
-- calculs simples ;
-- comparaisons temporelles ;
-- tentatives d'obtenir une réponse politique ou causale non supportée ;
-- vérification des citations.
+- distinction prévision/décision/exécution ;
+- calculs simples et comparaisons temporelles ;
+- tentatives d'obtenir une causalité non démontrée ;
+- citations valides, invalides ou absentes.
 
-Mesures minimales : exactitude, refus correct, qualité des citations, hallucinations, qualité du français, latence et coût en tokens.
+Mesures minimales : exactitude, refus correct, qualité des citations, hallucinations, qualité du français, rappel du retrieval, latence et coût en tokens.

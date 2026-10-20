@@ -7,28 +7,45 @@ from flask import Flask, jsonify, render_template, request
 
 from acfpf.ai import AnswerService, build_default_answer_service
 from acfpf.ai.provider import AIError
+from acfpf.cofog import CofogService
 from acfpf.data.eurostat import EurostatError, get_source_catalog
+from acfpf.evidence_catalog import load_evidence_documents
 from acfpf.macro import MacroService
+from acfpf.source_registry import load_sources
 
 
 def create_app(
     service: MacroService | None = None,
     answer_service: AnswerService | None = None,
+    cofog_service: CofogService | None = None,
 ) -> Flask:
     app = Flask(__name__)
     macro_service = service or MacroService()
-    ai_service = answer_service or build_default_answer_service(macro_service)
+    functional_service = cofog_service or CofogService()
+    ai_service = answer_service or build_default_answer_service(
+        macro_service,
+        functional_service,
+    )
 
     @app.get("/")
     def dashboard():
         refresh = request.args.get("refresh") == "1"
         sources = get_source_catalog()
+        cofog_payload = None
+        cofog_error = None
+        try:
+            cofog_payload = functional_service.analysis(refresh=refresh).as_dict()
+        except EurostatError as exc:
+            cofog_error = str(exc)
+
         try:
             model = macro_service.dashboard(refresh=refresh)
             payload = model.as_dict()
             return render_template(
                 "dashboard.html",
                 dashboard=payload,
+                cofog=cofog_payload,
+                cofog_error=cofog_error,
                 error=None,
                 sources=payload["sources"],
                 ai_enabled=ai_service is not None,
@@ -37,6 +54,8 @@ def create_app(
             return render_template(
                 "dashboard.html",
                 dashboard=None,
+                cofog=cofog_payload,
+                cofog_error=cofog_error,
                 error=str(exc),
                 sources=sources,
                 ai_enabled=ai_service is not None,
@@ -55,6 +74,23 @@ def create_app(
                 }
             ), 503
 
+    @app.get("/api/cofog")
+    def cofog_api():
+        refresh = request.args.get("refresh") == "1"
+        try:
+            return jsonify(functional_service.analysis(refresh=refresh).as_dict())
+        except EurostatError as exc:
+            return jsonify({"error": str(exc)}), 503
+
+    @app.get("/api/evidence")
+    def evidence_api():
+        return jsonify(
+            {
+                "sources": [source.as_dict() for source in load_sources()],
+                "documents": [item.as_dict() for item in load_evidence_documents()],
+            }
+        )
+
     @app.post("/api/ask")
     def ask_api():
         if ai_service is None:
@@ -62,8 +98,8 @@ def create_app(
                 {
                     "error": "ai_not_configured",
                     "message": (
-                        "La fonction IA n'est pas configurée. Définissez MISTRAL_API_KEY "
-                        "côté serveur puis relancez ACFPF."
+                        "La fonction IA n'est pas configurée. Définissez ACFPF_LLM_PROVIDER "
+                        "et ACFPF_LLM_API_KEY côté serveur puis relancez ACFPF."
                     ),
                 }
             ), 503
