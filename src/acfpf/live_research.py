@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from html.parser import HTMLParser
 from io import BytesIO
-from urllib.parse import parse_qs, unquote, urlparse
+from urllib.parse import parse_qs, unquote, urljoin, urlparse
 
 import requests
 from pypdf import PdfReader
@@ -21,8 +21,10 @@ DISCOVERY_URL = "https://html.duckduckgo.com/html/"
 MAX_RESULTS = 8
 MAX_HTML_BYTES = 3_000_000
 MAX_PDF_BYTES = 12_000_000
+MAX_REDIRECTS = 5
 HTML_UNIT_CHARS = 12_000
 PDF_PAGES_PER_UNIT = 4
+REDIRECT_STATUS_CODES = {301, 302, 303, 307, 308}
 
 
 class LiveResearchError(RuntimeError):
@@ -158,13 +160,19 @@ def _pdf_units(content: bytes) -> tuple[DocumentUnit, ...]:
     units: list[DocumentUnit] = []
     for start in range(0, len(reader.pages), PDF_PAGES_PER_UNIT):
         end = min(start + PDF_PAGES_PER_UNIT, len(reader.pages))
-        page_texts = [(reader.pages[index].extract_text() or "").strip() for index in range(start, end)]
+        page_texts = [
+            (reader.pages[index].extract_text() or "").strip() for index in range(start, end)
+        ]
         text = "\n\n".join(item for item in page_texts if item)
         if not text:
             continue
         first_page = start + 1
         last_page = end
-        locator = f"page {first_page}" if first_page == last_page else f"pages {first_page}-{last_page}"
+        locator = (
+            f"page {first_page}"
+            if first_page == last_page
+            else f"pages {first_page}-{last_page}"
+        )
         units.append(DocumentUnit(index=len(units) + 1, locator=locator, text=text))
     return tuple(units)
 
@@ -221,6 +229,37 @@ class LiveOfficialResearch:
                     return source
         raise SourceNotAllowed(f"Domain is not in the ACFPF source registry: {hostname}")
 
+    def _get_official(self, url: str) -> tuple[requests.Response, Source, str]:
+        """Follow redirects only after validating every target against the allow-list."""
+        current_url = url
+        for _ in range(MAX_REDIRECTS + 1):
+            source = self._source_for_url(current_url)
+            try:
+                response = self.session.get(
+                    current_url,
+                    headers={"User-Agent": "ACFPF/0.3 live-research"},
+                    timeout=self.timeout,
+                    allow_redirects=False,
+                )
+            except requests.RequestException as exc:
+                raise LiveResearchError(
+                    f"Unable to retrieve official source: {current_url}"
+                ) from exc
+
+            if response.status_code in REDIRECT_STATUS_CODES:
+                location = response.headers.get("Location")
+                if not location:
+                    raise LiveResearchError("Official source returned a redirect without Location")
+                next_url = urljoin(current_url, location)
+                self._source_for_url(next_url)
+                current_url = next_url
+                continue
+
+            response.raise_for_status()
+            return response, source, current_url
+
+        raise LiveResearchError(f"Too many redirects while opening official source: {url}")
+
     def search(
         self,
         query: str,
@@ -269,19 +308,7 @@ class LiveOfficialResearch:
         return tuple(found)
 
     def open(self, url: str) -> LiveDocument:
-        source = self._source_for_url(url)
-        try:
-            response = self.session.get(
-                url,
-                headers={"User-Agent": "ACFPF/0.3 live-research"},
-                timeout=self.timeout,
-            )
-            response.raise_for_status()
-        except requests.RequestException as exc:
-            raise LiveResearchError(f"Unable to retrieve official source: {url}") from exc
-
-        final_url = getattr(response, "url", None) or url
-        source = self._source_for_url(final_url)
+        response, source, final_url = self._get_official(url)
         content_type = response.headers.get("Content-Type", "").lower()
         content = response.content
         if "pdf" in content_type or final_url.lower().endswith(".pdf"):
