@@ -34,7 +34,7 @@ class MistralProvider:
         self.session = session or requests.Session()
 
     @classmethod
-    def from_env(cls) -> "MistralProvider":
+    def from_env(cls) -> MistralProvider:
         api_key = os.getenv("MISTRAL_API_KEY", "")
         model = os.getenv("ACFPF_LLM_MODEL", DEFAULT_MODEL)
         return cls(api_key, model=model)
@@ -73,5 +73,5 @@ class MistralProvider:
             return result
         except requests.RequestException as exc:
             raise AIProviderError("Mistral API request failed") from exc
-        except (KeyError, IndexError, TypeError, ValueError, json.JSONDecodeError) as exc:
+        except (KeyError, IndexError, TypeError, ValueError) as exc:
             raise AIProviderError("Mistral API returned an unexpected response") from exc
