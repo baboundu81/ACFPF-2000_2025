@@ -155,6 +155,7 @@ def test_openai_compatible_provider_uses_json_mode_and_server_side_key() -> None
 
     assert result == generated
     assert session.last_call["json"]["response_format"] == {"type": "json_object"}
+    assert session.last_call["json"]["tool_choice"] == "none"
     assert session.last_call["json"]["model"] == "openai/gpt-oss-120b"
     assert session.last_call["headers"]["Authorization"] == "Bearer secret-test-key"
 
