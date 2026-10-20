@@ -44,7 +44,27 @@ class Dashboard:
         data = self.dataset.as_dict()
         data["kpis"] = [kpi.as_dict() for kpi in self.kpis]
         data["insight"] = self.insight
+        data["rows"] = self._table_rows()
         return data
+
+    def _table_rows(self) -> list[dict[str, Any]]:
+        years = sorted(
+            {
+                year
+                for series in self.dataset.series.values()
+                for year in series.values
+            }
+        )
+        return [
+            {
+                "year": year,
+                **{
+                    key: series.values.get(year)
+                    for key, series in self.dataset.series.items()
+                },
+            }
+            for year in years
+        ]
 
 
 def _kpi(dataset: MacroDataset, key: str, *, base_year: int = 2000) -> Kpi | None:
