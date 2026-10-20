@@ -12,6 +12,37 @@ from acfpf.ai.provider import AIProviderError, AIProviderNotConfigured, Provider
 
 MAX_PROVIDER_ERROR_MESSAGE_CHARS = 500
 
+AGENT_ACTION_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "properties": {
+        "action": {"type": "string", "enum": ["search", "open", "read", "answer"]},
+        "query": {"type": "string"},
+        "source_ids": {"type": "array", "items": {"type": "string"}},
+        "reason": {"type": "string"},
+        "url": {"type": "string"},
+        "document_id": {"type": "string"},
+        "unit": {"type": "integer"},
+        "status": {"type": "string", "enum": ["", "answered", "insufficient"]},
+        "answer": {"type": "string"},
+        "citations": {"type": "array", "items": {"type": "string"}},
+        "limitations": {"type": "array", "items": {"type": "string"}},
+    },
+    "required": [
+        "action",
+        "query",
+        "source_ids",
+        "reason",
+        "url",
+        "document_id",
+        "unit",
+        "status",
+        "answer",
+        "citations",
+        "limitations",
+    ],
+    "additionalProperties": False,
+}
+
 
 class OpenAICompatibleProvider:
     """Minimal provider for OpenAI-compatible Chat Completions APIs."""
@@ -44,7 +75,7 @@ class OpenAICompatibleProvider:
                 {"role": "system", "content": request.system_prompt},
                 {"role": "user", "content": request.user_prompt},
             ],
-            "response_format": {"type": "json_object"},
+            "response_format": self._response_format(),
             "tool_choice": "none",
             "temperature": 0.1,
             "max_tokens": 900,
@@ -80,6 +111,17 @@ class OpenAICompatibleProvider:
             ) from exc
         except (KeyError, IndexError, TypeError, ValueError) as exc:
             raise AIProviderError(f"{self.name} API returned an unexpected response") from exc
+
+    def _response_format(self) -> dict[str, Any]:
+        if self.name == "groq" and self.model.startswith("openai/gpt-oss-"):
+            return {
+                "type": "json_schema",
+                "json_schema": {
+                    "name": "acfpf_agent_action",
+                    "schema": AGENT_ACTION_SCHEMA,
+                },
+            }
+        return {"type": "json_object"}
 
     def _http_error_message(self, response: requests.Response | None) -> str:
         if response is None:
@@ -123,6 +165,10 @@ class OpenAICompatibleProvider:
         if provider_message:
             parts.append(f"détail fournisseur: {provider_message}")
 
+        failed_generation = self._failed_generation_detail(response)
+        if failed_generation:
+            parts.append(f"génération refusée: {failed_generation}")
+
         return "; ".join(parts)
 
     @staticmethod
@@ -149,3 +195,27 @@ class OpenAICompatibleProvider:
             return None
         compact = " ".join(message.split())
         return compact[:MAX_PROVIDER_ERROR_MESSAGE_CHARS]
+
+    @staticmethod
+    def _failed_generation_detail(response: requests.Response) -> str | None:
+        try:
+            payload = response.json()
+        except (ValueError, TypeError):
+            return None
+        if not isinstance(payload, dict):
+            return None
+        error = payload.get("error")
+        if not isinstance(error, dict):
+            return None
+        failed = error.get("failed_generation")
+        if failed is None:
+            return None
+        if isinstance(failed, dict):
+            reason = failed.get("reason")
+            if isinstance(reason, str) and reason.strip():
+                return " ".join(reason.split())[:MAX_PROVIDER_ERROR_MESSAGE_CHARS]
+            failed = json.dumps(failed, ensure_ascii=False)
+        elif not isinstance(failed, str):
+            failed = str(failed)
+        compact = " ".join(failed.split())
+        return compact[:MAX_PROVIDER_ERROR_MESSAGE_CHARS] or None
