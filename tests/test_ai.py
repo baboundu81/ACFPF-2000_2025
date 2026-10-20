@@ -5,7 +5,7 @@ import json
 
 import pytest
 
-from acfpf.ai.openai_compatible import OpenAICompatibleProvider
+from acfpf.ai.openai_compatible import AGENT_ACTION_SCHEMA, OpenAICompatibleProvider
 from acfpf.ai.provider import AIGroundingError, AIProviderNotConfigured, ProviderRequest
 from acfpf.ai.registry import build_provider_from_env
 from acfpf.ai.service import AnswerService
@@ -255,9 +255,15 @@ def test_answer_service_accepts_insufficient_answer_without_citation() -> None:
     assert answer.citations == ()
 
 
-def test_openai_compatible_provider_uses_json_mode_and_server_side_key() -> None:
+def test_groq_gpt_oss_uses_structured_actions_and_server_side_key() -> None:
     generated = {
         "action": "answer",
+        "query": "",
+        "source_ids": [],
+        "reason": "",
+        "url": "",
+        "document_id": "",
+        "unit": 0,
         "status": "answered",
         "answer": "Test",
         "citations": ["S1"],
@@ -285,10 +291,31 @@ def test_openai_compatible_provider_uses_json_mode_and_server_side_key() -> None
     result = provider.complete_json(ProviderRequest("system JSON", "user"))
 
     assert result == generated
-    assert session.last_call["json"]["response_format"] == {"type": "json_object"}
+    response_format = session.last_call["json"]["response_format"]
+    assert response_format["type"] == "json_schema"
+    assert response_format["json_schema"]["name"] == "acfpf_agent_action"
+    assert response_format["json_schema"]["schema"] == AGENT_ACTION_SCHEMA
     assert session.last_call["json"]["tool_choice"] == "none"
     assert session.last_call["json"]["model"] == "openai/gpt-oss-120b"
     assert session.last_call["headers"]["Authorization"] == "Bearer secret-test-key"
+
+
+def test_non_groq_provider_keeps_json_object_mode() -> None:
+    generated = {"action": "answer"}
+    session = FakeSession(
+        {"choices": [{"message": {"content": json.dumps(generated)}}]}
+    )
+    provider = OpenAICompatibleProvider(
+        name="openrouter",
+        api_key="secret-test-key",
+        model="openrouter/free",
+        api_url="https://openrouter.test/api/v1/chat/completions",
+        session=session,
+    )
+
+    provider.complete_json(ProviderRequest("system JSON", "user"))
+
+    assert session.last_call["json"]["response_format"] == {"type": "json_object"}
 
 
 def test_registry_defaults_to_groq(monkeypatch) -> None:
