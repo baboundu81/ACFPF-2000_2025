@@ -338,11 +338,11 @@ def load_macro_dataset(
         dataset = _parse_cache_payload(payload, from_cache=False)
         cache_path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
         return dataset
-    except EurostatError as fetch_error:
+    except EurostatError:
         if cache_path.exists():
             try:
                 payload = json.loads(cache_path.read_text("utf-8"))
                 return _parse_cache_payload(payload, from_cache=True)
             except (json.JSONDecodeError, EurostatError):
                 pass
-        raise fetch_error
+        raise
