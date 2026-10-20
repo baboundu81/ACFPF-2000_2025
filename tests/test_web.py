@@ -2,9 +2,12 @@
 # Copyright (C) 2026 ACFPF contributors
 
 from acfpf.ai.service import Citation, GroundedAnswer
+from acfpf.cofog import build_cofog_analysis
+from acfpf.data.cofog import parse_cofog_payload
 from acfpf.data.eurostat import EurostatError
 from acfpf.macro import build_dashboard
 from acfpf.web import create_app
+from tests.test_cofog import sample_cofog_payload
 from tests.test_eurostat import sample_dataset
 
 
@@ -17,6 +20,17 @@ class FakeMacroService:
 class FailingMacroService:
     def dashboard(self, *, refresh: bool = False):
         raise EurostatError("simulated source failure")
+
+
+class FakeCofogService:
+    def analysis(self, *, refresh: bool = False):
+        assert isinstance(refresh, bool)
+        return build_cofog_analysis(parse_cofog_payload(sample_cofog_payload()))
+
+
+class FailingCofogService:
+    def analysis(self, *, refresh: bool = False):
+        raise EurostatError("simulated cofog failure")
 
 
 class FakeAnswerService:
@@ -39,8 +53,8 @@ class FakeAnswerService:
         )
 
 
-def test_dashboard_page_renders() -> None:
-    app = create_app(FakeMacroService())
+def test_dashboard_page_renders_macro_and_cofog() -> None:
+    app = create_app(FakeMacroService(), cofog_service=FakeCofogService())
     client = app.test_client()
 
     response = client.get("/")
@@ -51,11 +65,14 @@ def test_dashboard_page_renders() -> None:
     assert "57.3" in html
     assert "gov_10a_main" in html
     assert "gov_10dd_edpt1" in html
+    assert "Enseignement" in html
+    assert "Protection sociale" in html
     assert 'id="ask"' in html
+    assert 'id="functions"' in html
 
 
 def test_macro_api_returns_same_analysis() -> None:
-    app = create_app(FakeMacroService())
+    app = create_app(FakeMacroService(), cofog_service=FakeCofogService())
     client = app.test_client()
 
     response = client.get("/api/macro")
@@ -70,8 +87,37 @@ def test_macro_api_returns_same_analysis() -> None:
     assert len(payload["sources"]) == 2
 
 
+def test_cofog_api_returns_functional_breakdown() -> None:
+    app = create_app(FakeMacroService(), cofog_service=FakeCofogService())
+    client = app.test_client()
+
+    response = client.get("/api/cofog")
+    payload = response.get_json()
+
+    assert response.status_code == 200
+    assert payload["dataset_code"] == "gov_10a_exp"
+    assert len(payload["changes"]) == 10
+    assert payload["increases"][0]["code"] == "GF10"
+
+
+def test_evidence_api_exposes_source_and_document_catalogs() -> None:
+    app = create_app(FakeMacroService(), cofog_service=FakeCofogService())
+    client = app.test_client()
+
+    response = client.get("/api/evidence")
+    payload = response.get_json()
+
+    assert response.status_code == 200
+    assert any(source["id"] == "legifrance" for source in payload["sources"])
+    assert any(document["id"] == "legifrance_lfi_2025" for document in payload["documents"])
+
+
 def test_ask_api_returns_grounded_answer() -> None:
-    app = create_app(FakeMacroService(), FakeAnswerService())
+    app = create_app(
+        FakeMacroService(),
+        FakeAnswerService(),
+        cofog_service=FakeCofogService(),
+    )
     client = app.test_client()
 
     response = client.post(
@@ -86,8 +132,8 @@ def test_ask_api_returns_grounded_answer() -> None:
     assert payload["provider"] == "fake"
 
 
-def test_sources_remain_available_when_data_loading_fails() -> None:
-    app = create_app(FailingMacroService())
+def test_sources_remain_available_when_macro_loading_fails() -> None:
+    app = create_app(FailingMacroService(), cofog_service=FakeCofogService())
     client = app.test_client()
 
     response = client.get("/")
@@ -99,8 +145,20 @@ def test_sources_remain_available_when_data_loading_fails() -> None:
     assert "gov_10dd_edpt1" in html
 
 
+def test_dashboard_survives_cofog_failure() -> None:
+    app = create_app(FakeMacroService(), cofog_service=FailingCofogService())
+    client = app.test_client()
+
+    response = client.get("/")
+    html = response.get_data(as_text=True)
+
+    assert response.status_code == 200
+    assert "Décomposition COFOG indisponible" in html
+    assert "simulated cofog failure" in html
+
+
 def test_error_api_includes_source_catalog() -> None:
-    app = create_app(FailingMacroService())
+    app = create_app(FailingMacroService(), cofog_service=FakeCofogService())
     client = app.test_client()
 
     response = client.get("/api/macro")
@@ -115,7 +173,7 @@ def test_error_api_includes_source_catalog() -> None:
 
 
 def test_health_endpoint_does_not_load_data() -> None:
-    app = create_app(FakeMacroService())
+    app = create_app(FakeMacroService(), cofog_service=FakeCofogService())
     client = app.test_client()
 
     response = client.get("/healthz")
