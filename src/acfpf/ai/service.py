@@ -14,6 +14,8 @@ from acfpf.ai.provider import (
     ProviderRequest,
 )
 from acfpf.ai.registry import build_provider_from_env
+from acfpf.cofog import CofogService
+from acfpf.data.eurostat import EurostatError
 from acfpf.macro import MacroService
 
 SYSTEM_PROMPT = """Tu es le moteur d'analyse ACFPF.
@@ -24,6 +26,8 @@ Règles impératives :
 - Si le contexte ne suffit pas pour répondre correctement, retourne le statut `insufficient`.
 - Ne présente jamais une causalité si le contexte ne contient qu'une corrélation ou une évolution descriptive.
 - Distingue clairement fait observé, calcul simple et limite d'interprétation.
+- Une baisse de dépense exprimée en points de PIB n'est pas automatiquement une économie en euros.
+- Une décision, une prévision et une exécution ne sont jamais interchangeables.
 - Toute réponse avec le statut `answered` doit citer au moins une source fournie dans le contexte.
 - Les citations doivent utiliser exclusivement les identifiants de source autorisés (par exemple S1, S2).
 - Réponds en français.
@@ -70,9 +74,15 @@ class GroundedAnswer:
 
 
 class AnswerService:
-    def __init__(self, provider: LLMProvider, macro_service: MacroService) -> None:
+    def __init__(
+        self,
+        provider: LLMProvider,
+        macro_service: MacroService,
+        cofog_service: CofogService | None = None,
+    ) -> None:
         self.provider = provider
         self.macro_service = macro_service
+        self.cofog_service = cofog_service
 
     def ask(self, question: str) -> GroundedAnswer:
         question = question.strip()
@@ -81,8 +91,7 @@ class AnswerService:
         if len(question) > 1500:
             raise ValueError("La question est trop longue (1500 caractères maximum).")
 
-        dashboard = self.macro_service.dashboard().as_dict()
-        context, citations = self._build_macro_context(dashboard)
+        context, citations = self._build_context()
         allowed_ids = set(citations)
 
         request = ProviderRequest(
@@ -98,9 +107,8 @@ class AnswerService:
         raw = self.provider.complete_json(request)
         return self._validate_answer(raw, citations, allowed_ids)
 
-    def _build_macro_context(
-        self, dashboard: dict[str, Any]
-    ) -> tuple[dict[str, Any], dict[str, Citation]]:
+    def _build_context(self) -> tuple[dict[str, Any], dict[str, Citation]]:
+        dashboard = self.macro_service.dashboard().as_dict()
         citation_map: dict[str, Citation] = {}
         source_ids_by_dataset: dict[str, str] = {}
 
@@ -116,30 +124,60 @@ class AnswerService:
 
         main_source = source_ids_by_dataset.get("gov_10a_main")
         debt_source = source_ids_by_dataset.get("gov_10dd_edpt1")
-
         series_context: dict[str, Any] = {}
         for key, series in dashboard.get("series", {}).items():
             source_id = debt_source if key == "debt" else main_source
             series_context[key] = {
                 "label": series["label"],
                 "unit": series["unit"],
+                "evidence_stage": "statistical_observation",
                 "source_id": source_id,
                 "values": series["values"],
             }
 
+        cofog_context: dict[str, Any] | None = None
+        cofog_error: str | None = None
+        if self.cofog_service is not None:
+            try:
+                cofog = self.cofog_service.analysis().as_dict()
+                source_id = f"S{len(citation_map) + 1}"
+                citation_map[source_id] = Citation(
+                    id=source_id,
+                    dataset_code=cofog["dataset_code"],
+                    label="Dépenses des administrations publiques par fonction (COFOG)",
+                    source_url=cofog["source_url"],
+                )
+                cofog_context = {
+                    "source_id": source_id,
+                    "evidence_stage": "statistical_observation",
+                    "unit": "% du PIB",
+                    "changes_since_2000": cofog["changes"],
+                    "interpretation_note": cofog["interpretation_note"],
+                }
+            except EurostatError as exc:
+                cofog_error = str(exc)
+
+        limitations = [
+            "Le contexte actuel ne contient pas encore le texte intégral des lois, PAP, RAP, amendements ou rapports de contrôle.",
+            "Les données COFOG permettent de localiser les variations par fonction, pas d'en attribuer la cause à une décision précise.",
+        ]
+        if cofog_error:
+            limitations.append(f"Les données COFOG sont temporairement indisponibles : {cofog_error}")
+
         context = {
-            "scope": (
-                "France, administrations publiques, séries macroéconomiques actuellement chargées "
-                "dans ACFPF. Aucune donnée sectorielle détaillée n'est encore fournie à l'IA."
-            ),
-            "period": "2000-2025",
-            "series": series_context,
+            "scope": "France, administrations publiques, période 2000-2025.",
+            "macro_series": series_context,
+            "cofog_functional_spending": cofog_context,
+            "evidence_semantics": {
+                "statistical_observation": "mesure constatée dans une source statistique",
+                "forecast": "prévision ou autorisation, pas une dépense réalisée",
+                "decision": "texte adopté ou décision juridique",
+                "execution": "réalisation budgétaire constatée",
+                "evaluation": "analyse a posteriori d'une politique ou de son exécution",
+                "parliamentary_process": "proposition, amendement, débat ou vote à replacer dans son sort final",
+            },
             "sources": [citation.as_dict() for citation in citation_map.values()],
-            "important_limit": (
-                "Le contexte actuel ne permet pas de répondre aux questions détaillées sur "
-                "l'éducation, la santé, la fiscalité par ménage, les retraites, la fraude ou les "
-                "aides aux entreprises."
-            ),
+            "limitations": limitations,
         }
         return context, citation_map
 
@@ -188,9 +226,14 @@ class AnswerService:
 
 def build_default_answer_service(
     macro_service: MacroService | None = None,
+    cofog_service: CofogService | None = None,
 ) -> AnswerService | None:
     try:
         provider = build_provider_from_env()
     except AIProviderNotConfigured:
         return None
-    return AnswerService(provider, macro_service or MacroService())
+    return AnswerService(
+        provider,
+        macro_service or MacroService(),
+        cofog_service or CofogService(),
+    )
