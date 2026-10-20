@@ -4,44 +4,36 @@
 
 ## Objectif
 
-ACFPF est un outil d'analyse de données publiques. Son interface doit inspirer confiance sans imiter visuellement une institution ni un média en particulier.
+ACFPF est un outil d'analyse de données publiques. Son interface doit inspirer confiance, rendre les chiffres lisibles et donner envie d'explorer les sources sans imiter visuellement une institution ou un média existant.
 
-Le design doit pouvoir évoluer rapidement sans réécrire les templates ou les composants.
+La direction actuelle est **journalistique** : forte hiérarchie éditoriale, chiffres mis en avant, textes explicatifs courts, sources visibles et lecture fluide.
+
+Il n'existe pas de sélecteur de thème. Le design doit toutefois pouvoir être refondu facilement plus tard sans réécrire les templates ou les composants.
 
 ## Architecture du design system
 
 Le design est séparé en trois couches :
 
-1. **tokens structurels** : échelles d'espacement, tailles, breakpoints et règles communes ;
-2. **tokens sémantiques de thème** : surfaces, textes, accents, bordures, typographies, rayons, ombres ;
-3. **composants** : cartes, navigation, boutons, tableaux et graphiques qui ne consomment que des tokens sémantiques.
+1. **tokens structurels** : échelles d'espacement, tailles et règles communes ;
+2. **tokens sémantiques** : surfaces, textes, accents, bordures, typographies, rayons et ombres ;
+3. **composants** : navigation, indicateurs, tableaux, graphiques, appels de source et contenus éditoriaux qui ne consomment que des tokens sémantiques.
 
-Les composants ne doivent pas savoir si le thème est « institutionnel », « journalistique » ou autre.
+Le set de tokens actuel correspond au style journalistique. Un futur changement de direction visuelle doit principalement modifier ce set, pas l'HTML.
 
-## Thèmes initiaux
+## Direction journalistique
 
-### Institutional
+Intention : donner le sentiment de consulter une publication de données sérieuse plutôt qu'un logiciel d'administration ou un dashboard d'entreprise générique.
 
-Intention : sérieux, calme, structuré, très lisible, adapté à la consultation de données de référence.
+Principes :
 
-- typographie sans serif sobre ;
-- faible décoration ;
-- cartes et tableaux clairement séparés ;
-- bordures présentes ;
-- accent mesuré ;
-- densité moyenne.
-
-### Journalistic
-
-Intention : lecture éditoriale, hiérarchie forte, mise en avant des constats et des explications.
-
-- titres plus éditoriaux ;
-- contraste typographique plus marqué ;
-- surfaces plus discrètes ;
-- graphiques et narratif davantage mis en avant ;
-- densité légèrement plus aérée.
-
-Ces thèmes sont des presets de démonstration. De nouveaux thèmes doivent pouvoir être ajoutés sans modifier l'HTML.
+- titres éditoriaux avec contraste typographique marqué ;
+- typographie de lecture sobre pour le corps ;
+- grands chiffres utilisés avec parcimonie ;
+- séparation des sections principalement par rythme, bordures et espace plutôt que par accumulation de cartes ;
+- graphiques intégrés dans le récit ;
+- textes de contexte et sources immédiatement accessibles ;
+- palette réduite et non partisane ;
+- densité suffisamment aérée pour lire, suffisamment compacte pour comparer.
 
 ## Tokens
 
@@ -50,9 +42,9 @@ Exemples de tokens sémantiques :
 ```css
 --font-body
 --font-heading
+--font-data
 --color-page
 --color-surface
---color-surface-raised
 --color-text-primary
 --color-text-secondary
 --color-border
@@ -60,8 +52,8 @@ Exemples de tokens sémantiques :
 --color-accent-strong
 --color-positive
 --color-negative
---radius-card
---shadow-card
+--radius-control
+--shadow-overlay
 --content-max-width
 ```
 
@@ -114,7 +106,7 @@ Structure recommandée :
 - source toujours associée ;
 - légende explicite ;
 - unités visibles ;
-- tooltips ou table de données quand pertinent ;
+- table de données disponible lorsque pertinent ;
 - palette non partisane ;
 - pas d'effets 3D ;
 - pas de décor qui masque la lecture ;
