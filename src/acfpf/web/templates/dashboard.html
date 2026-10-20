@@ -6,7 +6,9 @@
   <title>ACFPF — Tableau de bord</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/tokens.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/ai.css') }}">
   <script defer src="{{ url_for('static', filename='js/chart.js') }}"></script>
+  <script defer src="{{ url_for('static', filename='js/ask.js') }}"></script>
 </head>
 <body>
   <header class="masthead">
@@ -17,6 +19,7 @@
       </div>
       <nav class="primary-nav" aria-label="Navigation principale">
         <a class="primary-nav__link is-active" href="/" aria-current="page">Vue d'ensemble</a>
+        {% if dashboard %}<a class="primary-nav__link" href="#ask">Question IA</a>{% endif %}
         <a class="primary-nav__link" href="#sources">Sources</a>
       </nav>
     </div>
@@ -80,6 +83,38 @@
           <p class="editorial-note__title">À garder en tête</p>
           <p>Une hausse en points de PIB ne se lit pas comme une hausse identique en euros constants ou par habitant.</p>
         </aside>
+      </section>
+
+      <section id="ask" class="shell section-block ask-block">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Questionner les données</p>
+            <h2>Poser une question à ACFPF</h2>
+          </div>
+          <p class="section-heading__note">Réponse limitée aux données ACFPF fournies au modèle</p>
+        </div>
+        <p class="ask-block__intro">
+          Pour l'instant, l'IA ne connaît que les séries macro affichées sur cette page. Elle doit refuser
+          de répondre si la question nécessite d'autres données.
+        </p>
+
+        {% if ai_enabled %}
+          <form id="ask-form" class="ask-form">
+            <label for="ask-question">Votre question</label>
+            <div class="ask-form__row">
+              <textarea id="ask-question" name="question" rows="3" maxlength="1500" required
+                placeholder="Ex. Les dépenses publiques ont-elles augmenté davantage que les recettes depuis 2000 ?"></textarea>
+              <button type="submit">Analyser</button>
+            </div>
+            <p class="ask-form__hint">Le modèle n'a aucun accès Web via ACFPF et reçoit uniquement le contexte sélectionné par le backend.</p>
+          </form>
+          <div id="ask-result" class="ask-result" hidden aria-live="polite"></div>
+        {% else %}
+          <div class="ai-disabled">
+            <p><strong>IA non configurée.</strong> Le tableau de bord reste entièrement utilisable sans IA.</p>
+            <p>Pour activer Mistral localement : <code>export MISTRAL_API_KEY="votre_clé"</code>, puis relancez <code>acfpf</code>.</p>
+          </div>
+        {% endif %}
       </section>
 
       <section class="shell section-block">

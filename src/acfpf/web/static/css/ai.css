@@ -1,0 +1,129 @@
+/* SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0 */
+/* Copyright (C) 2026 ACFPF contributors */
+
+.ask-block__intro {
+  max-width: 72ch;
+  margin: 0 0 var(--space-5);
+  color: var(--color-text-secondary);
+}
+
+.ask-form {
+  border-top: 1px solid var(--color-border-strong);
+  padding-top: var(--space-5);
+}
+
+.ask-form label {
+  display: block;
+  margin-bottom: var(--space-2);
+  font-weight: 800;
+}
+
+.ask-form__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-3);
+  align-items: stretch;
+}
+
+.ask-form textarea {
+  width: 100%;
+  resize: vertical;
+  min-height: 7rem;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  font: inherit;
+  line-height: 1.5;
+  padding: var(--space-4);
+}
+
+.ask-form textarea:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.ask-form button {
+  align-self: end;
+  min-height: 3rem;
+  border: 1px solid var(--color-accent-strong);
+  border-radius: var(--radius-control);
+  background: var(--color-accent-strong);
+  color: var(--color-text-inverse);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 800;
+  padding: 0 var(--space-5);
+}
+
+.ask-form button:hover:not(:disabled) {
+  background: var(--color-accent);
+}
+
+.ask-form button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.ask-form__hint,
+.ask-result__technical {
+  color: var(--color-text-secondary);
+  font-family: var(--font-data);
+  font-size: var(--text-xs);
+}
+
+.ask-result {
+  margin-top: var(--space-6);
+  border-top: 4px solid var(--color-accent);
+  background: var(--color-surface);
+  padding: var(--space-5);
+}
+
+.ask-result__answer {
+  max-width: 75ch;
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: var(--text-lg);
+  line-height: 1.45;
+}
+
+.ask-result__subtitle {
+  margin: var(--space-5) 0 var(--space-2);
+  font-weight: 800;
+}
+
+.ask-result ul {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+.ask-result__loading {
+  margin: 0;
+  color: var(--color-text-secondary);
+}
+
+.ai-disabled {
+  border-top: 1px solid var(--color-border-strong);
+  background: var(--color-surface-muted);
+  padding: var(--space-5);
+}
+
+.ai-disabled p {
+  max-width: 78ch;
+}
+
+.ai-disabled code {
+  font-family: var(--font-data);
+  font-size: var(--text-sm);
+}
+
+@media (max-width: 720px) {
+  .ask-form__row {
+    grid-template-columns: 1fr;
+  }
+
+  .ask-form button {
+    justify-self: start;
+    min-height: 2.75rem;
+  }
+}

@@ -13,6 +13,7 @@ Ce fichier complète le `AGENTS.md` racine et s'applique à tout `src/acfpf/web/
 
 - `static/css/tokens.css` contient l'ensemble des tokens sémantiques du design courant.
 - `static/css/app.css` contient les composants et layouts ; il doit consommer les tokens de `tokens.css`.
+- Les styles spécialisés peuvent être séparés dans des fichiers dédiés comme `static/css/ai.css`, mais doivent eux aussi consommer les tokens sémantiques.
 - Une valeur de marque (couleur, typo, rayon, ombre, densité) ne doit pas être répétée directement dans les composants.
 - Le design courant est **journalistique**.
 - Il n'y a pas de sélecteur de thème ni de mécanisme de bascule à chaud.
@@ -40,6 +41,14 @@ Ce fichier complète le `AGENTS.md` racine et s'applique à tout `src/acfpf/web/
 - Les endpoints JSON lisent la même couche de données que les pages HTML.
 - Ne jamais dupliquer une série dans le JavaScript ou l'HTML.
 - Les sources et millésimes doivent être visibles dans l'interface.
+
+## IA dans l'interface
+
+- La clé API d'un fournisseur LLM reste exclusivement côté serveur et ne doit jamais apparaître dans le HTML, le JavaScript ou une réponse API.
+- Le navigateur envoie uniquement la question utilisateur à `/api/ask` et affiche la réponse validée par le backend.
+- Ne jamais afficher une citation générée librement par le modèle : seules les citations validées par `acfpf.ai` peuvent être rendues.
+- L'absence de configuration IA ne doit pas bloquer le reste de l'application.
+- En cas de contexte insuffisant, l'interface doit afficher clairement le refus ou la limite plutôt qu'une réponse approximative.
 
 ## Performance
 
