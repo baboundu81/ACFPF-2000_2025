@@ -6,10 +6,11 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass
 
+from acfpf.ai.anthropic import AnthropicProvider
 from acfpf.ai.openai_compatible import OpenAICompatibleProvider
 from acfpf.ai.provider import AIProviderNotConfigured, LLMProvider
 
-DEFAULT_PROVIDER = "groq"
+DEFAULT_PROVIDER = "gemini"
 
 
 @dataclass(frozen=True)
@@ -18,20 +19,28 @@ class ProviderPreset:
     api_url: str
     default_model: str
     legacy_key_env: str
+    driver: str = "openai_compatible"
 
 
 PROVIDER_PRESETS: dict[str, ProviderPreset] = {
+    "gemini": ProviderPreset(
+        name="gemini",
+        api_url="https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+        default_model="gemini-3.8-flash",
+        legacy_key_env="GEMINI_API_KEY",
+    ),
     "groq": ProviderPreset(
         name="groq",
         api_url="https://api.groq.com/openai/v1/chat/completions",
         default_model="openai/gpt-oss-120b",
         legacy_key_env="GROQ_API_KEY",
     ),
-    "gemini": ProviderPreset(
-        name="gemini",
-        api_url="https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
-        default_model="gemini-3.8-flash",
-        legacy_key_env="GEMINI_API_KEY",
+    "claude": ProviderPreset(
+        name="claude",
+        api_url="https://api.anthropic.com/v1/messages",
+        default_model="claude-haiku-5-5",
+        legacy_key_env="ANTHROPIC_API_KEY",
+        driver="anthropic",
     ),
     "mistral": ProviderPreset(
         name="mistral",
@@ -77,6 +86,12 @@ def build_provider_from_env() -> LLMProvider:
         )
 
     model = os.getenv("ACFPF_LLM_MODEL", preset.default_model).strip() or preset.default_model
+    if preset.driver == "anthropic":
+        return AnthropicProvider(
+            api_key=api_key,
+            model=model,
+            api_url=preset.api_url,
+        )
     return OpenAICompatibleProvider(
         name=preset.name,
         api_key=api_key,
