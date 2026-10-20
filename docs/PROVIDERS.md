@@ -26,6 +26,12 @@ ACFPF a besoin d'un **endpoint d'inférence programmable** pour exécuter la bou
 
 Le choix du provider ne modifie pas les règles de grounding : aucun outil Web n'est transmis au modèle, le contexte vient d'ACFPF et les citations sont validées par le backend.
 
+## Sorties structurées
+
+Avec `groq` et un modèle `openai/gpt-oss-*`, ACFPF utilise `response_format=json_schema` avec un schéma explicite pour les quatre actions de l'agent (`search`, `open`, `read`, `answer`). Cela évite de dépendre du seul mode JSON libre, qui peut produire une erreur HTTP 400 `Failed to validate JSON` si le modèle génère un objet JSON invalide.
+
+Les autres providers restent en mode `json_object` tant que leur prise en charge d'un schéma strict n'est pas explicitement activée et testée dans ACFPF.
+
 ## Diagnostic des erreurs
 
 Les erreurs HTTP des providers doivent rester exploitables sans exposer les secrets. ACFPF remonte donc, lorsqu'ils existent :
@@ -35,6 +41,7 @@ Les erreurs HTTP des providers doivent rester exploitables sans exposer les secr
 - `retry-after` ;
 - les compteurs et délais de rate limit fournis par l'API ;
 - l'identifiant de requête du fournisseur ;
-- le message d'erreur structuré du fournisseur, tronqué à une taille raisonnable.
+- le message d'erreur structuré du fournisseur, tronqué à une taille raisonnable ;
+- lorsque le fournisseur retourne `failed_generation`, la raison structurée si elle est disponible, sans recopier automatiquement la génération fautive complète.
 
 La clé API et les en-têtes d'authentification ne doivent jamais apparaître dans l'interface ni dans les logs.
