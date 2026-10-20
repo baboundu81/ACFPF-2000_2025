@@ -6,7 +6,7 @@ Ce document complète le registre machine-readable [`config/sources.yml`](../con
 
 La convention qui distingue **observation statistique, prévision, décision, exécution, évaluation et processus parlementaire** est décrite dans [`docs/EVIDENCE.md`](EVIDENCE.md).
 
-Le premier manifeste documentaire allow-listé se trouve dans [`config/evidence_documents.yml`](../config/evidence_documents.yml).
+Le registre de sources est aussi la **liste blanche de recherche live** : chaque entrée peut déclarer les domaines HTTPS que l'agent est autorisé à ouvrir. Une URL trouvée sur le Web n'est jamais une preuve avant validation du domaine et lecture effective par ACFPF.
 
 ## INSEE et Eurostat
 
@@ -42,7 +42,7 @@ Usage :
 - versions historiques des textes ;
 - textes budgétaires et fiscaux promulgués.
 
-L'intégration structurée cible l'API officielle Légifrance via PISTE. Elle est gratuite après inscription et ses données sont soumises à la Licence Ouverte 2.0 et aux conditions de l'API.
+La lecture publique live peut fonctionner directement sur les pages Légifrance. Un connecteur structuré vers l'API officielle PISTE pourra être ajouté en complément lorsque ses identifiants sont configurés ; il ne doit pas être requis pour lancer ACFPF.
 
 ## Assemblée nationale et Sénat
 
@@ -97,6 +97,12 @@ Chaque jeu doit être relié à son producteur d'origine.
 
 Usage : comparaisons internationales, fiscalité, dépenses, emploi public et aides d'État.
 
+## Découverte et preuve
+
+La recherche d'URL peut s'appuyer sur un index externe, mais cet index ne sert qu'à la navigation. Les snippets, classements et résumés du moteur de découverte ne sont pas des sources ACFPF et ne sont pas transmis comme faits au modèle.
+
+Seul le contenu récupéré depuis un domaine autorisé peut recevoir un identifiant de preuve `E…`.
+
 ## Règle de citation
 
-Chaque analyse doit citer le producteur original et conserver suffisamment d'informations pour retrouver précisément le jeu de données, le document, la page, la section ou l'article utilisé.
+Chaque analyse doit citer le producteur original et conserver suffisamment d'informations pour retrouver précisément le jeu de données, le document et le locator utilisé, ainsi que la date de consultation pour les sources live.
