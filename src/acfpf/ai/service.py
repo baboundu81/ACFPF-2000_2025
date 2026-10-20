@@ -41,19 +41,23 @@ Règles impératives :
 - Si la recherche ne permet pas de conclure, réponds avec `status=insufficient`.
 - Réponds en français.
 
-À chaque tour, retourne UN SEUL objet JSON correspondant exactement à l'une des actions suivantes :
+À chaque tour, retourne UNE SEULE action structurée parmi `search`, `open`, `read` et `answer`.
+Le schéma peut imposer la présence de tous les champs : remplis les champs inutilisés avec une valeur neutre
+(chaîne vide, tableau vide ou 0) et ne leur donne aucune signification.
+
+Exemples logiques :
 
 1. Rechercher des URL officielles :
-{"action":"search","query":"...","source_ids":["budget_gouv","legifrance"],"reason":"..."}
+{"action":"search","query":"...","source_ids":["budget_gouv","legifrance"],"reason":"...","url":"","document_id":"","unit":0,"status":"","answer":"","citations":[],"limitations":[]}
 
 2. Ouvrir une URL officielle :
-{"action":"open","url":"https://...","reason":"..."}
+{"action":"open","query":"","source_ids":[],"reason":"...","url":"https://...","document_id":"","unit":0,"status":"","answer":"","citations":[],"limitations":[]}
 
 3. Lire une autre unité d'un document déjà ouvert :
-{"action":"read","document_id":"D1","unit":2,"reason":"..."}
+{"action":"read","query":"","source_ids":[],"reason":"...","url":"","document_id":"D1","unit":2,"status":"","answer":"","citations":[],"limitations":[]}
 
 4. Répondre :
-{"action":"answer","status":"answered|insufficient","answer":"...","citations":["S1","E1"],"limitations":["..."]}
+{"action":"answer","query":"","source_ids":[],"reason":"","url":"","document_id":"","unit":0,"status":"answered|insufficient","answer":"...","citations":["S1","E1"],"limitations":["..."]}
 
 Les `source_ids` de search doivent venir de ALLOWED_SOURCES. Une citation finale inconnue sera rejetée.
 """
