@@ -32,7 +32,67 @@ Le projet cherchera notamment à répondre, données à l'appui, aux questions s
 6. **Définitions explicites** : ne pas confondre par exemple dépense de l'État et dépense publique totale, fraude estimée et fraude détectée, subvention et marché public.
 7. **Incertitude visible** : toute limite, rupture de série, changement de périmètre ou estimation doit être documenté.
 
-Voir [docs/METHODOLOGY.md](docs/METHODOLOGY.md).
+Voir [docs/METHODOLOGY.md](docs/METHODOLOGY.md). Les choix structurants à respecter lors du développement sont documentés dans [AGENTS.md](AGENTS.md).
+
+## Premier tableau de bord
+
+La première tranche fonctionnelle affiche les séries macroéconomiques françaises 2000–2025 issues du jeu Eurostat `gov_10dd_edpt1` :
+
+- dépenses publiques ;
+- recettes publiques ;
+- solde public ;
+- dette publique lorsque la série est disponible dans la réponse.
+
+Les valeurs sont exprimées en pourcentage du PIB. L'application conserve un cache local pendant 24 heures et peut fonctionner sur le dernier cache disponible si Eurostat devient temporairement inaccessible.
+
+## Installation
+
+Python 3.11 ou supérieur.
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -e ".[dev]"
+```
+
+Sous Windows, l'activation de l'environnement devient :
+
+```powershell
+.venv\Scripts\activate
+```
+
+## Lancer ACFPF
+
+Après l'installation, une seule commande suffit :
+
+```bash
+acfpf
+```
+
+Le serveur local démarre sur `http://127.0.0.1:5000` et le navigateur s'ouvre automatiquement.
+
+Options utiles :
+
+```bash
+acfpf --no-browser
+acfpf --port 5050
+acfpf --debug
+```
+
+Il est également possible de lancer l'application avec :
+
+```bash
+python -m acfpf
+```
+
+## Tests
+
+```bash
+ruff check .
+pytest
+```
+
+Les tests unitaires n'appellent pas les services externes en temps réel : les parseurs et routes utilisent des fixtures déterministes. Les appels live aux sources officielles restent séparés des tests de CI.
 
 ## Structure
 
@@ -44,11 +104,10 @@ Voir [docs/METHODOLOGY.md](docs/METHODOLOGY.md).
 │   ├── raw/                # Données sources non modifiées (non versionnées par défaut)
 │   ├── interim/            # Données intermédiaires
 │   └── processed/          # Jeux normalisés prêts pour l'analyse
-├── docs/                   # Méthodologie, sources et documentation
+├── docs/                   # Méthodologie, UX/UI, sources et documentation
 ├── notebooks/              # Exploration et contrôles ponctuels
-├── scripts/                # Scripts d'import / automatisation
-├── src/acfpf/              # Bibliothèque Python commune
-└── tests/                  # Tests
+├── src/acfpf/              # Bibliothèque, données, analyse et interface locale
+└── tests/                  # Tests déterministes
 ```
 
 ## Sources prioritaires
@@ -64,28 +123,9 @@ Le registre initial est dans [config/sources.yml](config/sources.yml). Les princ
 - Eurostat et OCDE pour les comparaisons internationales ;
 - Commission européenne pour certaines aides d'État.
 
-## Installation
-
-Python 3.11 ou supérieur.
-
-```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -e ".[dev]"
-pytest
-```
-
-Sous Windows :
-
-```powershell
-.venv\Scripts\activate
-```
-
 ## État du projet
 
-Le dépôt est en phase d'initialisation. La première étape sera de construire un **socle macroéconomique 2000–2025** : PIB, population, inflation, dépenses publiques, recettes publiques, prélèvements obligatoires, déficit et dette.
-
-Les analyses thématiques viendront ensuite.
+Le socle technique et le premier dashboard macro sont en cours de construction. Les prochaines étapes consistent à enrichir le socle 2000–2025 avec les prélèvements obligatoires, l'inflation, la population et les montants en euros, puis à décomposer les dépenses par fonction.
 
 ## Licences
 
