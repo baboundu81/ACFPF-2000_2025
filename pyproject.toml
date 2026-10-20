@@ -7,12 +7,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "acfpf"
-version = "0.1.0"
+version = "0.2.0"
 description = "Analyse citoyenne des finances publiques françaises 2000-2025"
 license = "PolyForm-Noncommercial-1.0.0"
 license-files = ["LICENSE"]
 requires-python = ">=3.11"
 dependencies = [
+  "Flask>=3.1,<4",
   "pandas>=2.2",
   "numpy>=1.26",
   "requests>=2.31",
@@ -21,6 +22,9 @@ dependencies = [
   "matplotlib>=3.8",
   "PyYAML>=6.0",
 ]
+
+[project.scripts]
+acfpf = "acfpf.cli:main"
 
 [project.optional-dependencies]
 dev = [
@@ -31,6 +35,13 @@ dev = [
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+"acfpf.web" = [
+  "templates/*.html",
+  "static/css/*.css",
+  "static/js/*.js",
+]
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]
