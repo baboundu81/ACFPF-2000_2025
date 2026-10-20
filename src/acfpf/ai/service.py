@@ -19,7 +19,7 @@ from acfpf.data.eurostat import EurostatError
 from acfpf.live_research import LiveOfficialResearch, LiveResearchError
 from acfpf.macro import MacroService
 
-MAX_RESEARCH_STEPS = 10
+MAX_RESEARCH_STEPS = 14
 MAX_QUESTION_CHARS = 1500
 
 SYSTEM_PROMPT = """Tu es l'agent de recherche ACFPF.
@@ -149,6 +149,7 @@ class AnswerService:
         if len(question) > MAX_QUESTION_CHARS:
             raise ValueError(f"La question est trop longue ({MAX_QUESTION_CHARS} caractères maximum).")
 
+        research = self.live_research.spawn() if self.live_research is not None else None
         numeric_context, citations = self._build_numeric_context()
         evidence: dict[str, dict[str, Any]] = {}
         search_results: list[dict[str, Any]] = []
@@ -161,9 +162,7 @@ class AnswerService:
             "started",
             {
                 "message": "Préparation des données et des sources officielles",
-                "allowed_source_count": (
-                    len(self.live_research.source_catalog()) if self.live_research else 0
-                ),
+                "allowed_source_count": len(research.source_catalog()) if research else 0,
             },
         )
 
@@ -171,9 +170,7 @@ class AnswerService:
             state = {
                 "QUESTION": question,
                 "NUMERIC_CONTEXT": numeric_context,
-                "ALLOWED_SOURCES": (
-                    self.live_research.source_catalog() if self.live_research else []
-                ),
+                "ALLOWED_SOURCES": research.source_catalog() if research else [],
                 "SEARCH_RESULTS": search_results[-24:],
                 "OPEN_DOCUMENTS": list(documents.values()),
                 "EVIDENCE_AVAILABLE": evidence,
@@ -189,7 +186,7 @@ class AnswerService:
             action = raw.get("action")
 
             if action == "search":
-                if self.live_research is None:
+                if research is None:
                     yield AgentEvent(
                         "notice",
                         {"message": "La recherche live n'est pas disponible ; réponse sur données seules."},
@@ -205,7 +202,7 @@ class AnswerService:
                 ):
                     raise AIGroundingError("L'agent a demandé des sources de recherche invalides.")
                 try:
-                    results = self.live_research.search(query, source_ids=source_ids)
+                    results = research.search(query, source_ids=source_ids)
                 except LiveResearchError as exc:
                     yield AgentEvent(
                         "notice",
@@ -226,14 +223,14 @@ class AnswerService:
                 continue
 
             if action == "open":
-                if self.live_research is None:
+                if research is None:
                     continue
                 url = raw.get("url")
                 reason = raw.get("reason", "")
                 if not isinstance(url, str) or not url.startswith("https://"):
                     raise AIGroundingError("L'agent a demandé une URL invalide.")
                 try:
-                    document = self.live_research.open(url)
+                    document = research.open(url)
                 except LiveResearchError as exc:
                     yield AgentEvent(
                         "notice",
@@ -247,13 +244,13 @@ class AnswerService:
                 evidence_id = f"E{evidence_counter}"
                 read_units[key] = evidence_id
                 evidence[evidence_id] = self._live_evidence_payload(document, first_unit)
-                source = self.live_research.sources[document.source_id]
+                source = research.sources[document.source_id]
                 citations[evidence_id] = Citation(
                     id=evidence_id,
                     dataset_code=document.document_id,
                     label=document.title,
                     source_url=document.url,
-                    evidence_stage="/".join(source.evidence_stages) or None,
+                    evidence_stage=(source.evidence_stages[0] if len(source.evidence_stages) == 1 else None),
                     evidence_id=evidence_id,
                     locator=first_unit.locator,
                     source_id=document.source_id,
@@ -276,7 +273,7 @@ class AnswerService:
                 continue
 
             if action == "read":
-                if self.live_research is None:
+                if research is None:
                     continue
                 document_id = raw.get("document_id")
                 unit_index = raw.get("unit")
@@ -289,8 +286,8 @@ class AnswerService:
                     item = evidence[evidence_id]
                 else:
                     try:
-                        unit = self.live_research.read(document_id, unit_index)
-                        document = self.live_research.document(document_id)
+                        unit = research.read(document_id, unit_index)
+                        document = research.document(document_id)
                     except LiveResearchError as exc:
                         yield AgentEvent(
                             "notice",
@@ -302,13 +299,13 @@ class AnswerService:
                     read_units[key] = evidence_id
                     item = self._live_evidence_payload(document, unit)
                     evidence[evidence_id] = item
-                    source = self.live_research.sources[document.source_id]
+                    source = research.sources[document.source_id]
                     citations[evidence_id] = Citation(
                         id=evidence_id,
                         dataset_code=document.document_id,
                         label=document.title,
                         source_url=document.url,
-                        evidence_stage="/".join(source.evidence_stages) or None,
+                        evidence_stage=(source.evidence_stages[0] if len(source.evidence_stages) == 1 else None),
                         evidence_id=evidence_id,
                         locator=unit.locator,
                         source_id=document.source_id,
@@ -327,11 +324,7 @@ class AnswerService:
                 continue
 
             if action == "answer":
-                answer = self._validate_answer(
-                    raw,
-                    citations,
-                    research_trace=research_trace,
-                )
+                answer = self._validate_answer(raw, citations, research_trace=research_trace)
                 yield AgentEvent("answer", {}, answer=answer)
                 return
 
