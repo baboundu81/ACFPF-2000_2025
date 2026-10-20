@@ -8,8 +8,11 @@ Le LLM n'est **jamais** la source de vérité d'ACFPF. Il formule une réponse �
 
 ## Fournisseurs
 
-- La couche métier doit dépendre d'une abstraction `LLMProvider`, jamais directement de Mistral.
-- Mistral est le fournisseur par défaut actuel, mais doit rester remplaçable sans modifier la logique de recherche ou de validation.
+- La couche métier doit dépendre d'une abstraction `LLMProvider`, jamais directement d'un fournisseur concret.
+- La configuration standard est `ACFPF_LLM_PROVIDER` + `ACFPF_LLM_API_KEY` + `ACFPF_LLM_MODEL` facultatif.
+- Groq est le provider recommandé par défaut pour le développement tant que son free tier reste disponible, mais ce choix ne doit jamais contaminer la logique métier.
+- Les providers actuellement supportés sont Groq, Gemini, Mistral, OpenAI et OpenRouter.
+- Ajouter ou remplacer un provider ne doit pas modifier le RAG, le prompt métier ou la validation des citations.
 - Les clés API restent côté serveur. Elles ne doivent jamais être envoyées au navigateur, commitées dans Git ou loggées.
 
 ## Sources et grounding
@@ -47,12 +50,14 @@ Les embeddings servent à retrouver des passages ; ils ne constituent pas une so
 
 - Aucun test CI ne doit appeler un fournisseur LLM réel.
 - Tester les providers avec un faux client HTTP.
+- Tester le registre de providers et les valeurs par défaut.
 - Tester le service avec un provider factice.
 - Tester les cas de citations inconnues, réponse sans citation, contexte insuffisant et provider indisponible.
 - Tout changement de modèle ou de prompt important devra à terme être évalué sur un benchmark ACFPF versionné.
 
 ## Coût et gratuité
 
-- L'architecture doit fonctionner avec le mode gratuit de Mistral pour le développement et la bêta.
+- L'architecture doit rester utilisable avec au moins un provider disposant d'un vrai free tier pour le développement.
+- Ne pas supposer qu'un provider gratuit aujourd'hui le restera : documenter le choix, garder les alternatives fonctionnelles et centraliser les presets.
 - Limiter la taille du contexte et le nombre d'appels inutiles.
 - Avant un déploiement public, ajouter quotas, limitation de débit et suivi de consommation côté serveur.
