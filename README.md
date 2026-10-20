@@ -83,22 +83,50 @@ Il est également possible de lancer l'application avec :
 python -m acfpf
 ```
 
-## Activer l'IA Mistral
+## Activer l'IA
 
-L'application fonctionne sans IA. Pour activer la fonction « Poser une question à ACFPF », configurez une clé API Mistral côté serveur :
+L'application fonctionne sans IA. L'IA est indépendante du fournisseur : le backend ACFPF prépare le contexte autorisé, le fournisseur LLM génère une réponse structurée, puis ACFPF valide les citations avant affichage.
+
+### Option recommandée pour commencer : Groq (gratuit)
+
+Groq propose un plan gratuit avec des quotas adaptés au développement. Créez un compte puis une clé API dans la console Groq :
+
+- https://console.groq.com/keys
+
+Ensuite :
 
 ```bash
-export MISTRAL_API_KEY="votre_clé"
+export ACFPF_LLM_PROVIDER="groq"
+export ACFPF_LLM_API_KEY="votre_clé"
 acfpf
 ```
 
-Le modèle par défaut est `mistral-small-latest`. Il peut être changé sans modifier le code :
+Le modèle Groq par défaut est `openai/gpt-oss-120b`. Il peut être remplacé :
 
 ```bash
-export ACFPF_LLM_MODEL="mistral-small-latest"
+export ACFPF_LLM_MODEL="openai/gpt-oss-120b"
 ```
 
-La clé n'est jamais envoyée au navigateur. Dans ce premier jalon, le modèle reçoit uniquement les séries macro déjà chargées par ACFPF et leurs sources ; il n'a aucun outil de recherche Web. Les réponses factuelles sans citation connue sont refusées par le backend.
+### Autres fournisseurs supportés
+
+ACFPF supporte également :
+
+- `gemini` — modèle par défaut `gemini-3.8-flash` ;
+- `mistral` — modèle par défaut `mistral-small-latest` ;
+- `openai` — modèle par défaut `gpt-4.1-mini` ;
+- `openrouter` — modèle par défaut `openrouter/free`.
+
+La configuration reste identique :
+
+```bash
+export ACFPF_LLM_PROVIDER="gemini"
+export ACFPF_LLM_API_KEY="votre_clé"
+acfpf
+```
+
+`ACFPF_LLM_MODEL` est facultatif. Des variables historiques spécifiques au fournisseur (`GROQ_API_KEY`, `GEMINI_API_KEY`, `MISTRAL_API_KEY`, `OPENAI_API_KEY`, `OPENROUTER_API_KEY`) restent acceptées, mais la configuration générique est recommandée.
+
+La clé n'est jamais envoyée au navigateur. Le modèle ne reçoit aucun outil de navigation Web. Dans le premier jalon, il reçoit uniquement les séries macro déjà chargées par ACFPF et leurs sources ; les réponses factuelles sans citation connue sont refusées par le backend.
 
 L'architecture complète et la trajectoire vers un RAG documentaire sont décrites dans [docs/AI.md](docs/AI.md).
 
