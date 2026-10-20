@@ -21,7 +21,7 @@ contexte traçable + identifiants de source
         ↓
 LLMProvider
         ↓
-Mistral (par défaut aujourd'hui)
+provider configuré (Groq, Gemini, Mistral, OpenAI, OpenRouter...)
         ↓
 réponse structurée
         ↓
@@ -30,7 +30,7 @@ validation des citations par ACFPF
 affichage de la réponse + sources + limites
 ```
 
-Le fournisseur du modèle doit rester interchangeable.
+Le fournisseur et le modèle doivent rester interchangeables. Les règles de grounding et de citation appartiennent à ACFPF, pas au fournisseur LLM.
 
 ## Premier jalon
 
@@ -47,22 +47,29 @@ Elle peut donc répondre à des questions simples sur les dépenses publiques, l
 
 Elle doit refuser de conclure sur un domaine pour lequel ACFPF n'a pas encore fourni les données nécessaires, par exemple l'éducation, les retraites ou la fiscalité d'un ménage.
 
-## Fournisseur initial : Mistral
+## Providers LLM
 
-Le fournisseur par défaut est Mistral via l'endpoint `POST /v1/chat/completions`.
-
-Configuration locale :
+La configuration générique repose sur trois variables :
 
 ```bash
-export MISTRAL_API_KEY="..."
-acfpf
+export ACFPF_LLM_PROVIDER="groq"
+export ACFPF_LLM_API_KEY="..."
+export ACFPF_LLM_MODEL="openai/gpt-oss-120b"  # facultatif
 ```
 
-Le modèle est configurable avec :
+`ACFPF_LLM_PROVIDER` vaut `groq` par défaut. `ACFPF_LLM_MODEL` est facultatif : chaque provider possède un modèle par défaut.
 
-```bash
-export ACFPF_LLM_MODEL="mistral-small-latest"
-```
+Providers intégrés :
+
+| Provider | API | Modèle par défaut | Remarque |
+| --- | --- | --- | --- |
+| `groq` | OpenAI-compatible | `openai/gpt-oss-120b` | provider gratuit recommandé pour le développement |
+| `gemini` | OpenAI-compatible | `gemini-3.8-flash` | free tier Google disponible |
+| `mistral` | Chat Completions compatible | `mistral-small-latest` | disponibilité du free tier selon le compte |
+| `openai` | OpenAI Chat Completions | `gpt-4.1-mini` | facturation API distincte de ChatGPT |
+| `openrouter` | OpenAI-compatible | `openrouter/free` | routeur vers des modèles gratuits |
+
+Pour simplifier la migration depuis l'ancien fonctionnement, ACFPF accepte aussi `GROQ_API_KEY`, `GEMINI_API_KEY`, `MISTRAL_API_KEY`, `OPENAI_API_KEY` et `OPENROUTER_API_KEY`. La variable générique `ACFPF_LLM_API_KEY` reste recommandée.
 
 La clé reste exclusivement côté serveur Flask. Elle n'est jamais exposée au navigateur.
 
@@ -91,18 +98,18 @@ Lorsque le corpus aura suffisamment grandi :
 1. téléchargement ou ingestion des documents autorisés ;
 2. extraction du texte avec conservation des pages/sections ;
 3. découpage en passages traçables ;
-4. embeddings, initialement avec un provider abstrait ;
+4. embeddings via une abstraction `EmbeddingProvider` ;
 5. index vectoriel local ou serveur ;
 6. recherche des passages pertinents ;
 7. reranking éventuel ;
 8. génération d'une réponse à partir des seuls passages récupérés ;
 9. citations vers le document, la page et la source originale.
 
-Le modèle d'embeddings peut être `mistral-embed` au départ, mais ce choix doit rester interchangeable comme celui du LLM.
+Le choix du provider d'embeddings doit rester indépendant de celui du LLM.
 
 ## Gratuité et déploiement
 
-Pour le développement et la bêta locale, ACFPF vise le mode gratuit de l'API Mistral.
+Pour le développement et la bêta locale, ACFPF recommande un provider disposant d'un vrai free tier, actuellement Groq. Gemini et OpenRouter offrent également des options gratuites utilisables pour tester l'application.
 
 Pour un service public hébergé, la gratuité pour l'utilisateur ne signifie pas nécessairement l'absence de coût d'infrastructure. Avant une ouverture publique, il faudra mettre en place :
 

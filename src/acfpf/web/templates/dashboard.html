@@ -112,7 +112,11 @@
         {% else %}
           <div class="ai-disabled">
             <p><strong>IA non configurée.</strong> Le tableau de bord reste entièrement utilisable sans IA.</p>
-            <p>Pour activer Mistral localement : <code>export MISTRAL_API_KEY="votre_clé"</code>, puis relancez <code>acfpf</code>.</p>
+            <p>
+              Configurez un provider et une clé côté serveur, par exemple :
+              <code>export ACFPF_LLM_PROVIDER="groq"</code> puis
+              <code>export ACFPF_LLM_API_KEY="votre_clé"</code>, et relancez <code>acfpf</code>.
+            </p>
           </div>
         {% endif %}
       </section>

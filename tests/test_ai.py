@@ -5,8 +5,9 @@ import json
 
 import pytest
 
-from acfpf.ai.mistral import MistralProvider
-from acfpf.ai.provider import AIGroundingError, ProviderRequest
+from acfpf.ai.openai_compatible import OpenAICompatibleProvider
+from acfpf.ai.provider import AIGroundingError, AIProviderNotConfigured, ProviderRequest
+from acfpf.ai.registry import build_provider_from_env
 from acfpf.ai.service import AnswerService
 from acfpf.macro import build_dashboard
 from tests.test_eurostat import sample_dataset
@@ -124,7 +125,7 @@ def test_answer_service_accepts_insufficient_answer_without_citation() -> None:
     assert answer.citations == ()
 
 
-def test_mistral_provider_uses_json_mode_and_server_side_key() -> None:
+def test_openai_compatible_provider_uses_json_mode_and_server_side_key() -> None:
     generated = {
         "status": "answered",
         "answer": "Test",
@@ -142,11 +143,61 @@ def test_mistral_provider_uses_json_mode_and_server_side_key() -> None:
             ]
         }
     )
-    provider = MistralProvider("secret-test-key", session=session)
+    provider = OpenAICompatibleProvider(
+        name="groq",
+        api_key="secret-test-key",
+        model="openai/gpt-oss-120b",
+        api_url="https://api.groq.test/openai/v1/chat/completions",
+        session=session,
+    )
 
     result = provider.complete_json(ProviderRequest("system JSON", "user"))
 
     assert result == generated
     assert session.last_call["json"]["response_format"] == {"type": "json_object"}
-    assert session.last_call["json"]["model"] == "mistral-small-latest"
+    assert session.last_call["json"]["tool_choice"] == "none"
+    assert session.last_call["json"]["model"] == "openai/gpt-oss-120b"
     assert session.last_call["headers"]["Authorization"] == "Bearer secret-test-key"
+
+
+def test_registry_defaults_to_groq(monkeypatch) -> None:
+    monkeypatch.delenv("ACFPF_LLM_PROVIDER", raising=False)
+    monkeypatch.setenv("ACFPF_LLM_API_KEY", "test-key")
+    monkeypatch.delenv("ACFPF_LLM_MODEL", raising=False)
+
+    provider = build_provider_from_env()
+
+    assert provider.name == "groq"
+    assert provider.model == "openai/gpt-oss-120b"
+    assert provider.api_url == "https://api.groq.com/openai/v1/chat/completions"
+
+
+def test_registry_selects_gemini_and_custom_model(monkeypatch) -> None:
+    monkeypatch.setenv("ACFPF_LLM_PROVIDER", "gemini")
+    monkeypatch.setenv("ACFPF_LLM_API_KEY", "test-key")
+    monkeypatch.setenv("ACFPF_LLM_MODEL", "gemini-test-model")
+
+    provider = build_provider_from_env()
+
+    assert provider.name == "gemini"
+    assert provider.model == "gemini-test-model"
+    assert "generativelanguage.googleapis.com" in provider.api_url
+
+
+def test_registry_accepts_legacy_provider_specific_key(monkeypatch) -> None:
+    monkeypatch.setenv("ACFPF_LLM_PROVIDER", "mistral")
+    monkeypatch.delenv("ACFPF_LLM_API_KEY", raising=False)
+    monkeypatch.setenv("MISTRAL_API_KEY", "legacy-key")
+
+    provider = build_provider_from_env()
+
+    assert provider.name == "mistral"
+    assert provider.api_key == "legacy-key"
+
+
+def test_registry_rejects_unknown_provider(monkeypatch) -> None:
+    monkeypatch.setenv("ACFPF_LLM_PROVIDER", "unknown")
+    monkeypatch.setenv("ACFPF_LLM_API_KEY", "test-key")
+
+    with pytest.raises(AIProviderNotConfigured):
+        build_provider_from_env()
