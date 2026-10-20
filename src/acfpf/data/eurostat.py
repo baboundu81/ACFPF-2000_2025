@@ -3,12 +3,11 @@
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from itertools import product
 from pathlib import Path
 from typing import Any
-import json
 
 import requests
 
@@ -182,7 +181,9 @@ def parse_macro_payload(payload: dict[str, Any], *, from_cache: bool = False) ->
     )
 
 
-def fetch_macro_payload(*, timeout: float = 12.0, session: requests.Session | None = None) -> dict[str, Any]:
+def fetch_macro_payload(
+    *, timeout: float = 12.0, session: requests.Session | None = None
+) -> dict[str, Any]:
     client = session or requests.Session()
     params = {
         "lang": "EN",
