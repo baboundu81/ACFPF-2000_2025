@@ -13,3 +13,8 @@ def test_source_registry_loads() -> None:
     sources = load_sources()
     assert sources
     assert any(source.id == "insee" for source in sources)
+
+    legifrance = next(source for source in sources if source.id == "legifrance")
+    assert "decision" in legifrance.evidence_stages
+    assert "law" in legifrance.data_types
+    assert legifrance.access == "api_registration"
