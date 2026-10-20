@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ACFPF — Tableau de bord</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/tokens.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+  <script defer src="{{ url_for('static', filename='js/chart.js') }}"></script>
+</head>
+<body>
+  <header class="masthead">
+    <div class="shell masthead__inner">
+      <div>
+        <a class="brand" href="/">ACFPF</a>
+        <p class="brand__subtitle">Analyse citoyenne des finances publiques françaises</p>
+      </div>
+      <nav class="primary-nav" aria-label="Navigation principale">
+        <a class="primary-nav__link is-active" href="/" aria-current="page">Vue d'ensemble</a>
+        <a class="primary-nav__link" href="#sources">Sources</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero shell">
+      <p class="eyebrow">France · Administrations publiques · 2000–2025</p>
+      <h1>Vingt-cinq ans de finances publiques, remis en perspective.</h1>
+      <p class="hero__deck">
+        Une première lecture reproductible des dépenses, recettes, du solde public et de la dette,
+        à partir de données officielles harmonisées.
+      </p>
+    </section>
+
+    {% if error %}
+      <section class="shell section-block">
+        <div class="error-panel" role="alert">
+          <p class="eyebrow">Données indisponibles</p>
+          <h2>Impossible de charger la série Eurostat.</h2>
+          <p>{{ error }}</p>
+          <p>Une connexion réseau est nécessaire au premier lancement. Les lancements suivants utilisent le cache local si besoin.</p>
+        </div>
+      </section>
+    {% else %}
+      <section class="shell data-meta" aria-label="État des données">
+        <span>Jeu {{ dashboard.dataset_code }}</span>
+        <span>Dernière mise à jour source : {{ dashboard.updated_at or 'non renseignée' }}</span>
+        <span>{% if dashboard.from_cache %}Cache local{% else %}Source actualisée{% endif %}</span>
+        <a href="/?refresh=1">Actualiser</a>
+      </section>
+
+      <section class="shell metrics" aria-label="Indicateurs clés">
+        {% for kpi in dashboard.kpis %}
+          <article class="metric">
+            <p class="metric__label">{{ kpi.label }}</p>
+            <p class="metric__value">{{ '%.1f'|format(kpi.value) }}</p>
+            <p class="metric__unit">% du PIB · {{ kpi.year }}</p>
+            {% if kpi.delta is not none %}
+              <p class="metric__delta">Depuis {{ kpi.base_year }} : {{ '%+.1f'|format(kpi.delta) }} pt</p>
+            {% endif %}
+          </article>
+        {% endfor %}
+      </section>
+
+      <section class="shell editorial-grid section-block">
+        <div class="editorial-copy">
+          <p class="eyebrow">Premier constat</p>
+          <h2>Ce que montre déjà la série longue</h2>
+          <p class="lede">{{ dashboard.insight }}</p>
+          <p>
+            Ce constat est descriptif : il ne dit pas encore quelles fonctions expliquent la variation,
+            ni si la qualité du service public a progressé ou reculé. Les prochaines analyses devront
+            décomposer la dépense et la rapprocher des moyens et résultats observés.
+          </p>
+        </div>
+        <aside class="editorial-note">
+          <p class="editorial-note__title">À garder en tête</p>
+          <p>Une hausse en points de PIB ne se lit pas comme une hausse identique en euros constants ou par habitant.</p>
+        </aside>
+      </section>
+
+      <section class="shell section-block">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Évolution</p>
+            <h2>Dépenses et recettes publiques</h2>
+          </div>
+          <p class="section-heading__note">Part du PIB · échelle démarrant à zéro</p>
+        </div>
+
+        <div class="chart-frame">
+          <svg id="macro-chart" class="chart" viewBox="0 0 920 420" role="img" aria-labelledby="chart-title chart-desc">
+            <title id="chart-title">Évolution des dépenses et recettes publiques en France</title>
+            <desc id="chart-desc">Séries annuelles en pourcentage du PIB entre 2000 et 2025.</desc>
+          </svg>
+          <div class="chart-legend" aria-hidden="true">
+            <span><i class="legend-line legend-line--expenditure"></i>Dépenses</span>
+            <span><i class="legend-line legend-line--revenue"></i>Recettes</span>
+          </div>
+        </div>
+
+        <script id="chart-data" type="application/json">{{ {
+          'expenditure': dashboard.series.get('expenditure'),
+          'revenue': dashboard.series.get('revenue')
+        }|tojson }}</script>
+      </section>
+
+      <section class="shell section-block">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Données</p>
+            <h2>La série année par année</h2>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Année</th>
+                <th scope="col">Dépenses</th>
+                <th scope="col">Recettes</th>
+                <th scope="col">Solde</th>
+                <th scope="col">Dette</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in dashboard.rows %}
+                <tr>
+                  <th scope="row">{{ row.year }}</th>
+                  <td>{{ '%.1f'|format(row.expenditure) if row.expenditure is not none else '—' }}</td>
+                  <td>{{ '%.1f'|format(row.revenue) if row.revenue is not none else '—' }}</td>
+                  <td>{{ '%.1f'|format(row.balance) if row.balance is not none else '—' }}</td>
+                  <td>{{ '%.1f'|format(row.debt) if row.debt is defined and row.debt is not none else '—' }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="sources" class="shell source-block section-block">
+        <p class="eyebrow">Source</p>
+        <h2>Eurostat · {{ dashboard.dataset_code }}</h2>
+        <p>
+          Jeu harmonisé « Government deficit/surplus, debt and associated data », France,
+          secteur des administrations publiques, valeurs exprimées en pourcentage du PIB.
+        </p>
+        <p><a href="{{ dashboard.source_url }}" target="_blank" rel="noreferrer">Consulter la source officielle</a></p>
+        <p class="source-block__technical">Récupéré le {{ dashboard.retrieved_at }}.</p>
+      </section>
+    {% endif %}
+  </main>
+
+  <footer class="footer shell">
+    <span>ACFPF · Analyse reproductible</span>
+    <a href="/api/macro">API JSON</a>
+  </footer>
+</body>
+</html>
