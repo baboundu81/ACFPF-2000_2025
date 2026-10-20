@@ -61,23 +61,3 @@ class EvidenceRef:
             "license": self.license,
             "metadata": self.metadata,
         }
-
-
-@dataclass(frozen=True)
-class EvidenceChunk:
-    """Textual excerpt prepared for retrieval while retaining its exact provenance."""
-
-    id: str
-    evidence: EvidenceRef
-    text: str
-
-    def __post_init__(self) -> None:
-        if not self.text.strip():
-            raise ValueError("Evidence chunks cannot be empty")
-
-    def as_dict(self) -> dict[str, Any]:
-        return {
-            "id": self.id,
-            "text": self.text,
-            "evidence": self.evidence.as_dict(),
-        }

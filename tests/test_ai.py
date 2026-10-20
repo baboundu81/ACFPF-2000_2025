@@ -11,9 +11,9 @@ from acfpf.ai.registry import build_provider_from_env
 from acfpf.ai.service import AnswerService
 from acfpf.cofog import build_cofog_analysis
 from acfpf.data.cofog import parse_cofog_payload
-from acfpf.document_corpus import CorpusSearch
-from acfpf.evidence import EvidenceChunk, EvidenceRef
+from acfpf.live_research import DocumentUnit, LiveDocument, SearchResult
 from acfpf.macro import build_dashboard
+from acfpf.source_registry import Source
 from tests.test_cofog import sample_cofog_payload
 from tests.test_eurostat import sample_dataset
 
@@ -30,41 +30,85 @@ class FakeCofogService:
         return build_cofog_analysis(parse_cofog_payload(sample_cofog_payload()))
 
 
-class FakeDocumentCorpus:
-    def search(self, question: str, *, limit: int = 5, refresh: bool = False) -> CorpusSearch:
-        assert question
-        assert limit == 5
-        evidence = EvidenceRef(
-            id="finance-law",
-            source_id="legifrance",
-            stage="decision",
-            kind="finance_law",
-            title="Loi de finances de test",
-            source_url="https://official.test/finance-law",
-            document_id="LAW-TEST",
-        )
-        return CorpusSearch(
-            chunks=(
-                EvidenceChunk(
-                    id="finance-law#0001",
-                    evidence=evidence,
-                    text="La loi autorise les crédits pour l'exercice considéré.",
-                ),
-            )
-        )
-
-
 class FakeProvider:
     name = "fake"
     model = "fake-model"
 
-    def __init__(self, response: dict) -> None:
-        self.response = response
-        self.last_request = None
+    def __init__(self, *responses: dict) -> None:
+        self.responses = list(responses)
+        self.requests: list[ProviderRequest] = []
 
     def complete_json(self, request: ProviderRequest) -> dict:
-        self.last_request = request
-        return self.response
+        self.requests.append(request)
+        if not self.responses:
+            raise AssertionError("FakeProvider has no response left")
+        return self.responses.pop(0)
+
+
+class FakeLiveResearch:
+    def __init__(self) -> None:
+        self.sources = {
+            "legifrance": Source(
+                id="legifrance",
+                name="Légifrance",
+                base_url="https://www.legifrance.gouv.fr/",
+                priority="primary",
+                themes=("legislation",),
+                evidence_stages=("decision",),
+                allowed_domains=("legifrance.gouv.fr",),
+            )
+        }
+        self.doc = LiveDocument(
+            document_id="D1",
+            source_id="legifrance",
+            title="Loi de finances de test",
+            url="https://www.legifrance.gouv.fr/test",
+            retrieved_at="2026-10-20T12:00:00+00:00",
+            sha256="abc123",
+            content_type="text/html",
+            units=(
+                DocumentUnit(1, "segment 1", "La loi autorise les crédits pour l'exercice."),
+                DocumentUnit(2, "segment 2", "Une disposition modifie les crédits d'une mission."),
+            ),
+        )
+
+    def spawn(self):
+        return self
+
+    def source_catalog(self):
+        return [
+            {
+                "id": "legifrance",
+                "name": "Légifrance",
+                "priority": "primary",
+                "themes": ["legislation"],
+                "evidence_stages": ["decision"],
+                "allowed_domains": ["legifrance.gouv.fr"],
+            }
+        ]
+
+    def search(self, query: str, *, source_ids: list[str]):
+        assert query
+        assert source_ids == ["legifrance"]
+        return (
+            SearchResult(
+                source_id="legifrance",
+                title="Loi de finances de test",
+                url=self.doc.url,
+            ),
+        )
+
+    def open(self, url: str):
+        assert url == self.doc.url
+        return self.doc
+
+    def read(self, document_id: str, unit_index: int):
+        assert document_id == "D1"
+        return self.doc.units[unit_index - 1]
+
+    def document(self, document_id: str):
+        assert document_id == "D1"
+        return self.doc
 
 
 class FakeResponse:
@@ -93,9 +137,10 @@ class FakeSession:
         return FakeResponse(self.payload)
 
 
-def test_answer_service_accepts_only_known_citations() -> None:
+def test_answer_service_can_answer_from_numeric_context_only() -> None:
     provider = FakeProvider(
         {
+            "action": "answer",
             "status": "answered",
             "answer": "Les dépenses passent de 52,6 % à 57,3 % du PIB entre 2000 et 2025.",
             "citations": ["S1"],
@@ -108,58 +153,78 @@ def test_answer_service_accepts_only_known_citations() -> None:
 
     assert answer.status == "answered"
     assert answer.citations[0].dataset_code == "gov_10a_main"
-    assert answer.provider == "fake"
-    assert "CONTEXTE_ACFPF" in provider.last_request.user_prompt
-    assert "gov_10a_main" in provider.last_request.user_prompt
+    assert answer.research == ()
+    state = json.loads(provider.requests[0].user_prompt)
+    assert "NUMERIC_CONTEXT" in state
+    assert state["EVIDENCE_AVAILABLE"] == {}
 
 
-def test_answer_service_adds_cofog_and_document_evidence() -> None:
+def test_answer_service_runs_live_search_open_read_then_answers() -> None:
     provider = FakeProvider(
         {
+            "action": "search",
+            "query": "loi finances crédits mission",
+            "source_ids": ["legifrance"],
+            "reason": "Vérifier la décision juridique.",
+        },
+        {
+            "action": "open",
+            "url": "https://www.legifrance.gouv.fr/test",
+            "reason": "Lire le texte officiel.",
+        },
+        {
+            "action": "read",
+            "document_id": "D1",
+            "unit": 2,
+            "reason": "Lire la suite du texte.",
+        },
+        {
+            "action": "answer",
             "status": "answered",
-            "answer": "Le poids de certaines fonctions a diminué ; une loi n'est pas une exécution.",
-            "citations": ["S3", "S4"],
-            "limitations": ["Les causes doivent être documentées séparément."],
-        }
+            "answer": "Une variation est observée et un texte juridique modifie des crédits.",
+            "citations": ["S3", "E1", "E2"],
+            "limitations": ["Une décision ne prouve pas à elle seule l'exécution."],
+        },
     )
     service = AnswerService(
         provider,
         FakeMacroService(),
         FakeCofogService(),
-        FakeDocumentCorpus(),
+        FakeLiveResearch(),
     )
 
     answer = service.ask("Où la dépense a-t-elle baissé et quelles décisions ont été prises ?")
 
-    assert [citation.dataset_code for citation in answer.citations] == [
-        "gov_10a_exp",
-        "LAW-TEST",
-    ]
-    prompt = provider.last_request.user_prompt
-    assert "cofog_functional_spending" in prompt
-    assert "retrieved_official_documents" in prompt
-    assert "finance-law#0001" in prompt
-    assert '"stage":"decision"' in prompt
+    assert [citation.id for citation in answer.citations] == ["S3", "E1", "E2"]
+    assert answer.citations[1].source_id == "legifrance"
+    assert answer.citations[1].sha256 == "abc123"
+    assert [item["type"] for item in answer.research] == ["search", "open", "read"]
+    final_state = json.loads(provider.requests[-1].user_prompt)
+    assert "E1" in final_state["EVIDENCE_AVAILABLE"]
+    assert "E2" in final_state["EVIDENCE_AVAILABLE"]
+    assert "Une disposition modifie" in final_state["EVIDENCE_AVAILABLE"]["E2"]["text"]
 
 
-def test_answer_service_rejects_unknown_citation() -> None:
+def test_answer_service_rejects_citation_that_was_never_read() -> None:
     provider = FakeProvider(
         {
+            "action": "answer",
             "status": "answered",
             "answer": "Réponse inventée.",
-            "citations": ["S99"],
+            "citations": ["E99"],
             "limitations": [],
         }
     )
     service = AnswerService(provider, FakeMacroService())
 
-    with pytest.raises(AIGroundingError):
+    with pytest.raises(AIGroundingError, match="n'ont pas été lues"):
         service.ask("Question")
 
 
 def test_answer_service_rejects_fact_answer_without_citation() -> None:
     provider = FakeProvider(
         {
+            "action": "answer",
             "status": "answered",
             "answer": "Réponse sans source.",
             "citations": [],
@@ -175,10 +240,11 @@ def test_answer_service_rejects_fact_answer_without_citation() -> None:
 def test_answer_service_accepts_insufficient_answer_without_citation() -> None:
     provider = FakeProvider(
         {
+            "action": "answer",
             "status": "insufficient",
-            "answer": "Les données ACFPF actuelles ne permettent pas de répondre précisément.",
+            "answer": "Les preuves disponibles ne permettent pas de répondre précisément.",
             "citations": [],
-            "limitations": ["Le corpus est incomplet."],
+            "limitations": ["Aucune preuve suffisante n'a été trouvée."],
         }
     )
     service = AnswerService(provider, FakeMacroService())
@@ -191,6 +257,7 @@ def test_answer_service_accepts_insufficient_answer_without_citation() -> None:
 
 def test_openai_compatible_provider_uses_json_mode_and_server_side_key() -> None:
     generated = {
+        "action": "answer",
         "status": "answered",
         "answer": "Test",
         "citations": ["S1"],

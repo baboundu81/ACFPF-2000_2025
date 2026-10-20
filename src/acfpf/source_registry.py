@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+from urllib.parse import urlparse
 
 import yaml
 
@@ -21,6 +22,14 @@ class Source:
     license: str | None = None
     evidence_stages: tuple[str, ...] = ()
     data_types: tuple[str, ...] = ()
+    allowed_domains: tuple[str, ...] = ()
+    live_research: bool = True
+
+    def __post_init__(self) -> None:
+        if not self.allowed_domains:
+            hostname = urlparse(self.base_url).hostname
+            if hostname:
+                object.__setattr__(self, "allowed_domains", (hostname,))
 
     def as_dict(self) -> dict[str, object]:
         return {
@@ -34,6 +43,8 @@ class Source:
             "license": self.license,
             "evidence_stages": list(self.evidence_stages),
             "data_types": list(self.data_types),
+            "allowed_domains": list(self.allowed_domains),
+            "live_research": self.live_research,
         }
 
 
@@ -54,6 +65,8 @@ def load_sources(path: str | Path = "config/sources.yml") -> list[Source]:
             license=item.get("license"),
             evidence_stages=tuple(item.get("evidence_stages", [])),
             data_types=tuple(item.get("data_types", [])),
+            allowed_domains=tuple(item.get("allowed_domains", [])),
+            live_research=bool(item.get("live_research", True)),
         )
         for item in payload["sources"]
     ]

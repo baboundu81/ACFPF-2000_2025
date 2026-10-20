@@ -20,7 +20,7 @@
       <nav class="primary-nav" aria-label="Navigation principale">
         <a class="primary-nav__link is-active" href="/" aria-current="page">Vue d'ensemble</a>
         {% if cofog %}<a class="primary-nav__link" href="#functions">Fonctions</a>{% endif %}
-        {% if dashboard %}<a class="primary-nav__link" href="#ask">Question IA</a>{% endif %}
+        {% if dashboard %}<a class="primary-nav__link" href="#ask">Enquêter</a>{% endif %}
         <a class="primary-nav__link" href="#sources">Sources</a>
       </nav>
     </div>
@@ -32,7 +32,7 @@
       <h1>Vingt-cinq ans de finances publiques, remis en perspective.</h1>
       <p class="hero__deck">
         Une lecture reproductible des grands agrégats, de la répartition fonctionnelle des dépenses
-        et, progressivement, des décisions et documents officiels qui permettent de les expliquer.
+        et des décisions publiques qui peuvent contribuer à les expliquer.
       </p>
     </section>
 
@@ -76,8 +76,8 @@
           <p class="lede">{{ dashboard.insight }}</p>
           <p>
             Le niveau agrégé ne suffit pas à dire où l'argent a été ajouté ou retiré. La décomposition
-            fonctionnelle ci-dessous permet désormais d'identifier les grandes fonctions dont le poids
-            dans le PIB a augmenté ou diminué.
+            fonctionnelle ci-dessous permet d'identifier les grandes fonctions dont le poids dans le PIB
+            a augmenté ou diminué, puis l'enquête documentaire peut chercher ce qui a été décidé et exécuté.
           </p>
         </div>
         <aside class="editorial-note">
@@ -89,15 +89,23 @@
       <section id="ask" class="shell section-block ask-block">
         <div class="section-heading">
           <div>
-            <p class="eyebrow">Questionner les preuves</p>
-            <h2>Poser une question à ACFPF</h2>
+            <p class="eyebrow">Enquête assistée</p>
+            <h2>Posez une question, ACFPF va vérifier.</h2>
           </div>
-          <p class="section-heading__note">Réponse limitée aux éléments ACFPF effectivement fournis au modèle</p>
+          <p class="section-heading__note">Recherche live · sources officielles uniquement</p>
         </div>
+
+        <div class="research-trust" aria-label="Garanties de recherche">
+          <div><strong>Sources bornées</strong><span>L'agent ne peut ouvrir que les domaines autorisés.</span></div>
+          <div><strong>Lecture live</strong><span>Les documents sont consultés au moment de la question.</span></div>
+          <div><strong>Calculs déterministes</strong><span>Les séries chiffrées restent traitées par Python.</span></div>
+          <div><strong>Preuves vérifiées</strong><span>Une URL trouvée n'est citable qu'après lecture effective.</span></div>
+        </div>
+
         <p class="ask-block__intro">
-          L'IA reçoit les séries macro, la décomposition COFOG lorsqu'elle est disponible et les passages
-          pertinents d'un premier corpus de documents publics explicitement autorisés. Ce corpus est encore
-          partiel : si les preuves manquent, elle doit le dire.
+          L'IA décide elle-même quelles sources officielles consulter et peut approfondir sa recherche en plusieurs
+          étapes. ACFPF contrôle chaque URL avant ouverture et attribue un identifiant à chaque extrait réellement lu.
+          Si les éléments disponibles ne suffisent pas, la réponse doit rester incomplète plutôt que spéculative.
         </p>
 
         {% if ai_enabled %}
@@ -105,11 +113,20 @@
             <label for="ask-question">Votre question</label>
             <div class="ask-form__row">
               <textarea id="ask-question" name="question" rows="3" maxlength="1500" required
-                placeholder="Ex. Dans quelles grandes fonctions la dépense a-t-elle diminué depuis 2000 ?"></textarea>
-              <button type="submit">Analyser</button>
+                placeholder="Ex. Où observe-t-on des baisses de dépense depuis 2000, et quelles décisions ou réformes peuvent les expliquer ?"></textarea>
+              <button type="submit">Rechercher et analyser</button>
             </div>
-            <p class="ask-form__hint">Le modèle n'a aucun outil Web. Le backend choisit les données et documents officiels autorisés avant l'appel au modèle.</p>
+            <p class="ask-form__hint">
+              L'index Web sert uniquement à découvrir des URL autorisées. Ses snippets ne sont jamais transmis au modèle ni utilisés comme preuve.
+            </p>
           </form>
+          <div id="research-progress" class="research-progress" hidden aria-live="polite">
+            <div class="research-progress__header">
+              <p class="eyebrow">Enquête en cours</p>
+              <p id="research-progress-status">Préparation…</p>
+            </div>
+            <ol id="research-progress-steps" class="research-progress__steps"></ol>
+          </div>
           <div id="ask-result" class="ask-result" hidden aria-live="polite"></div>
         {% else %}
           <div class="ai-disabled">
@@ -121,6 +138,15 @@
             </p>
           </div>
         {% endif %}
+
+        <details class="research-sources">
+          <summary>{{ research_sources|length }} sources officielles actuellement autorisées pour la recherche live</summary>
+          <div class="research-sources__list">
+            {% for source in research_sources %}
+              <span>{{ source.name }}</span>
+            {% endfor %}
+          </div>
+        </details>
       </section>
 
       <section class="shell section-block">
@@ -229,12 +255,11 @@
 
     <section id="sources" class="shell source-block section-block">
       <p class="eyebrow">Sources et preuves</p>
-      <h2>Des chiffres aux décisions</h2>
+      <h2>Des données actuelles, sans entrepôt documentaire local.</h2>
       <p>
-        Les agrégats et la décomposition par fonction proviennent d'Eurostat. ACFPF possède désormais
-        également un catalogue de sources officielles pour les lois, documents budgétaires, exécutions,
-        amendements et évaluations. Le corpus documentaire utilisé par l'IA ne contient que des URL
-        explicitement autorisées dans ce catalogue.
+        Les séries chiffrées intégrées conservent leur provenance. Pour les textes, ACFPF ne maintient plus un corpus
+        pré-téléchargé : l'agent consulte en direct les sites officiels autorisés lorsqu'une question le nécessite.
+        Chaque page ou PDF effectivement lu conserve son URL, la date de consultation et une empreinte SHA-256 dans la trace de la réponse.
       </p>
       {% for source in sources %}
         <article class="source-entry">
@@ -253,7 +278,7 @@
           <p><a href="{{ cofog.source_url }}" target="_blank" rel="noreferrer">Consulter la source officielle</a></p>
         </article>
       {% endif %}
-      <p><a href="/api/evidence">Voir le catalogue de sources et documents ACFPF (JSON)</a></p>
+      <p><a href="/api/evidence">Voir la liste blanche des sources ACFPF (JSON)</a></p>
       {% if dashboard %}
         <p class="source-block__technical">Données macro récupérées le {{ dashboard.retrieved_at }}.</p>
       {% endif %}
@@ -262,7 +287,7 @@
 
   <footer class="footer shell">
     <span>ACFPF · Analyse reproductible</span>
-    <span><a href="/api/macro">Macro</a> · <a href="/api/cofog">COFOG</a> · <a href="/api/evidence">Preuves</a></span>
+    <span><a href="/api/macro">Macro</a> · <a href="/api/cofog">COFOG</a> · <a href="/api/evidence">Sources</a></span>
   </footer>
 </body>
 </html>

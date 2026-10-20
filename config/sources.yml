@@ -5,6 +5,8 @@ sources:
   - id: insee
     name: INSEE
     base_url: https://www.insee.fr/
+    allowed_domains: [insee.fr]
+    live_research: true
     priority: primary
     status: integrated
     access: direct
@@ -16,6 +18,8 @@ sources:
   - id: eurostat
     name: Eurostat
     base_url: https://ec.europa.eu/eurostat/
+    allowed_domains: [ec.europa.eu]
+    live_research: true
     priority: harmonized
     status: integrated
     access: api
@@ -27,6 +31,8 @@ sources:
   - id: budget_gouv
     name: Budget.gouv.fr - Direction du Budget
     base_url: https://www.budget.gouv.fr/
+    allowed_domains: [budget.gouv.fr]
+    live_research: true
     priority: primary
     status: catalogued
     access: direct
@@ -38,6 +44,8 @@ sources:
   - id: data_economie_budget
     name: Data Économie - données budgétaires de l'État
     base_url: https://data.economie.gouv.fr/
+    allowed_domains: [data.economie.gouv.fr]
+    live_research: true
     priority: primary
     status: catalogued
     access: api
@@ -49,39 +57,47 @@ sources:
   - id: legifrance
     name: Légifrance / DILA
     base_url: https://www.legifrance.gouv.fr/
+    allowed_domains: [legifrance.gouv.fr]
+    live_research: true
     priority: primary
     status: catalogued
-    access: api_registration
+    access: direct
     license: Licence Ouverte 2.0
     evidence_stages: [decision]
     data_types: [law, decree, code, regulation, legal_text]
     themes: [legislation, taxation, public_finance, social_protection, public_policy]
 
   - id: assemblee_nationale_open_data
-    name: Assemblée nationale - Open Data
-    base_url: https://data.assemblee-nationale.fr/
+    name: Assemblée nationale
+    base_url: https://www.assemblee-nationale.fr/
+    allowed_domains: [assemblee-nationale.fr]
+    live_research: true
     priority: primary
     status: catalogued
-    access: bulk_download
+    access: direct
     license: Licence ouverte selon le portail
     evidence_stages: [parliamentary_process, decision]
-    data_types: [amendment, legislative_file, vote, debate]
+    data_types: [amendment, legislative_file, vote, debate, report]
     themes: [legislation, finance_bill, parliamentary_work]
 
   - id: senat_open_data
-    name: Sénat - Open Data
-    base_url: https://data.senat.fr/
+    name: Sénat
+    base_url: https://www.senat.fr/
+    allowed_domains: [senat.fr]
+    live_research: true
     priority: primary
     status: catalogued
-    access: bulk_download
+    access: direct
     license: Voir conditions data.senat.fr
     evidence_stages: [parliamentary_process, decision]
-    data_types: [amendment, legislative_file, debate, question]
+    data_types: [amendment, legislative_file, debate, question, report]
     themes: [legislation, finance_bill, parliamentary_work]
 
   - id: securite_sociale
     name: Sécurité sociale - lois de financement et évaluations
     base_url: https://www.securite-sociale.fr/
+    allowed_domains: [securite-sociale.fr]
+    live_research: true
     priority: primary
     status: catalogued
     access: direct
@@ -93,6 +109,8 @@ sources:
   - id: cour_comptes
     name: Cour des comptes
     base_url: https://www.ccomptes.fr/
+    allowed_domains: [ccomptes.fr]
+    live_research: true
     priority: control
     status: catalogued
     access: direct
@@ -104,6 +122,8 @@ sources:
   - id: drees
     name: DREES
     base_url: https://drees.solidarites-sante.gouv.fr/
+    allowed_domains: [drees.solidarites-sante.gouv.fr]
+    live_research: true
     priority: primary
     status: catalogued
     access: direct
@@ -115,6 +135,8 @@ sources:
   - id: bofip_impots
     name: BOFiP-Impôts
     base_url: https://bofip.impots.gouv.fr/
+    allowed_domains: [bofip.impots.gouv.fr]
+    live_research: true
     priority: primary
     status: catalogued
     access: direct
@@ -126,6 +148,8 @@ sources:
   - id: data_gouv
     name: data.gouv.fr
     base_url: https://www.data.gouv.fr/
+    allowed_domains: [data.gouv.fr]
+    live_research: true
     priority: catalog
     status: catalogued
     access: api
@@ -137,9 +161,11 @@ sources:
   - id: oecd
     name: OECD
     base_url: https://www.oecd.org/
+    allowed_domains: [oecd.org]
+    live_research: true
     priority: harmonized
     status: catalogued
-    access: api
+    access: direct
     license: OECD terms
     evidence_stages: [statistical_observation, evaluation]
     data_types: [numeric_series, study]
@@ -148,6 +174,8 @@ sources:
   - id: european_commission_state_aid
     name: Commission européenne - aides d'État
     base_url: https://competition-policy.ec.europa.eu/state-aid/
+    allowed_domains: [ec.europa.eu]
+    live_research: true
     priority: primary
     status: catalogued
     access: direct

@@ -17,4 +17,6 @@ def test_source_registry_loads() -> None:
     legifrance = next(source for source in sources if source.id == "legifrance")
     assert "decision" in legifrance.evidence_stages
     assert "law" in legifrance.data_types
-    assert legifrance.access == "api_registration"
+    assert legifrance.access == "direct"
+    assert legifrance.live_research is True
+    assert "legifrance.gouv.fr" in legifrance.allowed_domains

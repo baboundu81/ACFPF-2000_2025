@@ -92,6 +92,38 @@ Structure recommandée :
 - source et limites ;
 - accès au détail.
 
+## Expérience d'enquête IA
+
+L'assistant n'est pas présenté comme un chatbot omniscient. L'expérience doit ressembler à une **enquête vérifiable** menée sur les données et sites officiels.
+
+Avant la question, l'interface explique quatre garanties :
+
+- les domaines accessibles sont bornés par ACFPF ;
+- les documents sont consultés en direct lorsque nécessaire ;
+- les calculs structurés sont effectués par le backend ;
+- une source ne devient citable qu'après lecture effective.
+
+Pendant l'enquête, afficher progressivement les actions observables :
+
+- préparation ;
+- recherche de documents ;
+- ouverture d'une source officielle ;
+- lecture d'une page ou d'un segment supplémentaire ;
+- avertissement si une recherche échoue ;
+- fin de l'enquête.
+
+Ne pas afficher la chaîne de pensée privée du modèle. Une justification opérationnelle courte comme « vérifier l'exécution budgétaire » est acceptable ; un raisonnement interne détaillé ne l'est pas.
+
+À la fin :
+
+- distinguer visuellement une réponse sourcée d'un état « preuves insuffisantes » ;
+- rendre chaque preuve cliquable vers la source officielle ;
+- afficher le locator disponible (page ou segment) ;
+- exposer les limites pertinentes ;
+- ne pas présenter les résultats de recherche non ouverts comme des sources utilisées.
+
+La progression doit être utile même si l'enquête prend plusieurs secondes : l'utilisateur doit comprendre que l'outil consulte réellement des sources plutôt que d'attendre devant un spinner opaque.
+
 ## Accessibilité
 
 - contraste minimum WCAG AA visé ;
@@ -115,3 +147,5 @@ Structure recommandée :
 ## Performance
 
 L'interface doit rester légère. Une amélioration esthétique ne doit pas dégrader sensiblement le temps de démarrage, le temps d'affichage ou la fluidité.
+
+Pour l'enquête IA, le flux de progression est diffusé en NDJSON et traité progressivement ; le navigateur ne doit pas recevoir ni conserver les contenus complets des documents lus par le backend.

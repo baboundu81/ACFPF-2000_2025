@@ -4,9 +4,9 @@
 
 **Analyse citoyenne des finances publiques françaises entre 2000 et 2025**
 
-ACFPF est un projet public et reproductible visant à analyser l'évolution des finances publiques françaises sur la période 2000–2025 à partir de **sources primaires, officielles et documentées**.
+ACFPF est un projet public et reproductible visant à analyser l'évolution des finances publiques françaises à partir de **sources primaires, officielles et documentées**.
 
-Le projet ne cherche pas à confirmer une conclusion politique prédéfinie. Il vise à tester quantitativement des hypothèses, à documenter les limites des données et à permettre à chacun de reproduire les calculs.
+Le projet ne cherche pas à confirmer une conclusion politique prédéfinie. Il vise à tester quantitativement des hypothèses, documenter les limites des données et permettre à chacun de vérifier les sources utilisées.
 
 ## Questions de départ
 
@@ -20,7 +20,6 @@ Le projet cherchera notamment à répondre, données à l'appui, aux questions s
 - Quelle est l'importance relative des retraites, de la santé, de l'éducation, de la sécurité, des intérêts de la dette et des autres grandes fonctions ?
 - Quelle est l'importance mesurable des fraudes sociales et fiscales, en distinguant fraude estimée, détectée, redressée et effectivement recouvrée ?
 - Quelles aides publiques sont accordées aux entreprises et sous quelles formes ?
-- Que représentent ces phénomènes par rapport aux masses budgétaires totales ?
 
 ## Principes méthodologiques
 
@@ -30,7 +29,7 @@ Le projet cherchera notamment à répondre, données à l'appui, aux questions s
 4. **Pas de cherry-picking** : une hypothèse doit pouvoir être confirmée, nuancée ou réfutée.
 5. **Comparaisons homogènes** : distinguer euros courants, euros constants, part de PIB, par habitant et autres unités pertinentes.
 6. **Nature de la preuve explicite** : une prévision, une décision, une exécution, une observation statistique et une évaluation ne sont pas interchangeables.
-7. **Incertitude visible** : toute limite, rupture de série, changement de périmètre ou corpus documentaire incomplet doit être documenté.
+7. **Fraîcheur documentaire** : les textes officiels sont consultés en direct lorsqu'une question le nécessite plutôt que maintenus dans un corpus local massif.
 
 Voir [docs/METHODOLOGY.md](docs/METHODOLOGY.md), [docs/EVIDENCE.md](docs/EVIDENCE.md) et [AGENTS.md](AGENTS.md).
 
@@ -42,29 +41,28 @@ Le socle macro 2000–2025 utilise :
 - `gov_10dd_edpt1` pour la dette publique consolidée (`GD`) ;
 - `gov_10a_exp` pour les dépenses des administrations publiques par fonction COFOG.
 
-Les vues actuelles sont exprimées en pourcentage du PIB. Le tableau de bord affiche désormais les dix grandes fonctions COFOG et leur variation depuis 2000. Une baisse en points de PIB n'est pas présentée comme une « économie » sans métrique complémentaire.
+Les vues actuelles sont exprimées en pourcentage du PIB. Le tableau de bord affiche les dix grandes fonctions COFOG et leur variation depuis 2000. Une baisse en points de PIB n'est pas présentée comme une « économie » sans métrique complémentaire.
 
 Les séries sont mises en cache localement pendant 24 heures et peuvent utiliser le dernier cache compatible si Eurostat devient temporairement inaccessible.
 
-## Couche de preuves
+## Recherche documentaire live
 
-ACFPF commence à relier les chiffres aux textes qui peuvent les expliquer.
+ACFPF ne télécharge plus à l'avance un corpus exhaustif de lois, rapports et documents budgétaires.
 
-`config/sources.yml` catalogue les familles de sources officielles et leur nature : statistiques, budget, lois, exécution, amendements, évaluations, etc.
+Lorsqu'une question nécessite des textes :
 
-`config/evidence_documents.yml` contient un premier manifeste de documents ou collections officielles. Le corpus automatique ne télécharge que les entrées explicitement marquées `status: seed` ; il n'effectue aucune recherche Web libre.
+1. le LLM choisit quelles familles de sources officielles interroger ;
+2. ACFPF cherche des URL uniquement sur les domaines autorisés dans `config/sources.yml` ;
+3. les résultats de recherche servent uniquement à la navigation : leurs snippets ne sont jamais utilisés comme preuves ;
+4. le modèle choisit une URL à ouvrir ;
+5. le backend revalide l'URL et toute redirection ;
+6. le document officiel est lu dans son ordre d'origine, par unités contiguës mécaniques ;
+7. chaque unité effectivement lue reçoit un identifiant `E…` ;
+8. la réponse finale ne peut citer que ces preuves `E…` ou les séries déterministes `S…`.
 
-Le premier pipeline documentaire :
+Une URL simplement trouvée mais jamais ouverte n'est donc pas citable.
 
-1. télécharge une URL officielle allow-listée ;
-2. extrait son texte visible ;
-3. le conserve dans le cache local ;
-4. le découpe en passages traçables ;
-5. recherche les passages pertinents pour la question ;
-6. transmet uniquement ces passages et les données ACFPF au LLM ;
-7. valide les identifiants de citation avant affichage.
-
-Le corpus est encore volontairement petit. Les prochaines intégrations documentaires prioritaires sont Légifrance/PISTE, PAP/RAP, exécution détaillée du budget de l'État, Assemblée nationale, Sénat, LFSS/REPSS et Cour des comptes.
+Les documents consultés sont éphémères et isolés par question. La trace de réponse conserve seulement les éléments utiles à l'audit : URL, source, locator, date de consultation et empreinte SHA-256.
 
 ## Installation
 
@@ -106,7 +104,7 @@ python -m acfpf
 
 ## Activer l'IA
 
-L'application fonctionne sans IA. L'IA est indépendante du fournisseur : le backend ACFPF prépare le contexte autorisé, le fournisseur LLM génère une réponse structurée, puis ACFPF valide les citations avant affichage.
+L'application fonctionne sans IA. L'architecture IA reste indépendante du fournisseur.
 
 ### Option recommandée pour commencer : Groq
 
@@ -124,7 +122,7 @@ Le modèle par défaut peut être remplacé avec `ACFPF_LLM_MODEL`.
 
 ACFPF supporte également `gemini`, `mistral`, `openai` et `openrouter`. La configuration reste la même : `ACFPF_LLM_PROVIDER`, `ACFPF_LLM_API_KEY` et éventuellement `ACFPF_LLM_MODEL`.
 
-La clé n'est jamais envoyée au navigateur. Le modèle ne reçoit aucun outil de navigation Web. Le backend lui fournit actuellement les séries macro, la décomposition COFOG et jusqu'à quelques passages récupérés dans le corpus officiel allow-listé. Les réponses factuelles sans citation connue sont refusées.
+Le protocole d'enquête est provider-neutral : à chaque tour le modèle demande `search`, `open`, `read` ou `answer`. Le backend exécute l'action et garde le contrôle des sources accessibles.
 
 Voir [docs/AI.md](docs/AI.md), [docs/PROVIDERS.md](docs/PROVIDERS.md) et [docs/EVIDENCE.md](docs/EVIDENCE.md).
 
@@ -134,8 +132,9 @@ Une fois ACFPF lancé :
 
 - `/api/macro` : agrégats macro ;
 - `/api/cofog` : dépenses par grande fonction ;
-- `/api/evidence` : catalogue des sources et documents officiels ;
-- `/api/ask` : question IA sourcée (POST).
+- `/api/evidence` : registre et liste blanche des sources ;
+- `/api/ask` : question IA sourcée (POST) ;
+- `/api/ask/stream` : enquête IA avec progression NDJSON (POST).
 
 ## Tests
 
@@ -144,7 +143,7 @@ ruff check .
 pytest
 ```
 
-Les tests unitaires n'appellent pas les services externes en temps réel : les parseurs, routes, corpus documentaire et providers IA utilisent des fixtures ou faux clients déterministes.
+Les tests unitaires n'appellent pas les services externes en temps réel : clients HTTP, providers IA et recherche live sont simulés par des fixtures/fakes déterministes.
 
 ## Structure
 
@@ -152,16 +151,15 @@ Les tests unitaires n'appellent pas les services externes en temps réel : les p
 .
 ├── analyses/               # Analyses thématiques finales
 ├── config/
-│   ├── sources.yml         # Registre des producteurs/sources
-│   └── evidence_documents.yml # Manifeste documentaire allow-listé
+│   └── sources.yml         # Registre des producteurs et domaines autorisés
 ├── data/                   # Données locales, brutes/intermédiaires/traitées
 ├── docs/                   # Méthodologie, preuves, IA, UX/UI
 ├── notebooks/              # Exploration et contrôles ponctuels
 ├── src/acfpf/
-│   ├── ai/                 # Providers LLM et grounding
-│   ├── data/               # Acquisition et extraction
-│   ├── evidence.py         # Modèle commun de preuve
-│   ├── document_corpus.py  # Corpus local et retrieval documentaire
+│   ├── ai/                 # Providers LLM et boucle d'agent
+│   ├── data/               # Acquisition et extraction déterministes
+│   ├── evidence.py         # Sémantique commune des preuves
+│   ├── live_research.py    # Recherche/lecture live avec liste blanche
 │   └── web/                # Interface Flask locale
 └── tests/                  # Tests déterministes
 ```
@@ -181,7 +179,7 @@ Le registre est dans [config/sources.yml](config/sources.yml). Il comprend notam
 
 ## État du projet
 
-Le projet dispose maintenant d'un socle macro, d'une première décomposition fonctionnelle COFOG, d'une couche de preuves et d'un mini-corpus documentaire officiel. Les prochaines étapes sont l'intégration systématique des prélèvements obligatoires, euros constants/par habitant, exécutions détaillées par mission/programme/action et l'élargissement du corpus juridique et budgétaire.
+Le projet dispose maintenant d'un socle macro, d'une décomposition fonctionnelle COFOG, d'une sémantique de preuves et d'un agent de recherche live contraint aux sources officielles. Les prochaines étapes sont notamment l'intégration des prélèvements obligatoires, euros constants/par habitant, exécutions détaillées par mission/programme/action et des connecteurs officiels spécialisés lorsque ceux-ci améliorent la recherche.
 
 ## Licences
 
