@@ -19,6 +19,7 @@
       </div>
       <nav class="primary-nav" aria-label="Navigation principale">
         <a class="primary-nav__link is-active" href="/" aria-current="page">Vue d'ensemble</a>
+        {% if cofog %}<a class="primary-nav__link" href="#functions">Fonctions</a>{% endif %}
         {% if dashboard %}<a class="primary-nav__link" href="#ask">Question IA</a>{% endif %}
         <a class="primary-nav__link" href="#sources">Sources</a>
       </nav>
@@ -30,8 +31,8 @@
       <p class="eyebrow">France · Administrations publiques · 2000–2025</p>
       <h1>Vingt-cinq ans de finances publiques, remis en perspective.</h1>
       <p class="hero__deck">
-        Une première lecture reproductible des dépenses, recettes, du solde public et de la dette,
-        à partir de données officielles harmonisées.
+        Une lecture reproductible des grands agrégats, de la répartition fonctionnelle des dépenses
+        et, progressivement, des décisions et documents officiels qui permettent de les expliquer.
       </p>
     </section>
 
@@ -74,28 +75,29 @@
           <h2>Ce que montre déjà la série longue</h2>
           <p class="lede">{{ dashboard.insight }}</p>
           <p>
-            Ce constat est descriptif : il ne dit pas encore quelles fonctions expliquent la variation,
-            ni si la qualité du service public a progressé ou reculé. Les prochaines analyses devront
-            décomposer la dépense et la rapprocher des moyens et résultats observés.
+            Le niveau agrégé ne suffit pas à dire où l'argent a été ajouté ou retiré. La décomposition
+            fonctionnelle ci-dessous permet désormais d'identifier les grandes fonctions dont le poids
+            dans le PIB a augmenté ou diminué.
           </p>
         </div>
         <aside class="editorial-note">
           <p class="editorial-note__title">À garder en tête</p>
-          <p>Une hausse en points de PIB ne se lit pas comme une hausse identique en euros constants ou par habitant.</p>
+          <p>Une baisse en points de PIB n'est pas automatiquement une économie en euros constants ou en effectifs.</p>
         </aside>
       </section>
 
       <section id="ask" class="shell section-block ask-block">
         <div class="section-heading">
           <div>
-            <p class="eyebrow">Questionner les données</p>
+            <p class="eyebrow">Questionner les preuves</p>
             <h2>Poser une question à ACFPF</h2>
           </div>
-          <p class="section-heading__note">Réponse limitée aux données ACFPF fournies au modèle</p>
+          <p class="section-heading__note">Réponse limitée aux éléments ACFPF effectivement fournis au modèle</p>
         </div>
         <p class="ask-block__intro">
-          Pour l'instant, l'IA ne connaît que les séries macro affichées sur cette page. Elle doit refuser
-          de répondre si la question nécessite d'autres données.
+          L'IA reçoit les séries macro, la décomposition COFOG lorsqu'elle est disponible et les passages
+          pertinents d'un premier corpus de documents publics explicitement autorisés. Ce corpus est encore
+          partiel : si les preuves manquent, elle doit le dire.
         </p>
 
         {% if ai_enabled %}
@@ -103,10 +105,10 @@
             <label for="ask-question">Votre question</label>
             <div class="ask-form__row">
               <textarea id="ask-question" name="question" rows="3" maxlength="1500" required
-                placeholder="Ex. Les dépenses publiques ont-elles augmenté davantage que les recettes depuis 2000 ?"></textarea>
+                placeholder="Ex. Dans quelles grandes fonctions la dépense a-t-elle diminué depuis 2000 ?"></textarea>
               <button type="submit">Analyser</button>
             </div>
-            <p class="ask-form__hint">Le modèle n'a aucun accès Web via ACFPF et reçoit uniquement le contexte sélectionné par le backend.</p>
+            <p class="ask-form__hint">Le modèle n'a aucun outil Web. Le backend choisit les données et documents officiels autorisés avant l'appel au modèle.</p>
           </form>
           <div id="ask-result" class="ask-result" hidden aria-live="polite"></div>
         {% else %}
@@ -147,6 +149,50 @@
         }|tojson }}</script>
       </section>
 
+      <section id="functions" class="shell section-block">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Répartition fonctionnelle</p>
+            <h2>Où le poids de la dépense a-t-il changé ?</h2>
+          </div>
+          <p class="section-heading__note">COFOG · variation en points de PIB</p>
+        </div>
+
+        {% if cofog %}
+          <p class="lede">
+            Les dix grandes fonctions permettent de localiser les changements de structure de la dépense publique.
+          </p>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col">Fonction</th>
+                  <th scope="col">2000</th>
+                  <th scope="col">{{ cofog.changes[0].latest_year if cofog.changes else 'Dernière année' }}</th>
+                  <th scope="col">Écart</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for item in cofog.changes|sort(attribute='delta', reverse=true) %}
+                  <tr>
+                    <th scope="row">{{ item.label }}</th>
+                    <td>{{ '%.1f'|format(item.base_value) }}</td>
+                    <td>{{ '%.1f'|format(item.latest_value) }}</td>
+                    <td>{{ '%+.1f'|format(item.delta) }} pt</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          <p class="source-block__technical">{{ cofog.interpretation_note }}</p>
+        {% else %}
+          <div class="error-panel" role="status">
+            <p><strong>Décomposition COFOG indisponible.</strong></p>
+            <p>{{ cofog_error or 'La série n’a pas pu être chargée.' }}</p>
+          </div>
+        {% endif %}
+      </section>
+
       <section class="shell section-block">
         <div class="section-heading">
           <div>
@@ -182,12 +228,13 @@
     {% endif %}
 
     <section id="sources" class="shell source-block section-block">
-      <p class="eyebrow">Sources</p>
-      <h2>Eurostat, deux jeux complémentaires</h2>
+      <p class="eyebrow">Sources et preuves</p>
+      <h2>Des chiffres aux décisions</h2>
       <p>
-        Les dépenses, recettes et le solde sont lus dans le jeu des principaux agrégats des finances
-        publiques. La dette est lue dans le jeu Eurostat consacré au déficit et à la dette publics.
-        Les deux sont filtrés sur la France, les administrations publiques et les valeurs en pourcentage du PIB.
+        Les agrégats et la décomposition par fonction proviennent d'Eurostat. ACFPF possède désormais
+        également un catalogue de sources officielles pour les lois, documents budgétaires, exécutions,
+        amendements et évaluations. Le corpus documentaire utilisé par l'IA ne contient que des URL
+        explicitement autorisées dans ce catalogue.
       </p>
       {% for source in sources %}
         <article class="source-entry">
@@ -199,15 +246,23 @@
           {% endif %}
         </article>
       {% endfor %}
+      {% if cofog %}
+        <article class="source-entry">
+          <h3>{{ cofog.dataset_code }}</h3>
+          <p>Dépenses des administrations publiques par fonction (COFOG)</p>
+          <p><a href="{{ cofog.source_url }}" target="_blank" rel="noreferrer">Consulter la source officielle</a></p>
+        </article>
+      {% endif %}
+      <p><a href="/api/evidence">Voir le catalogue de sources et documents ACFPF (JSON)</a></p>
       {% if dashboard %}
-        <p class="source-block__technical">Données récupérées le {{ dashboard.retrieved_at }}.</p>
+        <p class="source-block__technical">Données macro récupérées le {{ dashboard.retrieved_at }}.</p>
       {% endif %}
     </section>
   </main>
 
   <footer class="footer shell">
     <span>ACFPF · Analyse reproductible</span>
-    <a href="/api/macro">API JSON</a>
+    <span><a href="/api/macro">Macro</a> · <a href="/api/cofog">COFOG</a> · <a href="/api/evidence">Preuves</a></span>
   </footer>
 </body>
 </html>
