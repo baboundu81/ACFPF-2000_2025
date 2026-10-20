@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from flask import Flask, jsonify, render_template, request
 
-from acfpf.data.eurostat import EurostatError
+from acfpf.data.eurostat import EurostatError, get_source_catalog
 from acfpf.macro import MacroService
 
 
@@ -16,6 +16,7 @@ def create_app(service: MacroService | None = None) -> Flask:
     @app.get("/")
     def dashboard():
         refresh = request.args.get("refresh") == "1"
+        sources = get_source_catalog()
         try:
             model = macro_service.dashboard(refresh=refresh)
             payload = model.as_dict()
@@ -23,12 +24,14 @@ def create_app(service: MacroService | None = None) -> Flask:
                 "dashboard.html",
                 dashboard=payload,
                 error=None,
+                sources=payload["sources"],
             )
         except EurostatError as exc:
             return render_template(
                 "dashboard.html",
                 dashboard=None,
                 error=str(exc),
+                sources=sources,
             ), 503
 
     @app.get("/api/macro")
@@ -37,7 +40,12 @@ def create_app(service: MacroService | None = None) -> Flask:
         try:
             return jsonify(macro_service.dashboard(refresh=refresh).as_dict())
         except EurostatError as exc:
-            return jsonify({"error": str(exc)}), 503
+            return jsonify(
+                {
+                    "error": str(exc),
+                    "sources": get_source_catalog(),
+                }
+            ), 503
 
     @app.get("/healthz")
     def health():
