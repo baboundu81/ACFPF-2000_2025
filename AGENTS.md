@@ -8,15 +8,24 @@ ACFPF est un outil citoyen, reproductible et non partisan d'analyse des finances
 
 Le projet ne doit jamais être conçu pour confirmer une opinion prédéfinie. Une hypothèse peut être confirmée, nuancée ou réfutée.
 
-## 2. Données et méthode
+## 2. Données, documents et méthode
 
-- Privilégier les sources primaires : INSEE, administrations, juridictions financières, organismes de Sécurité sociale, Eurostat, OCDE, Commission européenne, etc.
-- Conserver pour chaque donnée la provenance, le millésime/publication, l'unité, le périmètre et les transformations appliquées.
+- Privilégier les sources primaires : INSEE, administrations, juridictions financières, organismes de Sécurité sociale, Eurostat, OCDE, Commission européenne, Légifrance, Assemblée nationale, Sénat, etc.
+- Conserver pour chaque donnée ou document la provenance, le millésime/publication, l'unité ou le type de texte, le périmètre et les transformations appliquées.
+- Toute preuve doit être qualifiée par son stade : `statistical_observation`, `forecast`, `decision`, `execution`, `evaluation`, `parliamentary_process` ou `interpretation`.
+- Ne jamais présenter une prévision ou une autorisation budgétaire comme une dépense exécutée.
+- Ne jamais présenter un amendement proposé ou rejeté comme une décision applicable.
+- Une évolution statistique ne démontre pas à elle seule la cause de cette évolution.
+- Une baisse en points de PIB ne doit pas être appelée « économie » sans métrique complémentaire permettant de justifier ce terme.
 - Ne jamais mélanger silencieusement deux bases statistiques ou deux définitions différentes.
 - Distinguer clairement données définitives, semi-définitives, provisoires et estimées.
 - Ne jamais coder en dur un chiffre analytique dans un template ou un composant UI : les chiffres affichés doivent provenir de la couche de données.
 - Toute conclusion importante doit pouvoir être reproduite par le code et reliée à ses sources.
 - Une série de référence versionnée est acceptable pour permettre un fonctionnement local déterministe, à condition que sa source, sa date et sa méthode de construction soient documentées.
+- Le corpus documentaire automatique ne doit télécharger que des URL officielles explicitement autorisées dans un manifeste ACFPF. Aucun crawl ou moteur de recherche Web général ne doit être caché derrière le RAG.
+- Pour les documents textuels, conserver autant que possible l'identifiant officiel, la page, la section ou l'article afin que la citation soit vérifiable.
+
+Voir `docs/EVIDENCE.md` pour la convention de preuve.
 
 ## 3. Architecture
 
@@ -25,7 +34,7 @@ Le projet ne doit jamais être conçu pour confirmer une opinion prédéfinie. U
 - Le point d'entrée doit rester stable même si l'architecture interne évolue.
 - L'application locale utilise Flask et du rendu serveur tant qu'une architecture plus complexe n'est pas justifiée par un besoin réel.
 - Éviter une SPA ou un framework frontend lourd sans bénéfice démontré.
-- Séparer strictement : acquisition/normalisation des données, logique d'analyse, présentation web.
+- Séparer strictement : acquisition/normalisation des données, corpus documentaire, logique d'analyse, récupération RAG et présentation web.
 - Les routes Flask ne doivent pas contenir la logique métier ou de calcul substantielle.
 - Éviter les dépendances réseau côté navigateur pour les fonctions essentielles : l'interface doit rester utilisable localement sans CDN.
 
@@ -85,6 +94,8 @@ Minimum attendu :
 
 - tests unitaires de la logique de données ;
 - tests de cohérence des séries (années, doublons, unités, identités simples) ;
+- tests des métadonnées et stades de preuve ;
+- tests du découpage et de la récupération documentaire sans appel réseau réel ;
 - tests des routes/API Flask ;
 - tests de non-régression pour quelques valeurs de référence officielles ;
 - `ruff check .` et `pytest` verts avant fusion.
@@ -95,6 +106,7 @@ Les tests ne doivent pas dépendre d'un serveur externe disponible en temps rée
 
 - Le démarrage local doit rester rapide.
 - Ne pas recharger/recalculer inutilement les mêmes données à chaque requête.
+- Mettre en cache localement les documents officiels téléchargés et les séries distantes.
 - Préférer HTML/CSS/JS léger et local.
 - Toute dépendance importante doit apporter une valeur fonctionnelle claire.
 
@@ -102,7 +114,7 @@ Les tests ne doivent pas dépendre d'un serveur externe disponible en temps rée
 
 - Code et éléments logiciels : `PolyForm-Noncommercial-1.0.0` sauf mention contraire.
 - Documentation et contenu éditorial original : `CC-BY-4.0`.
-- Données tierces : licence du producteur ; ne jamais les relicencier implicitement.
+- Données et documents tiers : licence du producteur ; ne jamais les relicencier implicitement.
 - Respecter le CLA et la politique décrits dans `CONTRIBUTING.md` et `LICENSES/README.md`.
 
 ## 9. Workflow Git
@@ -115,4 +127,4 @@ Les tests ne doivent pas dépendre d'un serveur externe disponible en temps rée
 
 ## 10. Évolution de ces règles
 
-Si une décision structurante change (stack, méthodologie, conventions UX/UI, politique de données, licence), mettre à jour le ou les `AGENTS.md` concernés dans la même PR.
+Si une décision structurante change (stack, méthodologie, conventions UX/UI, politique de données, politique de preuve, licence), mettre à jour le ou les `AGENTS.md` concernés dans la même PR.
