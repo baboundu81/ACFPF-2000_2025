@@ -33,6 +33,8 @@ Le projet ne doit jamais être conçu pour confirmer une opinion prédéfinie. U
 
 ACFPF possède son propre langage visuel. Ne pas copier le design d'un autre projet.
 
+Le style courant est **journalistique** : lecture éditoriale, hiérarchie typographique forte, mise en avant des chiffres, des constats, des sources et du contexte. Il n'existe pas de sélecteur de thème dans l'interface.
+
 Principes :
 
 - respecter les conventions d'interfaces web connues avant d'inventer de nouveaux patterns ;
@@ -44,15 +46,15 @@ Principes :
 - animations rares, courtes et fonctionnelles ;
 - priorité à la lisibilité, à la rapidité et à la compréhension des données.
 
-### Design system et thèmes
+### Design system
 
 Les composants ne doivent pas contenir de couleurs, typographies, ombres, rayons ou espacements de marque codés en dur.
 
-Ils doivent consommer des **design tokens sémantiques** (CSS custom properties). Les valeurs sont définies dans des fichiers de thème séparés.
+Ils doivent consommer des **design tokens sémantiques** (CSS custom properties) centralisés. Le set de valeurs actuel produit le style journalistique.
 
-Objectif : pouvoir passer facilement d'un rendu, par exemple, `institutional` à `journalistic` sans modifier les templates ni les composants.
+L'objectif est de pouvoir refaire entièrement la direction visuelle plus tard en modifiant principalement ce set de tokens, sans réécrire les templates ni les composants. Il ne faut toutefois pas construire de mécanisme de changement de thème tant qu'il n'est pas demandé.
 
-Les thèmes peuvent modifier notamment :
+Les tokens peuvent piloter notamment :
 
 - familles et échelles typographiques ;
 - couleurs de surfaces, textes, accent et états ;
