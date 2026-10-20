@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 from html.parser import HTMLParser
-from typing import Any
 
 import requests
 
@@ -65,7 +64,7 @@ def fetch_official_document_text(
         raise DocumentFetchError(f"Unable to retrieve official document: {url}") from exc
 
     content_type = response.headers.get("Content-Type", "")
-    if "html" not in content_type.lower() and not url.lower().endswith(('.html', '/')):
+    if "html" not in content_type.lower() and not url.lower().endswith((".html", "/")):
         raise DocumentFetchError(
             f"Unsupported document content type for the first corpus implementation: {content_type}"
         )
