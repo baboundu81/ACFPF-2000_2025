@@ -9,39 +9,9 @@ from typing import Any
 import requests
 
 from acfpf.ai.provider import AIProviderError, AIProviderNotConfigured, ProviderRequest
+from acfpf.ai.schema import AGENT_ACTION_SCHEMA
 
 MAX_PROVIDER_ERROR_MESSAGE_CHARS = 500
-
-AGENT_ACTION_SCHEMA: dict[str, Any] = {
-    "type": "object",
-    "properties": {
-        "action": {"type": "string", "enum": ["search", "open", "read", "answer"]},
-        "query": {"type": "string"},
-        "source_ids": {"type": "array", "items": {"type": "string"}},
-        "reason": {"type": "string"},
-        "url": {"type": "string"},
-        "document_id": {"type": "string"},
-        "unit": {"type": "integer"},
-        "status": {"type": "string", "enum": ["", "answered", "insufficient"]},
-        "answer": {"type": "string"},
-        "citations": {"type": "array", "items": {"type": "string"}},
-        "limitations": {"type": "array", "items": {"type": "string"}},
-    },
-    "required": [
-        "action",
-        "query",
-        "source_ids",
-        "reason",
-        "url",
-        "document_id",
-        "unit",
-        "status",
-        "answer",
-        "citations",
-        "limitations",
-    ],
-    "additionalProperties": False,
-}
 
 
 class OpenAICompatibleProvider:
@@ -69,7 +39,7 @@ class OpenAICompatibleProvider:
         self.extra_headers = extra_headers or {}
 
     def complete_json(self, request: ProviderRequest) -> dict[str, Any]:
-        payload = {
+        payload: dict[str, Any] = {
             "model": self.model,
             "messages": [
                 {"role": "system", "content": request.system_prompt},
@@ -80,6 +50,11 @@ class OpenAICompatibleProvider:
             "temperature": 0.1,
             "max_tokens": 900,
         }
+        if self.name == "gemini" and self.model.startswith("gemini-3"):
+            # The agent only chooses the next deterministic action. Low reasoning
+            # reduces latency/token use while preserving structured execution.
+            payload["reasoning_effort"] = "low"
+
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",
@@ -113,7 +88,10 @@ class OpenAICompatibleProvider:
             raise AIProviderError(f"{self.name} API returned an unexpected response") from exc
 
     def _response_format(self) -> dict[str, Any]:
-        if self.name == "groq" and self.model.startswith("openai/gpt-oss-"):
+        structured = self.name == "gemini" or (
+            self.name == "groq" and self.model.startswith("openai/gpt-oss-")
+        )
+        if structured:
             return {
                 "type": "json_schema",
                 "json_schema": {
