@@ -3,13 +3,14 @@
 
 from __future__ import annotations
 
-from flask import Flask, jsonify, render_template, request
+import json
+
+from flask import Flask, Response, jsonify, render_template, request, stream_with_context
 
 from acfpf.ai import AnswerService, build_default_answer_service
 from acfpf.ai.provider import AIError
 from acfpf.cofog import CofogService
 from acfpf.data.eurostat import EurostatError, get_source_catalog
-from acfpf.evidence_catalog import load_evidence_documents
 from acfpf.macro import MacroService
 from acfpf.source_registry import load_sources
 
@@ -26,6 +27,8 @@ def create_app(
         macro_service,
         functional_service,
     )
+    registered_sources = load_sources()
+    live_sources = [source for source in registered_sources if source.live_research]
 
     @app.get("/")
     def dashboard():
@@ -48,6 +51,7 @@ def create_app(
                 cofog_error=cofog_error,
                 error=None,
                 sources=payload["sources"],
+                research_sources=[source.as_dict() for source in live_sources],
                 ai_enabled=ai_service is not None,
             )
         except EurostatError as exc:
@@ -58,6 +62,7 @@ def create_app(
                 cofog_error=cofog_error,
                 error=str(exc),
                 sources=sources,
+                research_sources=[source.as_dict() for source in live_sources],
                 ai_enabled=ai_service is not None,
             ), 503
 
@@ -86,10 +91,18 @@ def create_app(
     def evidence_api():
         return jsonify(
             {
-                "sources": [source.as_dict() for source in load_sources()],
-                "documents": [item.as_dict() for item in load_evidence_documents()],
+                "mode": "live_official_research",
+                "persistent_document_corpus": False,
+                "sources": [source.as_dict() for source in registered_sources],
             }
         )
+
+    def _question_from_request() -> tuple[str | None, tuple[dict[str, str], int] | None]:
+        payload = request.get_json(silent=True) or {}
+        question = payload.get("question", "")
+        if not isinstance(question, str):
+            return None, ({"error": "invalid_question"}, 400)
+        return question, None
 
     @app.post("/api/ask")
     def ask_api():
@@ -104,13 +117,13 @@ def create_app(
                 }
             ), 503
 
-        payload = request.get_json(silent=True) or {}
-        question = payload.get("question", "")
-        if not isinstance(question, str):
-            return jsonify({"error": "invalid_question"}), 400
+        question, error = _question_from_request()
+        if error is not None:
+            payload, status = error
+            return jsonify(payload), status
 
         try:
-            return jsonify(ai_service.ask(question).as_dict())
+            return jsonify(ai_service.ask(question or "").as_dict())
         except ValueError as exc:
             return jsonify({"error": "invalid_question", "message": str(exc)}), 400
         except EurostatError as exc:
@@ -118,11 +131,43 @@ def create_app(
         except AIError as exc:
             return jsonify({"error": "ai_failure", "message": str(exc)}), 502
 
+    @app.post("/api/ask/stream")
+    def ask_stream_api():
+        if ai_service is None:
+            return jsonify(
+                {
+                    "error": "ai_not_configured",
+                    "message": "La fonction IA n'est pas configurée côté serveur.",
+                }
+            ), 503
+
+        question, error = _question_from_request()
+        if error is not None:
+            payload, status = error
+            return jsonify(payload), status
+
+        @stream_with_context
+        def generate():
+            try:
+                for event in ai_service.iter_ask(question or ""):
+                    yield json.dumps(event.as_dict(), ensure_ascii=False) + "\n"
+            except ValueError as exc:
+                yield json.dumps(
+                    {"type": "error", "message": str(exc)}, ensure_ascii=False
+                ) + "\n"
+            except (EurostatError, AIError) as exc:
+                yield json.dumps(
+                    {"type": "error", "message": str(exc)}, ensure_ascii=False
+                ) + "\n"
+
+        return Response(generate(), mimetype="application/x-ndjson")
+
     @app.get("/healthz")
     def health():
         return {
             "status": "ok",
             "ai": "enabled" if ai_service is not None else "disabled",
+            "research_mode": "live_official_sources",
         }
 
     return app
