@@ -8,7 +8,12 @@ from dataclasses import dataclass
 from typing import Any
 
 from acfpf.ai.mistral import MistralProvider
-from acfpf.ai.provider import AIGroundingError, AIProviderNotConfigured, LLMProvider, ProviderRequest
+from acfpf.ai.provider import (
+    AIGroundingError,
+    AIProviderNotConfigured,
+    LLMProvider,
+    ProviderRequest,
+)
 from acfpf.macro import MacroService
 
 SYSTEM_PROMPT = """Tu es le moteur d'analyse ACFPF.
