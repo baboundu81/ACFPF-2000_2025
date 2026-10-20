@@ -7,6 +7,7 @@ import hashlib
 import re
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from html.parser import HTMLParser
 from io import BytesIO
 from urllib.parse import parse_qs, unquote, urlparse
 
@@ -21,6 +22,7 @@ MAX_RESULTS = 8
 MAX_HTML_BYTES = 3_000_000
 MAX_PDF_BYTES = 12_000_000
 HTML_UNIT_CHARS = 12_000
+PDF_PAGES_PER_UNIT = 4
 
 
 class LiveResearchError(RuntimeError):
@@ -76,23 +78,41 @@ class LiveDocument:
         }
 
 
-class _SearchResultParser:
-    """Tiny parser for DuckDuckGo HTML result anchors; snippets are deliberately ignored."""
+class _SearchResultParser(HTMLParser):
+    """Extract result links only. Search-engine snippets are intentionally discarded."""
 
-    RESULT_RE = re.compile(
-        r'<a[^>]+class="[^"]*result__a[^"]*"[^>]+href="([^"]+)"[^>]*>(.*?)</a>',
-        re.IGNORECASE | re.DOTALL,
-    )
-    TAG_RE = re.compile(r"<[^>]+>")
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.results: list[tuple[str, str]] = []
+        self._href: str | None = None
+        self._parts: list[str] = []
 
-    @classmethod
-    def parse(cls, html: str) -> list[tuple[str, str]]:
-        results: list[tuple[str, str]] = []
-        for href, raw_title in cls.RESULT_RE.findall(html):
-            title = cls.TAG_RE.sub("", raw_title)
-            title = re.sub(r"\s+", " ", title).strip()
-            results.append((href, title))
-        return results
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        if tag != "a":
+            return
+        values = dict(attrs)
+        classes = (values.get("class") or "").split()
+        href = values.get("href")
+        if "result__a" in classes and href:
+            self._href = href
+            self._parts = []
+
+    def handle_data(self, data: str) -> None:
+        if self._href is not None:
+            self._parts.append(data)
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag == "a" and self._href is not None:
+            title = re.sub(r"\s+", " ", "".join(self._parts)).strip()
+            self.results.append((self._href, title))
+            self._href = None
+            self._parts = []
+
+
+def _parse_search_results(html: str) -> list[tuple[str, str]]:
+    parser = _SearchResultParser()
+    parser.feed(html)
+    return parser.results
 
 
 def _redirect_target(url: str) -> str:
@@ -112,6 +132,7 @@ def _html_title(html: str, fallback: str) -> str:
 
 
 def _split_html_units(text: str) -> tuple[DocumentUnit, ...]:
+    """Split in source order only; no lexical or semantic relevance filtering is applied."""
     if not text.strip():
         return ()
     units: list[DocumentUnit] = []
@@ -132,12 +153,19 @@ def _split_html_units(text: str) -> tuple[DocumentUnit, ...]:
 
 
 def _pdf_units(content: bytes) -> tuple[DocumentUnit, ...]:
+    """Group contiguous PDF pages without ranking or dropping readable pages."""
     reader = PdfReader(BytesIO(content))
     units: list[DocumentUnit] = []
-    for page_number, page in enumerate(reader.pages, start=1):
-        text = (page.extract_text() or "").strip()
-        if text:
-            units.append(DocumentUnit(index=page_number, locator=f"page {page_number}", text=text))
+    for start in range(0, len(reader.pages), PDF_PAGES_PER_UNIT):
+        end = min(start + PDF_PAGES_PER_UNIT, len(reader.pages))
+        page_texts = [(reader.pages[index].extract_text() or "").strip() for index in range(start, end)]
+        text = "\n\n".join(item for item in page_texts if item)
+        if not text:
+            continue
+        first_page = start + 1
+        last_page = end
+        locator = f"page {first_page}" if first_page == last_page else f"pages {first_page}-{last_page}"
+        units.append(DocumentUnit(index=len(units) + 1, locator=locator, text=text))
     return tuple(units)
 
 
@@ -157,6 +185,10 @@ class LiveOfficialResearch:
         self._document_counter = 0
         self._documents: dict[str, LiveDocument] = {}
 
+    def spawn(self) -> LiveOfficialResearch:
+        """Create an isolated, empty research session for one user question."""
+        return LiveOfficialResearch(sources=self.sources, timeout=self.timeout)
+
     def source_catalog(self) -> list[dict[str, object]]:
         return [
             {
@@ -175,6 +207,8 @@ class LiveOfficialResearch:
         parsed = urlparse(url)
         if parsed.scheme != "https" or parsed.username or parsed.password:
             raise SourceNotAllowed("Only credential-free HTTPS URLs are allowed")
+        if parsed.port not in {None, 443}:
+            raise SourceNotAllowed("Non-standard URL ports are not allowed")
         hostname = (parsed.hostname or "").lower().rstrip(".")
         if not hostname:
             raise SourceNotAllowed("URL has no valid hostname")
@@ -217,15 +251,16 @@ class LiveOfficialResearch:
         except requests.RequestException as exc:
             raise LiveResearchError("Unable to query the live discovery index") from exc
 
+        selected_ids = {item.id for item in selected}
         found: list[SearchResult] = []
         seen: set[str] = set()
-        for raw_url, title in _SearchResultParser.parse(response.text):
+        for raw_url, title in _parse_search_results(response.text):
             url = _redirect_target(raw_url)
             try:
                 source = self._source_for_url(url)
             except SourceNotAllowed:
                 continue
-            if source.id not in {item.id for item in selected} or url in seen:
+            if source.id not in selected_ids or url in seen:
                 continue
             seen.add(url)
             found.append(SearchResult(source_id=source.id, title=title or url, url=url))
@@ -245,11 +280,8 @@ class LiveOfficialResearch:
         except requests.RequestException as exc:
             raise LiveResearchError(f"Unable to retrieve official source: {url}") from exc
 
-        final_url = response.url or url
-        final_source = self._source_for_url(final_url)
-        if final_source.id != source.id:
-            source = final_source
-
+        final_url = getattr(response, "url", None) or url
+        source = self._source_for_url(final_url)
         content_type = response.headers.get("Content-Type", "").lower()
         content = response.content
         if "pdf" in content_type or final_url.lower().endswith(".pdf"):
