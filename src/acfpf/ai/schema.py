@@ -3,7 +3,6 @@
 
 from typing import Any
 
-
 AGENT_ACTION_SCHEMA: dict[str, Any] = {
     "type": "object",
     "properties": {
