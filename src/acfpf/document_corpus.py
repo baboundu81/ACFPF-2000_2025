@@ -21,10 +21,39 @@ from acfpf.evidence_catalog import load_evidence_documents
 
 WORD_RE = re.compile(r"[a-z0-9]{3,}")
 STOPWORDS = {
-    "avec", "dans", "des", "les", "une", "pour", "par", "sur", "que", "qui",
-    "aux", "est", "sont", "ont", "plus", "moins", "entre", "depuis", "cette",
-    "cela", "comme", "leur", "leurs", "nous", "vous", "mais", "donc", "quoi",
-    "comment", "pourquoi", "france", "francais", "francaise",
+    "avec",
+    "dans",
+    "des",
+    "les",
+    "une",
+    "pour",
+    "par",
+    "sur",
+    "que",
+    "qui",
+    "aux",
+    "est",
+    "sont",
+    "ont",
+    "plus",
+    "moins",
+    "entre",
+    "depuis",
+    "cette",
+    "cela",
+    "comme",
+    "leur",
+    "leurs",
+    "nous",
+    "vous",
+    "mais",
+    "donc",
+    "quoi",
+    "comment",
+    "pourquoi",
+    "france",
+    "francais",
+    "francaise",
 }
 
 
@@ -70,7 +99,9 @@ class OfficialDocumentCorpus:
         safe_id = hashlib.sha256(evidence.id.encode("utf-8")).hexdigest()[:16]
         return self.cache_dir / f"{safe_id}.json"
 
-    def _load_document(self, evidence: EvidenceRef, *, refresh: bool = False) -> list[EvidenceChunk]:
+    def _load_document(
+        self, evidence: EvidenceRef, *, refresh: bool = False
+    ) -> list[EvidenceChunk]:
         cache_path = self._cache_path(evidence)
         cache_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -107,7 +138,7 @@ class OfficialDocumentCorpus:
             raise ValueError("Incompatible document cache")
         raw_chunks = payload.get("chunks")
         if not isinstance(raw_chunks, list):
-            raise ValueError("Invalid document cache")
+            raise TypeError("Invalid document cache")
         return [
             EvidenceChunk(id=f"{evidence.id}#{index:04d}", evidence=evidence, text=text)
             for index, text in enumerate(raw_chunks, start=1)
