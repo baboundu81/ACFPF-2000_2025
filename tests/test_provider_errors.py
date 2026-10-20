@@ -1,23 +1,24 @@
 # SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 # Copyright (C) 2026 ACFPF contributors
 
-import requests
 import pytest
+import requests
 
 from acfpf.ai.openai_compatible import OpenAICompatibleProvider
 from acfpf.ai.provider import AIProviderError, ProviderRequest
 
 
 class ErrorResponse:
-    status_code = 429
-    headers = {
-        "retry-after": "7",
-        "x-ratelimit-remaining-tokens": "0",
-        "x-ratelimit-reset-tokens": "6.5s",
-        "x-ratelimit-remaining-requests": "999",
-        "x-request-id": "req-test-123",
-    }
-    text = '{"error":{"message":"Rate limit reached for model"}}'
+    def __init__(self) -> None:
+        self.status_code = 429
+        self.headers = {
+            "retry-after": "7",
+            "x-ratelimit-remaining-tokens": "0",
+            "x-ratelimit-reset-tokens": "6.5s",
+            "x-ratelimit-remaining-requests": "999",
+            "x-request-id": "req-test-123",
+        }
+        self.text = '{"error":{"message":"Rate limit reached for model"}}'
 
     def raise_for_status(self) -> None:
         raise requests.HTTPError("429 Client Error", response=self)
