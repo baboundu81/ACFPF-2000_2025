@@ -22,8 +22,11 @@ Le projet ne doit jamais être conçu pour confirmer une opinion prédéfinie. U
 - Ne jamais coder en dur un chiffre analytique dans un template ou un composant UI : les chiffres affichés doivent provenir de la couche de données.
 - Toute conclusion importante doit pouvoir être reproduite par le code et reliée à ses sources.
 - Une série de référence versionnée est acceptable pour permettre un fonctionnement local déterministe, à condition que sa source, sa date et sa méthode de construction soient documentées.
-- Le corpus documentaire automatique ne doit télécharger que des URL officielles explicitement autorisées dans un manifeste ACFPF. Aucun crawl ou moteur de recherche Web général ne doit être caché derrière le RAG.
-- Pour les documents textuels, conserver autant que possible l'identifiant officiel, la page, la section ou l'article afin que la citation soit vérifiable.
+- Pour les documents textuels, la stratégie par défaut est **live-first** : consulter la source officielle au moment de la question plutôt que maintenir un corpus local exhaustif.
+- La recherche live est limitée aux domaines explicitement autorisés dans `config/sources.yml`. Toute URL et toute redirection doivent être revalidées par le backend avant lecture.
+- Un moteur ou index Web peut servir uniquement à découvrir des URL officielles ; ses snippets et résumés ne constituent jamais des preuves et ne doivent pas être fournis au LLM comme faits.
+- Une URL n'est citable qu'après ouverture et lecture effective par ACFPF. Conserver autant que possible l'URL, le titre, le locator (page/segment), la date de consultation et l'empreinte du document.
+- Ne pas présélectionner des paragraphes par score lexical/vectoriel avant lecture par le modèle. Toute segmentation doit être mécanique, contiguë et conserver l'ordre de la source.
 
 Voir `docs/EVIDENCE.md` pour la convention de preuve.
 
@@ -34,8 +37,10 @@ Voir `docs/EVIDENCE.md` pour la convention de preuve.
 - Le point d'entrée doit rester stable même si l'architecture interne évolue.
 - L'application locale utilise Flask et du rendu serveur tant qu'une architecture plus complexe n'est pas justifiée par un besoin réel.
 - Éviter une SPA ou un framework frontend lourd sans bénéfice démontré.
-- Séparer strictement : acquisition/normalisation des données, corpus documentaire, logique d'analyse, récupération RAG et présentation web.
+- Séparer strictement : acquisition/normalisation des données, recherche live officielle, validation des preuves, logique d'analyse et présentation web.
 - Les routes Flask ne doivent pas contenir la logique métier ou de calcul substantielle.
+- Les séries structurées doivent rester traitées par des fonctions déterministes ; le LLM sert à piloter la recherche et à synthétiser les preuves.
+- La couche IA doit rester indépendante du fournisseur de modèle.
 - Éviter les dépendances réseau côté navigateur pour les fonctions essentielles : l'interface doit rester utilisable localement sans CDN.
 
 ## 4. UX/UI
@@ -53,7 +58,9 @@ Principes :
 - responsive desktop/tablette/mobile ;
 - états hover, focus, active, disabled, loading et error explicites ;
 - animations rares, courtes et fonctionnelles ;
-- priorité à la lisibilité, à la rapidité et à la compréhension des données.
+- priorité à la lisibilité, à la rapidité et à la compréhension des données ;
+- pour l'enquête IA, rendre visibles les étapes significatives (recherche, ouverture, lecture, réponse) sans exposer de raisonnement privé du modèle ;
+- permettre à l'utilisateur d'ouvrir les sources officielles effectivement consultées.
 
 ### Design system
 
@@ -95,18 +102,20 @@ Minimum attendu :
 - tests unitaires de la logique de données ;
 - tests de cohérence des séries (années, doublons, unités, identités simples) ;
 - tests des métadonnées et stades de preuve ;
-- tests du découpage et de la récupération documentaire sans appel réseau réel ;
-- tests des routes/API Flask ;
+- tests de la liste blanche réseau, des redirections et de la lecture documentaire sans appel réseau réel ;
+- tests de l'agent multi-étapes et du refus des citations jamais lues ;
+- tests des routes/API Flask et du flux de progression ;
 - tests de non-régression pour quelques valeurs de référence officielles ;
 - `ruff check .` et `pytest` verts avant fusion.
 
-Les tests ne doivent pas dépendre d'un serveur externe disponible en temps réel. Les téléchargements live sont des tests d'intégration distincts.
+Les tests ne doivent pas dépendre d'un serveur externe disponible en temps réel. Les appels live sont des tests d'intégration distincts.
 
 ## 7. Performance
 
 - Le démarrage local doit rester rapide.
 - Ne pas recharger/recalculer inutilement les mêmes données à chaque requête.
-- Mettre en cache localement les documents officiels téléchargés et les séries distantes.
+- Ne pas maintenir par défaut un entrepôt documentaire local massif.
+- Les documents lus pendant une question doivent rester éphémères et isolés à cette session ; un éventuel cache HTTP court terme devra être borné, invalidable et ne pas devenir une source de vérité.
 - Préférer HTML/CSS/JS léger et local.
 - Toute dépendance importante doit apporter une valeur fonctionnelle claire.
 
