@@ -3,9 +3,52 @@
 
 import pytest
 
-from acfpf.data.documents import extract_html_text, split_document_text
-from acfpf.document_corpus import OfficialDocumentCorpus
-from acfpf.evidence import EvidenceChunk, EvidenceRef
+from acfpf.data.documents import extract_html_text
+from acfpf.evidence import EvidenceRef
+from acfpf.live_research import DISCOVERY_URL, LiveOfficialResearch, SourceNotAllowed
+from acfpf.source_registry import Source
+
+
+class FakeResponse:
+    def __init__(
+        self,
+        *,
+        text: str,
+        url: str,
+        content_type: str = "text/html; charset=utf-8",
+    ) -> None:
+        self.text = text
+        self.url = url
+        self.headers = {"Content-Type": content_type}
+        self.content = text.encode("utf-8")
+
+    def raise_for_status(self) -> None:
+        return None
+
+
+class FakeSession:
+    def __init__(self, responses: dict[str, FakeResponse]) -> None:
+        self.responses = responses
+        self.calls: list[tuple[str, dict | None]] = []
+
+    def get(self, url, *, params=None, headers=None, timeout=None):
+        del headers, timeout
+        self.calls.append((url, params))
+        return self.responses[url]
+
+
+def source_map() -> dict[str, Source]:
+    return {
+        "official": Source(
+            id="official",
+            name="Source officielle",
+            base_url="https://official.test/",
+            priority="primary",
+            themes=("public_finance",),
+            evidence_stages=("decision",),
+            allowed_domains=("official.test",),
+        )
+    }
 
 
 def test_evidence_ref_rejects_unknown_stage() -> None:
@@ -16,67 +59,76 @@ def test_evidence_ref_rejects_unknown_stage() -> None:
             stage="rumour",
             kind="text",
             title="Titre",
-            source_url="https://example.test",
+            source_url="https://official.test",
         )
 
 
-def test_html_extraction_ignores_scripts_and_preserves_visible_text() -> None:
+def test_html_extraction_preserves_all_visible_text_in_source_order() -> None:
     html = """
     <html><body><h1>Loi de finances</h1><script>secret()</script>
-    <p>Les crédits sont autorisés pour 2025.</p></body></html>
+    <p>Premier paragraphe.</p><p>Paragraphe éloigné mais important.</p></body></html>
     """
     text = extract_html_text(html)
 
     assert "Loi de finances" in text
-    assert "Les crédits sont autorisés" in text
+    assert text.index("Premier paragraphe") < text.index("Paragraphe éloigné")
     assert "secret" not in text
 
 
-def test_split_document_text_produces_non_empty_chunks() -> None:
-    chunks = split_document_text("Premier paragraphe.\nDeuxième paragraphe.", max_chars=30)
+def test_live_research_rejects_non_allowlisted_domain() -> None:
+    research = LiveOfficialResearch(sources=source_map(), session=FakeSession({}))
 
-    assert chunks
-    assert all(chunk.strip() for chunk in chunks)
+    with pytest.raises(SourceNotAllowed):
+        research.open("https://example.com/not-official")
 
 
-def test_document_corpus_searches_only_seed_documents(tmp_path, monkeypatch) -> None:
-    catalog = tmp_path / "documents.yml"
-    catalog.write_text(
-        """
-documents:
-  - id: finance-law
-    source_id: legifrance
-    stage: decision
-    kind: finance_law
-    title: Loi de finances de test
-    source_url: https://official.test/law
-    scope: budget_etat
-    status: seed
-  - id: future-source
-    source_id: senate
-    stage: parliamentary_process
-    kind: amendment_collection
-    title: Collection future
-    source_url: https://official.test/future
-    status: catalogued
-""",
-        encoding="utf-8",
+def test_discovery_returns_only_allowlisted_urls_and_never_snippets() -> None:
+    html = """
+    <html><body>
+      <a class="result__a" href="https://official.test/report">Rapport officiel</a>
+      <div class="result__snippet">Texte provenant du moteur qui ne doit jamais devenir une preuve.</div>
+      <a class="result__a" href="https://example.com/article">Article externe</a>
+    </body></html>
+    """
+    session = FakeSession(
+        {DISCOVERY_URL: FakeResponse(text=html, url=DISCOVERY_URL)}
+    )
+    research = LiveOfficialResearch(sources=source_map(), session=session)
+
+    results = research.search("dépenses", source_ids=["official"])
+
+    assert [item.url for item in results] == ["https://official.test/report"]
+    assert results[0].title == "Rapport officiel"
+    assert "snippet" not in results[0].as_dict()
+    assert session.calls[0][1]["q"].startswith("(site:official.test)")
+
+
+def test_open_reads_official_html_without_relevance_filtering() -> None:
+    html = "<html><head><title>Rapport public</title></head><body>" + (
+        "<p>Texte général sans le mot recherché.</p>" * 400
+    ) + "<p>Conclusion décisive située à la fin.</p></body></html>"
+    response = FakeResponse(text=html, url="https://official.test/report")
+    research = LiveOfficialResearch(
+        sources=source_map(),
+        session=FakeSession({"https://official.test/report": response}),
     )
 
-    monkeypatch.setattr(
-        "acfpf.document_corpus.fetch_official_document_text",
-        lambda url: (
-            "La loi de finances prévoit une évolution des crédits de l'éducation. "
-            "Ce texte constitue une décision budgétaire officielle."
-        ),
+    document = research.open("https://official.test/report")
+
+    assert document.title == "Rapport public"
+    assert len(document.units) >= 2
+    combined = "\n".join(unit.text for unit in document.units)
+    assert "Texte général sans le mot recherché" in combined
+    assert "Conclusion décisive située à la fin" in combined
+    assert document.sha256
+
+
+def test_redirect_to_non_allowlisted_domain_is_rejected() -> None:
+    response = FakeResponse(text="<html><body>Texte officiel</body></html>", url="https://evil.test/")
+    research = LiveOfficialResearch(
+        sources=source_map(),
+        session=FakeSession({"https://official.test/start": response}),
     )
 
-    corpus = OfficialDocumentCorpus(cache_dir=tmp_path / "cache", catalog_path=catalog)
-    result = corpus.search("crédits éducation", limit=3)
-
-    assert len(result.chunks) == 1
-    chunk = result.chunks[0]
-    assert isinstance(chunk, EvidenceChunk)
-    assert chunk.evidence.id == "finance-law"
-    assert chunk.evidence.stage == "decision"
-    assert "éducation" in chunk.text
+    with pytest.raises(SourceNotAllowed):
+        research.open("https://official.test/start")
