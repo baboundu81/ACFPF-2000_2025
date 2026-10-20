@@ -43,6 +43,7 @@ class OpenAICompatibleProvider:
                 {"role": "user", "content": request.user_prompt},
             ],
             "response_format": {"type": "json_object"},
+            "tool_choice": "none",
             "temperature": 0.1,
             "max_tokens": 900,
         }
