@@ -4,7 +4,7 @@ Ce fichier complète le `AGENTS.md` racine et s'applique à `src/acfpf/ai/**`.
 
 ## Principe central
 
-Le LLM n'est **jamais** la source de vérité d'ACFPF. Il formule une réponse à partir d'un contexte construit par le backend ACFPF à partir de données et documents autorisés.
+Le LLM n'est **jamais** la source de vérité d'ACFPF. Il choisit les recherches à mener et formule une synthèse à partir de données structurées ACFPF et de preuves officielles effectivement lues pendant la session.
 
 ## Fournisseurs
 
@@ -12,71 +12,85 @@ Le LLM n'est **jamais** la source de vérité d'ACFPF. Il formule une réponse �
 - La configuration standard est `ACFPF_LLM_PROVIDER` + `ACFPF_LLM_API_KEY` + `ACFPF_LLM_MODEL` facultatif.
 - Groq est le provider recommandé par défaut pour le développement tant que son free tier reste disponible, mais ce choix ne doit jamais contaminer la logique métier.
 - Les providers actuellement supportés sont Groq, Gemini, Mistral, OpenAI et OpenRouter.
-- Ajouter ou remplacer un provider ne doit pas modifier le RAG, le prompt métier ou la validation des citations.
+- Ajouter ou remplacer un provider ne doit pas modifier le protocole de recherche, les règles métier ou la validation des citations.
 - Les clés API restent côté serveur. Elles ne doivent jamais être envoyées au navigateur, commitées dans Git ou loggées.
+
+## Agent de recherche live
+
+Le protocole d'agent est provider-neutral. À chaque tour, le modèle renvoie exactement une action JSON parmi :
+
+- `search` : rechercher des URL sur une ou plusieurs sources ACFPF autorisées ;
+- `open` : ouvrir une URL officielle ;
+- `read` : lire une autre unité contiguë d'un document ouvert ;
+- `answer` : répondre avec citations ou déclarer `insufficient`.
+
+Le modèle n'obtient pas un navigateur libre. Le backend exécute chaque action et contrôle les domaines.
 
 ## Sources et grounding
 
-- Aucun accès Web libre n'est accordé au modèle par ACFPF.
-- Le modèle ne reçoit que le contexte explicitement sélectionné par ACFPF.
-- Le backend peut récupérer des documents sur Internet uniquement si leur URL exacte figure dans un manifeste ACFPF de sources officielles autorisées.
-- Une réponse factuelle doit citer au moins une source fournie dans ce contexte.
-- Une citation inconnue ou absente du contexte provoque un rejet de la réponse.
-- Lorsque le contexte est insuffisant, le résultat attendu est `insufficient`, pas une extrapolation.
-- Ne jamais utiliser le savoir pré-entraîné du modèle pour compléter silencieusement une lacune du corpus.
-- Le contexte doit conserver le **stade de preuve** de chaque élément : observation, prévision, décision, exécution, évaluation, processus parlementaire ou interprétation.
-- Le prompt doit rappeler qu'une prévision, une décision et une exécution ne sont pas interchangeables.
+- Le registre `config/sources.yml` est la liste blanche réseau.
+- Toute URL doit être HTTPS et appartenir à un domaine autorisé ; les redirections doivent être revalidées.
+- Un index Web peut être utilisé pour la découverte d'URL uniquement. Ses snippets et résumés ne doivent jamais devenir des preuves.
+- Une URL trouvée mais non ouverte n'est pas citable.
+- Une unité de document n'est citable que si elle a effectivement été fournie au modèle pendant la session.
+- Le backend attribue les identifiants `E…`; le modèle ne choisit pas lui-même des identifiants arbitraires.
+- Les séries déterministes utilisent des identifiants `S…`.
+- Une citation inconnue provoque un rejet de la réponse.
+- Lorsque les preuves sont insuffisantes, le résultat attendu est `insufficient`, pas une extrapolation.
+- Ne jamais utiliser le savoir pré-entraîné du modèle pour compléter silencieusement une lacune.
 
-## RAG documentaire
+## Lecture documentaire
 
-Le premier corpus documentaire est volontairement limité et allow-listé.
+- Ne pas classer ou supprimer des paragraphes par pertinence avant lecture du modèle.
+- Le texte visible doit être conservé dans son ordre source.
+- La segmentation HTML doit être mécanique et contiguë.
+- Les PDF peuvent être regroupés en blocs de pages contiguës.
+- Le modèle peut demander les unités suivantes ; le nombre total d'étapes reste plafonné.
+- Les documents sont éphémères par question. Ne pas recréer un corpus local persistant par défaut.
+- Conserver dans la citation live : URL, source, titre, locator, date de consultation et empreinte SHA-256.
 
-Pipeline actuel :
+## Sémantique des preuves
 
-1. lire le manifeste `config/evidence_documents.yml` ;
-2. télécharger uniquement les entrées `status: seed` ;
-3. extraire le texte visible et le mettre en cache local ;
-4. découper en chunks traçables ;
-5. effectuer une recherche lexicale simple ;
-6. transmettre un nombre limité de passages au modèle ;
-7. valider les identifiants de citation retournés.
+Le prompt et la réponse doivent distinguer :
 
-Évolution attendue :
+- `statistical_observation` ;
+- `forecast` ;
+- `decision` ;
+- `execution` ;
+- `evaluation` ;
+- `parliamentary_process` ;
+- `interpretation`.
 
-- extraction structurée PDF/HTML ;
-- pages, sections et articles précis ;
-- API Légifrance PISTE ;
-- corpus PAP/RAP/exécution budgétaire ;
-- amendements et dossiers législatifs Assemblée/Sénat ;
-- `EmbeddingProvider` abstrait ;
-- index vectoriel et reranking ;
-- benchmark de retrieval.
-
-Les embeddings servent à retrouver des passages ; ils ne constituent pas une source et ne remplacent pas la citation du document original.
+Une prévision, une décision et une exécution ne sont jamais interchangeables. Une baisse en points de PIB ne suffit pas à établir une économie en euros ou en moyens.
 
 ## Réponses
 
 - Répondre en français par défaut.
 - Distinguer constat, calcul, décision, exécution et interprétation.
 - Ne pas transformer une corrélation en causalité.
-- Ne pas qualifier de « baisse des dépenses » une simple baisse de part de PIB sans préciser l'unité.
 - Ne jamais traiter un amendement rejeté comme une règle applicable.
-- Exposer les limites pertinentes et la couverture partielle du corpus.
-- Préférer une réponse courte et vérifiable à une réponse longue comportant des inférences fragiles.
+- Exposer les limites pertinentes et les recherches qui n'ont pas abouti.
+- Préférer une réponse vérifiable à une réponse longue comportant des inférences fragiles.
+
+## UX et progression
+
+Le backend peut exposer des événements de progression `started`, `search`, `open`, `read`, `notice`, `answer`.
+
+Ces événements doivent décrire les actions observables de l'agent, jamais son raisonnement privé. L'interface doit montrer les sources ouvertes et les locators lus sans afficher de chaîne de pensée.
 
 ## Tests
 
-- Aucun test CI ne doit appeler un fournisseur LLM réel ni une source documentaire externe.
+- Aucun test CI ne doit appeler un fournisseur LLM réel ni une source externe.
 - Tester les providers avec un faux client HTTP.
-- Tester le registre de providers et les valeurs par défaut.
-- Tester le service avec un provider factice.
-- Tester le parsing COFOG, les stades de preuve, l'extraction/chunking documentaire et la récupération sur fixtures.
-- Tester les cas de citations inconnues, réponse sans citation, contexte insuffisant et provider indisponible.
-- Tout changement de modèle, prompt ou stratégie de retrieval important devra à terme être évalué sur un benchmark ACFPF versionné.
+- Tester l'agent avec des séquences de réponses factices.
+- Tester la liste blanche, les redirections, les documents longs et les unités mécaniques.
+- Tester les cas de citation jamais lue, réponse sans citation, preuve insuffisante et provider indisponible.
+- Tester le flux NDJSON de progression.
+- Tout changement de modèle, prompt ou stratégie d'agent important devra être évalué sur un benchmark ACFPF versionné.
 
 ## Coût et gratuité
 
-- L'architecture doit rester utilisable avec au moins un provider disposant d'un vrai free tier pour le développement.
-- Ne pas supposer qu'un provider gratuit aujourd'hui le restera : documenter le choix, garder les alternatives fonctionnelles et centraliser les presets.
-- Limiter la taille du contexte, le nombre de chunks et les appels inutiles.
-- Avant un déploiement public, ajouter quotas, limitation de débit et suivi de consommation côté serveur.
+- L'architecture doit rester utilisable avec au moins un provider disposant d'un free tier pour le développement.
+- Ne pas supposer qu'un provider gratuit aujourd'hui le restera : garder les alternatives fonctionnelles et centraliser les presets.
+- Plafonner le nombre d'étapes d'enquête et la taille des documents lus.
+- Avant un déploiement public, ajouter quotas, limitation de débit, suivi de consommation et budgets de tokens côté serveur.
