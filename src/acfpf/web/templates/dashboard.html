@@ -36,14 +36,17 @@
       <section class="shell section-block">
         <div class="error-panel" role="alert">
           <p class="eyebrow">Données indisponibles</p>
-          <h2>Impossible de charger la série Eurostat.</h2>
+          <h2>Impossible de charger les séries Eurostat.</h2>
           <p>{{ error }}</p>
-          <p>Une connexion réseau est nécessaire au premier lancement. Les lancements suivants utilisent le cache local si besoin.</p>
+          <p>
+            Aucune valeur n'est inventée ou remplacée silencieusement. Les sources utilisées restent
+            consultables ci-dessous pour faciliter le diagnostic.
+          </p>
         </div>
       </section>
     {% else %}
       <section class="shell data-meta" aria-label="État des données">
-        <span>Jeu {{ dashboard.dataset_code }}</span>
+        <span>Jeux {{ dashboard.dataset_code }}</span>
         <span>Dernière mise à jour source : {{ dashboard.updated_at or 'non renseignée' }}</span>
         <span>{% if dashboard.from_cache %}Cache local{% else %}Source actualisée{% endif %}</span>
         <a href="/?refresh=1">Actualiser</a>
@@ -137,18 +140,30 @@
           </table>
         </div>
       </section>
-
-      <section id="sources" class="shell source-block section-block">
-        <p class="eyebrow">Source</p>
-        <h2>Eurostat · {{ dashboard.dataset_code }}</h2>
-        <p>
-          Jeu harmonisé « Government deficit/surplus, debt and associated data », France,
-          secteur des administrations publiques, valeurs exprimées en pourcentage du PIB.
-        </p>
-        <p><a href="{{ dashboard.source_url }}" target="_blank" rel="noreferrer">Consulter la source officielle</a></p>
-        <p class="source-block__technical">Récupéré le {{ dashboard.retrieved_at }}.</p>
-      </section>
     {% endif %}
+
+    <section id="sources" class="shell source-block section-block">
+      <p class="eyebrow">Sources</p>
+      <h2>Eurostat, deux jeux complémentaires</h2>
+      <p>
+        Les dépenses, recettes et le solde sont lus dans le jeu des principaux agrégats des finances
+        publiques. La dette est lue dans le jeu Eurostat consacré au déficit et à la dette publics.
+        Les deux sont filtrés sur la France, les administrations publiques et les valeurs en pourcentage du PIB.
+      </p>
+      {% for source in sources %}
+        <article class="source-entry">
+          <h3>{{ source.dataset_code }}</h3>
+          <p>{{ source.label }}</p>
+          <p><a href="{{ source.source_url }}" target="_blank" rel="noreferrer">Consulter la source officielle</a></p>
+          {% if source.updated_at %}
+            <p class="source-block__technical">Dernière mise à jour source : {{ source.updated_at }}.</p>
+          {% endif %}
+        </article>
+      {% endfor %}
+      {% if dashboard %}
+        <p class="source-block__technical">Données récupérées le {{ dashboard.retrieved_at }}.</p>
+      {% endif %}
+    </section>
   </main>
 
   <footer class="footer shell">
