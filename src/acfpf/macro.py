@@ -75,7 +75,7 @@ def _kpi(dataset: MacroDataset, key: str, *, base_year: int = 2000) -> Kpi | Non
     latest_year = max(series.values)
     latest_value = series.values[latest_year]
     base_value = series.values.get(base_year)
-    delta = latest_value - base_value if base_value is not None else None
+    delta = round(latest_value - base_value, 1) if base_value is not None else None
     return Kpi(
         key=key,
         label=series.label,
