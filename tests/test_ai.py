@@ -9,7 +9,12 @@ from acfpf.ai.openai_compatible import OpenAICompatibleProvider
 from acfpf.ai.provider import AIGroundingError, AIProviderNotConfigured, ProviderRequest
 from acfpf.ai.registry import build_provider_from_env
 from acfpf.ai.service import AnswerService
+from acfpf.cofog import build_cofog_analysis
+from acfpf.data.cofog import parse_cofog_payload
+from acfpf.document_corpus import CorpusSearch
+from acfpf.evidence import EvidenceChunk, EvidenceRef
 from acfpf.macro import build_dashboard
+from tests.test_cofog import sample_cofog_payload
 from tests.test_eurostat import sample_dataset
 
 
@@ -17,6 +22,36 @@ class FakeMacroService:
     def dashboard(self, *, refresh: bool = False):
         assert isinstance(refresh, bool)
         return build_dashboard(sample_dataset())
+
+
+class FakeCofogService:
+    def analysis(self, *, refresh: bool = False):
+        assert isinstance(refresh, bool)
+        return build_cofog_analysis(parse_cofog_payload(sample_cofog_payload()))
+
+
+class FakeDocumentCorpus:
+    def search(self, question: str, *, limit: int = 5, refresh: bool = False) -> CorpusSearch:
+        assert question
+        assert limit == 5
+        evidence = EvidenceRef(
+            id="finance-law",
+            source_id="legifrance",
+            stage="decision",
+            kind="finance_law",
+            title="Loi de finances de test",
+            source_url="https://official.test/finance-law",
+            document_id="LAW-TEST",
+        )
+        return CorpusSearch(
+            chunks=(
+                EvidenceChunk(
+                    id="finance-law#0001",
+                    evidence=evidence,
+                    text="La loi autorise les crédits pour l'exercice considéré.",
+                ),
+            )
+        )
 
 
 class FakeProvider:
@@ -78,6 +113,35 @@ def test_answer_service_accepts_only_known_citations() -> None:
     assert "gov_10a_main" in provider.last_request.user_prompt
 
 
+def test_answer_service_adds_cofog_and_document_evidence() -> None:
+    provider = FakeProvider(
+        {
+            "status": "answered",
+            "answer": "Le poids de certaines fonctions a diminué ; une loi n'est pas une exécution.",
+            "citations": ["S3", "S4"],
+            "limitations": ["Les causes doivent être documentées séparément."],
+        }
+    )
+    service = AnswerService(
+        provider,
+        FakeMacroService(),
+        FakeCofogService(),
+        FakeDocumentCorpus(),
+    )
+
+    answer = service.ask("Où la dépense a-t-elle baissé et quelles décisions ont été prises ?")
+
+    assert [citation.dataset_code for citation in answer.citations] == [
+        "gov_10a_exp",
+        "LAW-TEST",
+    ]
+    prompt = provider.last_request.user_prompt
+    assert "cofog_functional_spending" in prompt
+    assert "retrieved_official_documents" in prompt
+    assert "finance-law#0001" in prompt
+    assert '"stage":"decision"' in prompt
+
+
 def test_answer_service_rejects_unknown_citation() -> None:
     provider = FakeProvider(
         {
@@ -112,9 +176,9 @@ def test_answer_service_accepts_insufficient_answer_without_citation() -> None:
     provider = FakeProvider(
         {
             "status": "insufficient",
-            "answer": "Les données ACFPF actuelles ne permettent pas de répondre sur l'éducation.",
+            "answer": "Les données ACFPF actuelles ne permettent pas de répondre précisément.",
             "citations": [],
-            "limitations": ["Aucune série d'éducation n'est fournie au modèle."],
+            "limitations": ["Le corpus est incomplet."],
         }
     )
     service = AnswerService(provider, FakeMacroService())
