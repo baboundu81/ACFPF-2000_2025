@@ -109,7 +109,10 @@ def build_dashboard(dataset: MacroDataset) -> Dashboard:
 
 class MacroService:
     def __init__(self, cache_path: Path | None = None) -> None:
-        self.cache_path = cache_path or Path.home() / ".cache" / "acfpf" / "gov_10dd_edpt1.json"
+        self.cache_path = (
+            cache_path
+            or Path.home() / ".cache" / "acfpf" / "macro_fr_pc_gdp_v2.json"
+        )
 
     def dashboard(self, *, refresh: bool = False) -> Dashboard:
         dataset = load_macro_dataset(cache_path=self.cache_path, refresh=refresh)

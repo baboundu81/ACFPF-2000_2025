@@ -36,14 +36,12 @@ Voir [docs/METHODOLOGY.md](docs/METHODOLOGY.md). Les choix structurants à respe
 
 ## Premier tableau de bord
 
-La première tranche fonctionnelle affiche les séries macroéconomiques françaises 2000–2025 issues du jeu Eurostat `gov_10dd_edpt1` :
+La première tranche fonctionnelle affiche les séries macroéconomiques françaises 2000–2025 à partir de deux jeux Eurostat complémentaires :
 
-- dépenses publiques ;
-- recettes publiques ;
-- solde public ;
-- dette publique lorsque la série est disponible dans la réponse.
+- `gov_10a_main` pour les dépenses publiques (`TE`), les recettes publiques (`TR`) et le solde public (`B9`) ;
+- `gov_10dd_edpt1` pour la dette publique consolidée (`GD`).
 
-Les valeurs sont exprimées en pourcentage du PIB. L'application conserve un cache local pendant 24 heures et peut fonctionner sur le dernier cache disponible si Eurostat devient temporairement inaccessible.
+Les valeurs sont exprimées en pourcentage du PIB. L'application conserve un cache local pendant 24 heures et peut fonctionner sur le dernier cache compatible disponible si Eurostat devient temporairement inaccessible.
 
 ## Installation
 
