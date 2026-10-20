@@ -83,6 +83,25 @@ Il est également possible de lancer l'application avec :
 python -m acfpf
 ```
 
+## Activer l'IA Mistral
+
+L'application fonctionne sans IA. Pour activer la fonction « Poser une question à ACFPF », configurez une clé API Mistral côté serveur :
+
+```bash
+export MISTRAL_API_KEY="votre_clé"
+acfpf
+```
+
+Le modèle par défaut est `mistral-small-latest`. Il peut être changé sans modifier le code :
+
+```bash
+export ACFPF_LLM_MODEL="mistral-small-latest"
+```
+
+La clé n'est jamais envoyée au navigateur. Dans ce premier jalon, le modèle reçoit uniquement les séries macro déjà chargées par ACFPF et leurs sources ; il n'a aucun outil de recherche Web. Les réponses factuelles sans citation connue sont refusées par le backend.
+
+L'architecture complète et la trajectoire vers un RAG documentaire sont décrites dans [docs/AI.md](docs/AI.md).
+
 ## Tests
 
 ```bash
@@ -90,7 +109,7 @@ ruff check .
 pytest
 ```
 
-Les tests unitaires n'appellent pas les services externes en temps réel : les parseurs et routes utilisent des fixtures déterministes. Les appels live aux sources officielles restent séparés des tests de CI.
+Les tests unitaires n'appellent pas les services externes en temps réel : les parseurs, routes et providers IA utilisent des fixtures ou faux clients déterministes. Les appels live aux sources officielles et aux fournisseurs LLM restent séparés des tests de CI.
 
 ## Structure
 
@@ -102,9 +121,12 @@ Les tests unitaires n'appellent pas les services externes en temps réel : les p
 │   ├── raw/                # Données sources non modifiées (non versionnées par défaut)
 │   ├── interim/            # Données intermédiaires
 │   └── processed/          # Jeux normalisés prêts pour l'analyse
-├── docs/                   # Méthodologie, UX/UI, sources et documentation
+├── docs/                   # Méthodologie, IA, UX/UI, sources et documentation
 ├── notebooks/              # Exploration et contrôles ponctuels
-├── src/acfpf/              # Bibliothèque, données, analyse et interface locale
+├── src/acfpf/
+│   ├── ai/                 # Providers LLM et réponses contraintes par les sources
+│   ├── data/               # Acquisition et normalisation
+│   └── web/                # Interface Flask locale
 └── tests/                  # Tests déterministes
 ```
 
@@ -123,7 +145,7 @@ Le registre initial est dans [config/sources.yml](config/sources.yml). Les princ
 
 ## État du projet
 
-Le socle technique et le premier dashboard macro sont en cours de construction. Les prochaines étapes consistent à enrichir le socle 2000–2025 avec les prélèvements obligatoires, l'inflation, la population et les montants en euros, puis à décomposer les dépenses par fonction.
+Le socle technique, le premier dashboard macro et le premier socle IA contraint par les sources sont en construction. Les prochaines étapes consistent à enrichir le socle 2000–2025 avec les prélèvements obligatoires, l'inflation, la population et les montants en euros, puis à décomposer les dépenses par fonction et à construire un véritable corpus RAG documentaire.
 
 ## Licences
 
