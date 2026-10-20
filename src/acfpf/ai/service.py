@@ -7,13 +7,13 @@ import json
 from dataclasses import dataclass
 from typing import Any
 
-from acfpf.ai.mistral import MistralProvider
 from acfpf.ai.provider import (
     AIGroundingError,
     AIProviderNotConfigured,
     LLMProvider,
     ProviderRequest,
 )
+from acfpf.ai.registry import build_provider_from_env
 from acfpf.macro import MacroService
 
 SYSTEM_PROMPT = """Tu es le moteur d'analyse ACFPF.
@@ -190,7 +190,7 @@ def build_default_answer_service(
     macro_service: MacroService | None = None,
 ) -> AnswerService | None:
     try:
-        provider = MistralProvider.from_env()
+        provider = build_provider_from_env()
     except AIProviderNotConfigured:
         return None
     return AnswerService(provider, macro_service or MacroService())
