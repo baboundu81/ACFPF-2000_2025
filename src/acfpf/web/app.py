@@ -129,6 +129,7 @@ def create_app(
         except EurostatError as exc:
             return jsonify({"error": "data_unavailable", "message": str(exc)}), 503
         except AIError as exc:
+            app.logger.exception("AI request failed: %s", exc)
             return jsonify({"error": "ai_failure", "message": str(exc)}), 502
 
     @app.post("/api/ask/stream")
@@ -155,7 +156,13 @@ def create_app(
                 yield json.dumps(
                     {"type": "error", "message": str(exc)}, ensure_ascii=False
                 ) + "\n"
-            except (EurostatError, AIError) as exc:
+            except EurostatError as exc:
+                app.logger.exception("Data failure during streamed AI request: %s", exc)
+                yield json.dumps(
+                    {"type": "error", "message": str(exc)}, ensure_ascii=False
+                ) + "\n"
+            except AIError as exc:
+                app.logger.exception("AI streaming request failed: %s", exc)
                 yield json.dumps(
                     {"type": "error", "message": str(exc)}, ensure_ascii=False
                 ) + "\n"
