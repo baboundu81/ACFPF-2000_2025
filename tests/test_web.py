@@ -84,7 +84,11 @@ class FakeAnswerService:
 
 
 def test_dashboard_page_renders_macro_cofog_and_live_research_experience() -> None:
-    app = create_app(FakeMacroService(), cofog_service=FakeCofogService())
+    app = create_app(
+        FakeMacroService(),
+        FakeAnswerService(),
+        cofog_service=FakeCofogService(),
+    )
     client = app.test_client()
 
     response = client.get("/")
