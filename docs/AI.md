@@ -87,6 +87,8 @@ Le principe reste :
 - `read` : unité suivante d'un document déjà ouvert ;
 - `answer` : réponse finale sourcée ou statut `insufficient`.
 
+Le contrat commun est défini par `AGENT_ACTION_SCHEMA` dans `src/acfpf/ai/schema.py`. Les providers qui supportent des sorties structurées doivent utiliser ce schéma au niveau de l'API, plutôt que compter uniquement sur le prompt.
+
 Le nombre d'étapes est plafonné afin d'éviter les boucles et les coûts incontrôlés. Si la limite est atteinte sans preuve suffisante, ACFPF renvoie une réponse insuffisante plutôt que de forcer une conclusion.
 
 ## Validation des citations
@@ -107,12 +109,14 @@ La validation d'identité et de provenance ne garantit pas à elle seule que le 
 La configuration générique reste :
 
 ```bash
-export ACFPF_LLM_PROVIDER="groq"
+export ACFPF_LLM_PROVIDER="gemini"
 export ACFPF_LLM_API_KEY="..."
 export ACFPF_LLM_MODEL="..."  # facultatif
 ```
 
-Providers intégrés : Groq, Gemini, Mistral, OpenAI et OpenRouter. Les presets sont documentés dans [PROVIDERS.md](PROVIDERS.md).
+Gemini est le provider par défaut. Le modèle par défaut est `gemini-3.8-flash`. Les autres providers intégrés sont Groq, Claude, Mistral, OpenAI et OpenRouter. Les presets et particularités d'intégration sont documentés dans [PROVIDERS.md](PROVIDERS.md).
+
+Gemini et Groq/GPT-OSS utilisent le schéma structuré via leur endpoint compatible OpenAI. Claude utilise l'API native Anthropic, car sa couche OpenAI-compatible ne garantit pas actuellement `response_format` ; l'API native permet d'imposer `output_config.format=json_schema`.
 
 La clé reste exclusivement côté serveur Flask et n'est jamais exposée au navigateur.
 
