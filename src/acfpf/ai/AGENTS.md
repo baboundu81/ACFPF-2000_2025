@@ -10,9 +10,11 @@ Le LLM n'est **jamais** la source de vérité d'ACFPF. Il choisit les recherches
 
 - La couche métier doit dépendre d'une abstraction `LLMProvider`, jamais directement d'un fournisseur concret.
 - La configuration standard est `ACFPF_LLM_PROVIDER` + `ACFPF_LLM_API_KEY` + `ACFPF_LLM_MODEL` facultatif.
-- Groq est le provider recommandé par défaut pour le développement tant que son free tier reste disponible, mais ce choix ne doit jamais contaminer la logique métier.
-- Les providers actuellement supportés sont Groq, Gemini, Mistral, OpenAI et OpenRouter.
+- Gemini est le provider recommandé par défaut pour le développement tant que son free tier reste disponible, mais ce choix ne doit jamais contaminer la logique métier.
+- Les providers actuellement supportés sont Gemini, Groq, Claude, Mistral, OpenAI et OpenRouter.
 - Ajouter ou remplacer un provider ne doit pas modifier le protocole de recherche, les règles métier ou la validation des citations.
+- Les providers capables de Structured Outputs doivent utiliser le schéma commun `AGENT_ACTION_SCHEMA` plutôt qu'un JSON libre.
+- Claude utilise l'API native Anthropic pour conserver la garantie de schéma ; ne pas basculer silencieusement sur sa couche OpenAI-compatible tant que `response_format` y est ignoré.
 - Les clés API restent côté serveur. Elles ne doivent jamais être envoyées au navigateur, commitées dans Git ou loggées.
 
 ## Agent de recherche live

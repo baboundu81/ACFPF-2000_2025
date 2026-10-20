@@ -106,21 +106,23 @@ python -m acfpf
 
 L'application fonctionne sans IA. L'architecture IA reste indépendante du fournisseur.
 
-### Option recommandée pour commencer : Groq
+### Option recommandée et gratuite pour commencer : Gemini
 
-Créez une clé dans la console Groq puis :
+Google propose actuellement un Free Tier de la Gemini Developer API. Créez une clé dans [Google AI Studio](https://aistudio.google.com/app/apikey), puis :
 
 ```bash
-export ACFPF_LLM_PROVIDER="groq"
+export ACFPF_LLM_PROVIDER="gemini"
 export ACFPF_LLM_API_KEY="votre_clé"
 acfpf
 ```
 
-Le modèle par défaut peut être remplacé avec `ACFPF_LLM_MODEL`.
+Gemini est le provider par défaut ; `ACFPF_LLM_PROVIDER=gemini` peut donc être omis sur une installation neuve. Le modèle par défaut est `gemini-3.8-flash` et peut être remplacé avec `ACFPF_LLM_MODEL`.
 
 ### Autres fournisseurs supportés
 
-ACFPF supporte également `gemini`, `mistral`, `openai` et `openrouter`. La configuration reste la même : `ACFPF_LLM_PROVIDER`, `ACFPF_LLM_API_KEY` et éventuellement `ACFPF_LLM_MODEL`.
+ACFPF supporte également `groq`, `claude`, `mistral`, `openai` et `openrouter`. La configuration reste la même : `ACFPF_LLM_PROVIDER`, `ACFPF_LLM_API_KEY` et éventuellement `ACFPF_LLM_MODEL`.
+
+Claude utilise l'API native Anthropic afin de bénéficier de sorties JSON strictement conformes au schéma de l'agent ; son modèle par défaut est `claude-haiku-5-5`. `ANTHROPIC_API_KEY` est aussi accepté comme variable spécifique au provider.
 
 Le protocole d'enquête est provider-neutral : à chaque tour le modèle demande `search`, `open`, `read` ou `answer`. Le backend exécute l'action et garde le contrôle des sources accessibles.
 

@@ -5,9 +5,10 @@ import json
 
 import pytest
 
-from acfpf.ai.openai_compatible import AGENT_ACTION_SCHEMA, OpenAICompatibleProvider
+from acfpf.ai.openai_compatible import OpenAICompatibleProvider
 from acfpf.ai.provider import AIGroundingError, AIProviderNotConfigured, ProviderRequest
 from acfpf.ai.registry import build_provider_from_env
+from acfpf.ai.schema import AGENT_ACTION_SCHEMA
 from acfpf.ai.service import AnswerService
 from acfpf.cofog import build_cofog_analysis
 from acfpf.data.cofog import parse_cofog_payload
@@ -300,7 +301,28 @@ def test_groq_gpt_oss_uses_structured_actions_and_server_side_key() -> None:
     assert session.last_call["headers"]["Authorization"] == "Bearer secret-test-key"
 
 
-def test_non_groq_provider_keeps_json_object_mode() -> None:
+def test_gemini_uses_structured_actions_and_low_reasoning() -> None:
+    generated = {"action": "answer"}
+    session = FakeSession(
+        {"choices": [{"message": {"content": json.dumps(generated)}}]}
+    )
+    provider = OpenAICompatibleProvider(
+        name="gemini",
+        api_key="secret-test-key",
+        model="gemini-3.8-flash",
+        api_url="https://generativelanguage.googleapis.test/v1beta/openai/chat/completions",
+        session=session,
+    )
+
+    provider.complete_json(ProviderRequest("system JSON", "user"))
+
+    response_format = session.last_call["json"]["response_format"]
+    assert response_format["type"] == "json_schema"
+    assert response_format["json_schema"]["schema"] == AGENT_ACTION_SCHEMA
+    assert session.last_call["json"]["reasoning_effort"] == "low"
+
+
+def test_other_compatible_provider_keeps_json_object_mode() -> None:
     generated = {"action": "answer"}
     session = FakeSession(
         {"choices": [{"message": {"content": json.dumps(generated)}}]}
@@ -318,16 +340,16 @@ def test_non_groq_provider_keeps_json_object_mode() -> None:
     assert session.last_call["json"]["response_format"] == {"type": "json_object"}
 
 
-def test_registry_defaults_to_groq(monkeypatch) -> None:
+def test_registry_defaults_to_gemini(monkeypatch) -> None:
     monkeypatch.delenv("ACFPF_LLM_PROVIDER", raising=False)
     monkeypatch.setenv("ACFPF_LLM_API_KEY", "test-key")
     monkeypatch.delenv("ACFPF_LLM_MODEL", raising=False)
 
     provider = build_provider_from_env()
 
-    assert provider.name == "groq"
-    assert provider.model == "openai/gpt-oss-120b"
-    assert provider.api_url == "https://api.groq.com/openai/v1/chat/completions"
+    assert provider.name == "gemini"
+    assert provider.model == "gemini-3.8-flash"
+    assert "generativelanguage.googleapis.com" in provider.api_url
 
 
 def test_registry_selects_gemini_and_custom_model(monkeypatch) -> None:

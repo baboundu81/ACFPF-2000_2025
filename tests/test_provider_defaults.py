@@ -5,7 +5,14 @@ from acfpf.ai.registry import PROVIDER_PRESETS
 
 
 def test_all_provider_presets_define_secure_https_endpoints() -> None:
-    assert set(PROVIDER_PRESETS) == {"groq", "gemini", "mistral", "openai", "openrouter"}
+    assert set(PROVIDER_PRESETS) == {
+        "gemini",
+        "groq",
+        "claude",
+        "mistral",
+        "openai",
+        "openrouter",
+    }
     for preset in PROVIDER_PRESETS.values():
         assert preset.api_url.startswith("https://")
         assert preset.default_model
