@@ -9,6 +9,10 @@ from flask import Flask, Response, jsonify, render_template, request, stream_wit
 
 from acfpf.ai import AnswerService
 from acfpf.ai.civic import build_default_civic_answer_service
+from acfpf.ai.legislation_query import (
+    LegislativeQueryPlanner,
+    build_default_legislative_query_planner,
+)
 from acfpf.ai.provider import AIError
 from acfpf.cofog import CofogService
 from acfpf.data.assemblee_legislation import ASSEMBLY_SOURCE_PAGE
@@ -20,7 +24,7 @@ from acfpf.legislation import (
     LegislativeDossier,
     parse_legislative_search,
 )
-from acfpf.legislation_browse import browse_legislation
+from acfpf.legislation_assisted import assisted_browse_legislation
 from acfpf.legislative_stages import classify_dossier_stage, enrich_dossier_payload
 from acfpf.macro import MacroService
 from acfpf.source_registry import load_sources
@@ -113,11 +117,16 @@ def _empty_selected_filters() -> dict[str, str | int | None]:
     }
 
 
+def _assist_enabled_from_request() -> bool:
+    return request.args.get("assist", "1").strip().lower() not in {"0", "false", "off", "no"}
+
+
 def create_app(
     service: MacroService | None = None,
     answer_service: AnswerService | None = None,
     cofog_service: CofogService | None = None,
     legislation_service: LegislationService | None = None,
+    legislation_query_planner: LegislativeQueryPlanner | None = None,
 ) -> Flask:
     app = Flask(__name__)
     macro_service = service or MacroService()
@@ -127,6 +136,7 @@ def create_app(
         macro_service,
         functional_service,
     )
+    query_planner = legislation_query_planner or build_default_legislative_query_planner()
     registered_sources = load_sources()
     live_sources = [source for source in registered_sources if source.live_research]
 
@@ -134,23 +144,28 @@ def create_app(
     def home():
         query = request.args.get("q", "").strip()
         status = request.args.get("status") or None
-        effective_status = parse_legislative_search(query, status=status).status
+        fallback_status = parse_legislative_search(query, status=status).status
         refresh = request.args.get("refresh") == "1"
+        assist_enabled = _assist_enabled_from_request()
         try:
             selected_filters = _browse_filters_from_request()
-            browse = browse_legislation(
+            assisted = assisted_browse_legislation(
                 civic_service,
                 query,
+                planner=query_planner,
+                assist=assist_enabled,
                 status=status,
                 refresh=refresh,
                 limit=30,
                 **selected_filters,
             )
+            browse = assisted.browse
+            interpretation = assisted.as_meta_dict() if query else None
             return render_template(
                 "home.html",
                 query=query,
-                selected_status=effective_status,
-                selected_filters=selected_filters,
+                selected_status=assisted.effective_status,
+                selected_filters=assisted.effective_filters,
                 facets=browse.facets.as_dict(),
                 dossiers=[
                     enrich_dossier_payload(item, include_events=False) for item in browse.results
@@ -159,12 +174,15 @@ def create_app(
                 legislation_warnings=_legislation_warnings(civic_service),
                 legislation_sources=LEGISLATION_SOURCE_PAGES,
                 legislation_source=ASSEMBLY_SOURCE_PAGE,
+                search_interpretation=interpretation,
+                planner_available=query_planner is not None,
+                assist_enabled=assist_enabled,
             )
         except ValueError as exc:
             return render_template(
                 "home.html",
                 query=query,
-                selected_status=effective_status,
+                selected_status=fallback_status,
                 selected_filters=_empty_selected_filters(),
                 facets=EMPTY_FACETS,
                 dossiers=[],
@@ -172,12 +190,15 @@ def create_app(
                 legislation_warnings=_legislation_warnings(civic_service),
                 legislation_sources=LEGISLATION_SOURCE_PAGES,
                 legislation_source=ASSEMBLY_SOURCE_PAGE,
+                search_interpretation=None,
+                planner_available=query_planner is not None,
+                assist_enabled=assist_enabled,
             ), 400
         except LegislationError as exc:
             return render_template(
                 "home.html",
                 query=query,
-                selected_status=effective_status,
+                selected_status=fallback_status,
                 selected_filters=_empty_selected_filters(),
                 facets=EMPTY_FACETS,
                 dossiers=[],
@@ -185,6 +206,9 @@ def create_app(
                 legislation_warnings=_legislation_warnings(civic_service),
                 legislation_sources=LEGISLATION_SOURCE_PAGES,
                 legislation_source=ASSEMBLY_SOURCE_PAGE,
+                search_interpretation=None,
+                planner_available=query_planner is not None,
+                assist_enabled=assist_enabled,
             ), 503
 
     @app.get("/textes/<dossier_id>")
@@ -258,19 +282,22 @@ def create_app(
     def legislation_api():
         query = request.args.get("q", "").strip()
         status = request.args.get("status") or None
-        effective_status = parse_legislative_search(query, status=status).status
         refresh = request.args.get("refresh") == "1"
+        assist_enabled = _assist_enabled_from_request()
         try:
             limit = max(1, min(int(request.args.get("limit", "30")), 100))
             selected_filters = _browse_filters_from_request()
-            browse = browse_legislation(
+            assisted = assisted_browse_legislation(
                 civic_service,
                 query,
+                planner=query_planner,
+                assist=assist_enabled,
                 status=status,
                 refresh=refresh,
                 limit=limit,
                 **selected_filters,
             )
+            browse = assisted.browse
         except ValueError as exc:
             return jsonify({"error": "invalid_filter", "message": str(exc)}), 400
         except LegislationError as exc:
@@ -278,8 +305,11 @@ def create_app(
         return jsonify(
             {
                 "query": query,
-                "status": effective_status,
-                "filters": selected_filters,
+                "status": assisted.effective_status,
+                "filters": assisted.effective_filters,
+                "assistance": assisted.as_meta_dict(),
+                "assist_enabled": assist_enabled,
+                "planner_available": query_planner is not None,
                 "facets": browse.facets.as_dict(),
                 "sources": list(LEGISLATION_SOURCE_PAGES),
                 "warnings": _legislation_warnings(civic_service),
