@@ -4,17 +4,25 @@ Ce fichier définit la ligne directrice du projet. Toute modification du dépôt
 
 ## 1. Mission
 
-ACFPF est un outil citoyen, reproductible et non partisan d'analyse des finances publiques françaises, principalement sur la période 2000–2025.
+ACFPF est un outil citoyen, reproductible et non partisan d'analyse de l'action publique française à partir de sources primaires, officielles et vérifiables.
+
+L'expérience principale doit permettre de retrouver une décision ou un texte public, comprendre son parcours, l'analyser dans son contexte et vérifier chaque affirmation importante. Les finances publiques constituent un sous-outil spécialisé du produit : elles servent à replacer une décision dans son contexte budgétaire et à distinguer notamment coût annoncé, budget voté et exécution constatée.
 
 Le projet ne doit jamais être conçu pour confirmer une opinion prédéfinie. Une hypothèse peut être confirmée, nuancée ou réfutée.
 
+Le LLM n'est jamais une source de vérité. Il peut comprendre une demande, piloter une recherche et synthétiser des preuves ; l'existence d'un texte, son état, son contenu et les chiffres utilisés doivent être établis par des données ou documents officiels.
+
+Voir `docs/CIVIC_ACTION_PLAN.md` pour la trajectoire produit.
+
 ## 2. Données, documents et méthode
 
-- Privilégier les sources primaires : INSEE, administrations, juridictions financières, organismes de Sécurité sociale, Eurostat, OCDE, Commission européenne, Légifrance, Assemblée nationale, Sénat, etc.
+- Privilégier les sources primaires : Assemblée nationale, Sénat, Légifrance, INSEE, administrations, juridictions financières, organismes de Sécurité sociale, Eurostat, OCDE, Commission européenne, etc.
 - Conserver pour chaque donnée ou document la provenance, le millésime/publication, l'unité ou le type de texte, le périmètre et les transformations appliquées.
 - Toute preuve doit être qualifiée par son stade : `statistical_observation`, `forecast`, `decision`, `execution`, `evaluation`, `parliamentary_process` ou `interpretation`.
 - Ne jamais présenter une prévision ou une autorisation budgétaire comme une dépense exécutée.
 - Ne jamais présenter un amendement proposé ou rejeté comme une décision applicable.
+- Ne jamais présenter un projet ou une proposition comme une loi promulguée.
+- Lorsque plusieurs versions d'un texte existent, indiquer la version ou l'étape utilisée avant d'en tirer une conclusion.
 - Une évolution statistique ne démontre pas à elle seule la cause de cette évolution.
 - Une baisse en points de PIB ne doit pas être appelée « économie » sans métrique complémentaire permettant de justifier ce terme.
 - Ne jamais mélanger silencieusement deux bases statistiques ou deux définitions différentes.
@@ -22,6 +30,7 @@ Le projet ne doit jamais être conçu pour confirmer une opinion prédéfinie. U
 - Ne jamais coder en dur un chiffre analytique dans un template ou un composant UI : les chiffres affichés doivent provenir de la couche de données.
 - Toute conclusion importante doit pouvoir être reproduite par le code et reliée à ses sources.
 - Une série de référence versionnée est acceptable pour permettre un fonctionnement local déterministe, à condition que sa source, sa date et sa méthode de construction soient documentées.
+- Les métadonnées législatives structurées peuvent être mises en cache localement pour la découverte, mais leur source et leur fraîcheur doivent rester visibles. Elles servent à identifier et orienter un dossier ; elles ne remplacent pas la lecture du texte comme preuve de son contenu.
 - Pour les documents textuels, la stratégie par défaut est **live-first** : consulter la source officielle au moment de la question plutôt que maintenir un corpus local exhaustif.
 - La recherche live est limitée aux domaines explicitement autorisés dans `config/sources.yml`. Toute URL et toute redirection doivent être revalidées par le backend avant lecture.
 - Un moteur ou index Web peut servir uniquement à découvrir des URL officielles ; ses snippets et résumés ne constituent jamais des preuves et ne doivent pas être fournis au LLM comme faits.
@@ -37,17 +46,23 @@ Voir `docs/EVIDENCE.md` pour la convention de preuve.
 - Le point d'entrée doit rester stable même si l'architecture interne évolue.
 - L'application locale utilise Flask et du rendu serveur tant qu'une architecture plus complexe n'est pas justifiée par un besoin réel.
 - Éviter une SPA ou un framework frontend lourd sans bénéfice démontré.
-- Séparer strictement : acquisition/normalisation des données, recherche live officielle, validation des preuves, logique d'analyse et présentation web.
+- Séparer strictement : acquisition/normalisation des données structurées, recherche live officielle, validation des preuves, logique d'analyse et présentation web.
 - Les routes Flask ne doivent pas contenir la logique métier ou de calcul substantielle.
+- Les connecteurs structurés Assemblée nationale, Sénat et Légifrance doivent converger vers des modèles métier communs tout en conservant leurs identifiants et leur provenance d'origine.
+- La découverte d'un dossier législatif doit être déterministe à partir des sources structurées ; le LLM peut aider à reformuler ou interpréter une recherche mais ne doit jamais fabriquer une liste de textes.
+- Un chat dédié à un dossier doit recevoir l'identité du dossier depuis le backend. Les champs envoyés par le navigateur ne doivent pas pouvoir substituer silencieusement le titre ou l'URL officiels.
 - Les séries structurées doivent rester traitées par des fonctions déterministes ; le LLM sert à piloter la recherche et à synthétiser les preuves.
 - La couche IA doit rester indépendante du fournisseur de modèle.
+- Le module finances doit rester utilisable indépendamment du module législatif et réciproquement autant que possible.
 - Éviter les dépendances réseau côté navigateur pour les fonctions essentielles : l'interface doit rester utilisable localement sans CDN.
 
 ## 4. UX/UI
 
 ACFPF possède son propre langage visuel. Ne pas copier le design d'un autre projet.
 
-Le style courant est **journalistique** : lecture éditoriale, hiérarchie typographique forte, mise en avant des chiffres, des constats, des sources et du contexte. Il n'existe pas de sélecteur de thème dans l'interface.
+Le style courant est **journalistique** : lecture éditoriale, hiérarchie typographique forte, mise en avant des faits, des sources et du contexte. Il n'existe pas de sélecteur de thème dans l'interface.
+
+L'expérience principale est désormais la découverte et l'analyse de l'action publique. L'accueil doit permettre de chercher ou parcourir des textes et décisions sans exiger que l'utilisateur connaisse leur nom officiel. Le dashboard financier est un sous-outil accessible depuis cette navigation principale.
 
 Principes :
 
@@ -59,8 +74,10 @@ Principes :
 - états hover, focus, active, disabled, loading et error explicites ;
 - animations rares, courtes et fonctionnelles ;
 - priorité à la lisibilité, à la rapidité et à la compréhension des données ;
+- pour un dossier législatif, rendre visibles le statut, la dernière activité, la provenance et les limites de couverture ;
 - pour l'enquête IA, rendre visibles les étapes significatives (recherche, ouverture, lecture, réponse) sans exposer de raisonnement privé du modèle ;
-- permettre à l'utilisateur d'ouvrir les sources officielles effectivement consultées.
+- permettre à l'utilisateur d'ouvrir les sources officielles effectivement consultées ;
+- ne jamais présenter un classement éditorial opaque comme « les textes importants » : les critères de tri ou de mise en avant doivent être explicites et reproductibles.
 
 ### Design system
 
@@ -100,11 +117,14 @@ Toute fonctionnalité non triviale doit être testée.
 Minimum attendu :
 
 - tests unitaires de la logique de données ;
+- tests des parseurs de données législatives sur fixtures locales représentatives ;
+- tests des statuts et de la recherche de dossiers sans appel réseau réel ;
 - tests de cohérence des séries (années, doublons, unités, identités simples) ;
 - tests des métadonnées et stades de preuve ;
 - tests de la liste blanche réseau, des redirections et de la lecture documentaire sans appel réseau réel ;
 - tests de l'agent multi-étapes et du refus des citations jamais lues ;
 - tests des routes/API Flask et du flux de progression ;
+- tests du parcours accueil → dossier → chat contextualisé ;
 - tests de non-régression pour quelques valeurs de référence officielles ;
 - `ruff check .` et `pytest` verts avant fusion.
 
@@ -114,6 +134,7 @@ Les tests ne doivent pas dépendre d'un serveur externe disponible en temps rée
 
 - Le démarrage local doit rester rapide.
 - Ne pas recharger/recalculer inutilement les mêmes données à chaque requête.
+- Les exports structurés peuvent utiliser un cache local court et invalidable afin d'éviter un téléchargement complet à chaque page.
 - Ne pas maintenir par défaut un entrepôt documentaire local massif.
 - Les documents lus pendant une question doivent rester éphémères et isolés à cette session ; un éventuel cache HTTP court terme devra être borné, invalidable et ne pas devenir une source de vérité.
 - Préférer HTML/CSS/JS léger et local.
@@ -136,4 +157,4 @@ Les tests ne doivent pas dépendre d'un serveur externe disponible en temps rée
 
 ## 10. Évolution de ces règles
 
-Si une décision structurante change (stack, méthodologie, conventions UX/UI, politique de données, politique de preuve, licence), mettre à jour le ou les `AGENTS.md` concernés dans la même PR.
+Si une décision structurante change (mission produit, stack, méthodologie, conventions UX/UI, politique de données, politique de preuve, licence), mettre à jour le ou les `AGENTS.md` concernés dans la même PR.
