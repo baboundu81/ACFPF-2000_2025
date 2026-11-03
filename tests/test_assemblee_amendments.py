@@ -18,7 +18,7 @@ def sample_csv() -> bytes:
         "https://www.assemblee-nationale.fr/dyn/opendata/AMANR5L17N000042.xml\n"
         "I-43;Commission des finances;Après l'article 12;M. Bob Dupont;Non soutenu;"
         "https://www.assemblee-nationale.fr/dyn/opendata/AMANR5L17N000043.xml\n"
-    ).encode("utf-8")
+    ).encode()
 
 
 def test_parse_amendments_csv_preserves_official_fields_and_builds_page_url() -> None:
@@ -64,7 +64,7 @@ def test_parse_amendments_csv_deduplicates_same_uid() -> None:
     blob = sample_csv() + (
         "I-42;Séance publique;Article 12;Mme Alice Martin;Adopté;"
         "https://www.assemblee-nationale.fr/dyn/opendata/AMANR5L17N000042.xml\n"
-    ).encode("utf-8")
+    ).encode()
 
     items = parse_assembly_amendments_csv(blob, legislature="17", dossier_id="54629")
 
