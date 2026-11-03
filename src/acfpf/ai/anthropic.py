@@ -46,7 +46,7 @@ class AnthropicProvider:
                 "effort": "low",
                 "format": {
                     "type": "json_schema",
-                    "schema": AGENT_ACTION_SCHEMA,
+                    "schema": request.response_schema or AGENT_ACTION_SCHEMA,
                 },
             },
         }
