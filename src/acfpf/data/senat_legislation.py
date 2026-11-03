@@ -127,6 +127,14 @@ def _field_map(fieldnames: list[str] | None) -> dict[str, str]:
     }
 
 
+def _row_value(row: dict[str, str | None], fields: dict[str, str], key: str) -> str | None:
+    column = fields[key]
+    if not column:
+        return None
+    raw = (row.get(column) or "").strip()
+    return raw or None
+
+
 def parse_senate_csv(
     blob: bytes,
     *,
@@ -158,14 +166,7 @@ def parse_senate_csv(
         except SenateLegislationError:
             continue
 
-        def value(key: str) -> str | None:
-            column = fields[key]
-            if not column:
-                return None
-            raw = (row.get(column) or "").strip()
-            return raw or None
-
-        raw_themes = value("themes") or ""
+        raw_themes = _row_value(row, fields, "themes") or ""
         themes = tuple(
             dict.fromkeys(
                 item.strip()
@@ -176,14 +177,14 @@ def parse_senate_csv(
         dossiers[uid] = SenateLegislativeDossier(
             uid=uid,
             title=title,
-            type_label=value("type"),
-            initial_date=_date(value("initial_date")),
+            type_label=_row_value(row, fields, "type"),
+            initial_date=_date(_row_value(row, fields, "initial_date")),
             official_url=url,
-            state=value("state"),
-            constitutional_result=value("constitutional_result"),
-            constitutional_date=_date(value("constitutional_date")),
-            promulgation_date=_date(value("promulgation_date")),
-            law_number=value("law_number"),
+            state=_row_value(row, fields, "state"),
+            constitutional_result=_row_value(row, fields, "constitutional_result"),
+            constitutional_date=_date(_row_value(row, fields, "constitutional_date")),
+            promulgation_date=_date(_row_value(row, fields, "promulgation_date")),
+            law_number=_row_value(row, fields, "law_number"),
             themes=themes,
             retrieved_at=retrieved_at,
             from_cache=from_cache,
