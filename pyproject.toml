@@ -7,8 +7,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "acfpf"
-version = "0.2.0"
-description = "Analyse citoyenne des finances publiques françaises 2000-2025"
+version = "0.3.0"
+description = "Analyse citoyenne de l'action publique française à partir de sources officielles"
 license = "PolyForm-Noncommercial-1.0.0"
 license-files = ["LICENSE"]
 requires-python = ">=3.11"
