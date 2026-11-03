@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ACFPF — Comprendre l'action publique</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/tokens.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/legislation.css') }}">
+</head>
+<body>
+  <header class="masthead">
+    <div class="shell masthead__inner">
+      <div>
+        <a class="brand" href="/">ACFPF</a>
+        <p class="brand__subtitle">Analyse citoyenne de l'action publique française</p>
+      </div>
+      <nav class="primary-nav" aria-label="Navigation principale">
+        <a class="primary-nav__link is-active" href="/" aria-current="page">Textes & décisions</a>
+        <a class="primary-nav__link" href="/finances">Finances publiques</a>
+        <a class="primary-nav__link" href="#method">Méthode</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero shell civic-hero">
+      <p class="eyebrow">Sources primaires · Parlement · Légifrance · données publiques</p>
+      <h1>Comprendre ce que décide réellement la puissance publique.</h1>
+      <p class="hero__deck">
+        Recherchez un texte par son nom, son sujet ou simplement avec vos mots. ACFPF vous aide d'abord
+        à retrouver le bon dossier officiel, puis vous permet de l'analyser dans un espace dédié.
+      </p>
+
+      <form class="legislation-search" method="get" action="/">
+        <label for="legislation-query">Que voulez-vous retrouver ?</label>
+        <div class="legislation-search__row">
+          <input
+            id="legislation-query"
+            name="q"
+            type="search"
+            value="{{ query }}"
+            placeholder="Ex. Quels textes sont en cours sur le logement ?"
+            autocomplete="off"
+          >
+          <button type="submit">Rechercher</button>
+        </div>
+        <div class="search-examples" aria-label="Exemples de recherches">
+          <a href="/?q=Quels+sont+les+textes+en+cours+de+vote+%3F">Textes en cours</a>
+          <a href="/?q=Quels+textes+concernent+la+sant%C3%A9+%3F">Santé</a>
+          <a href="/?q=Quels+textes+ont+%C3%A9t%C3%A9+adopt%C3%A9s+r%C3%A9cemment+%3F">Adoptés récemment</a>
+        </div>
+      </form>
+    </section>
+
+    <section class="shell section-block legislation-results">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Dossiers législatifs</p>
+          <h2>{% if query %}Résultats pour « {{ query }} »{% else %}Textes en cours{% endif %}</h2>
+        </div>
+        <p class="section-heading__note">{{ dossiers|length }} résultat(s) · Assemblée nationale</p>
+      </div>
+
+      <nav class="status-filters" aria-label="Filtrer les dossiers par statut">
+        <a href="/?{% if query %}q={{ query|urlencode }}&{% endif %}status=active"
+           class="status-filter {% if selected_status == 'active' %}is-active{% endif %}">En cours</a>
+        <a href="/?{% if query %}q={{ query|urlencode }}&{% endif %}status=adopted_or_promulgated"
+           class="status-filter {% if selected_status == 'adopted_or_promulgated' %}is-active{% endif %}">Adoptés / promulgués</a>
+        <a href="/?{% if query %}q={{ query|urlencode }}&{% endif %}status=all"
+           class="status-filter {% if selected_status == 'all' %}is-active{% endif %}">Tous</a>
+      </nav>
+
+      {% if legislation_error %}
+        <div class="error-panel" role="alert">
+          <p class="eyebrow">Source indisponible</p>
+          <h2>Impossible de charger les dossiers législatifs.</h2>
+          <p>{{ legislation_error }}</p>
+          <p>ACFPF n'invente aucun résultat de remplacement lorsque la source officielle est indisponible.</p>
+        </div>
+      {% elif dossiers %}
+        <div class="dossier-list">
+          {% for dossier in dossiers %}
+            <article class="dossier-row">
+              <div class="dossier-row__meta">
+                <span class="status-badge" data-status="{{ dossier.status }}">{{ dossier.status_label }}</span>
+                {% if dossier.procedure_label %}<span>{{ dossier.procedure_label }}</span>{% endif %}
+                {% if dossier.last_activity %}<span>Activité : {{ dossier.last_activity }}</span>{% endif %}
+              </div>
+              <h3><a href="/textes/{{ dossier.id }}">{{ dossier.title }}</a></h3>
+              {% if dossier.current_stage %}<p>{{ dossier.current_stage }}</p>{% endif %}
+              <div class="dossier-row__actions">
+                <a class="action-link" href="/textes/{{ dossier.id }}">Analyser ce texte</a>
+                <a href="{{ dossier.official_url }}" target="_blank" rel="noreferrer">Voir le dossier officiel</a>
+              </div>
+            </article>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty-state">
+          <h3>Aucun dossier correspondant.</h3>
+          <p>Essayez un sujet plus large ou affichez tous les textes. ACFPF ne complète pas artificiellement les résultats.</p>
+        </div>
+      {% endif %}
+    </section>
+
+    <section class="shell section-block civic-tools">
+      <div>
+        <p class="eyebrow">Sous-outil</p>
+        <h2>Explorer les finances publiques</h2>
+        <p>
+          Dépenses, recettes, dette, déficit et répartition fonctionnelle restent disponibles dans le module
+          spécialisé déjà développé.
+        </p>
+        <a class="action-link" href="/finances">Ouvrir les finances publiques</a>
+      </div>
+      <aside class="editorial-note">
+        <p class="editorial-note__title">À terme</p>
+        <p>Un dossier législatif pourra appeler ce sous-outil pour confronter coût annoncé, budget voté et exécution constatée.</p>
+      </aside>
+    </section>
+
+    <section id="method" class="shell section-block editorial-grid">
+      <div class="editorial-copy">
+        <p class="eyebrow">Méthode</p>
+        <h2>Le modèle explique ; les sources établissent les faits.</h2>
+        <p class="lede">
+          La liste des textes vient des données officielles. L'IA n'est pas chargée d'inventer quels dossiers existent.
+        </p>
+        <p>
+          Après sélection d'un dossier, la recherche assistée reste bornée aux sources autorisées par ACFPF et une
+          affirmation factuelle doit être reliée à un document effectivement ouvert et lu.
+        </p>
+      </div>
+      <aside class="editorial-note">
+        <p class="editorial-note__title">Source de découverte</p>
+        <p><a href="{{ legislation_source }}" target="_blank" rel="noreferrer">Open data de l'Assemblée nationale</a></p>
+      </aside>
+    </section>
+  </main>
+
+  <footer class="shell footer">
+    <span>ACFPF · Analyse citoyenne de l'action publique française</span>
+    <a href="{{ legislation_source }}" target="_blank" rel="noreferrer">Source des dossiers</a>
+  </footer>
+</body>
+</html>

@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% if dossier %}ACFPF — {{ dossier.title }}{% else %}ACFPF — Dossier législatif{% endif %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/tokens.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/ai.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/legislation.css') }}">
+  <script defer src="{{ url_for('static', filename='js/dossier_chat.js') }}"></script>
+</head>
+<body>
+  <header class="masthead">
+    <div class="shell masthead__inner">
+      <div>
+        <a class="brand" href="/">ACFPF</a>
+        <p class="brand__subtitle">Analyse citoyenne de l'action publique française</p>
+      </div>
+      <nav class="primary-nav" aria-label="Navigation principale">
+        <a class="primary-nav__link is-active" href="/">Textes & décisions</a>
+        <a class="primary-nav__link" href="/finances">Finances publiques</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    {% if error %}
+      <section class="shell section-block">
+        <div class="error-panel" role="alert">
+          <p class="eyebrow">Dossier indisponible</p>
+          <h1>Impossible d'ouvrir ce dossier.</h1>
+          <p>{{ error }}</p>
+          <p><a href="/">Retour à la recherche des textes</a></p>
+        </div>
+      </section>
+    {% else %}
+      <section class="hero shell dossier-hero">
+        <p class="dossier-breadcrumb"><a href="/">Textes & décisions</a> / {{ dossier.id }}</p>
+        <div class="dossier-hero__meta">
+          <span class="status-badge" data-status="{{ dossier.status }}">{{ dossier.status_label }}</span>
+          {% if dossier.procedure_label %}<span>{{ dossier.procedure_label }}</span>{% endif %}
+          {% if dossier.last_activity %}<span>Dernière activité : {{ dossier.last_activity }}</span>{% endif %}
+        </div>
+        <h1>{{ dossier.title }}</h1>
+        {% if dossier.current_stage %}<p class="hero__deck">Dernière étape repérée : {{ dossier.current_stage }}</p>{% endif %}
+        <p><a href="{{ dossier.official_url }}" target="_blank" rel="noreferrer">Ouvrir le dossier officiel de l'Assemblée nationale</a></p>
+      </section>
+
+      <section class="shell dossier-overview section-block">
+        <div>
+          <p class="eyebrow">Repères</p>
+          <h2>Un dossier, plusieurs versions et plusieurs étapes.</h2>
+          <p>
+            Les métadonnées ci-dessus servent à identifier le dossier. Elles ne sont pas utilisées comme preuve du
+            contenu juridique : le chat doit ouvrir les textes officiels avant d'affirmer ce que prévoit une mesure.
+          </p>
+        </div>
+        <div class="timeline-mini" aria-label="Activité récente du dossier">
+          {% for event in dossier.events[-8:] %}
+            <div class="timeline-mini__item">
+              <time>{{ event.date or 'date non renseignée' }}</time>
+              <span>{{ event.label }}</span>
+            </div>
+          {% endfor %}
+        </div>
+      </section>
+
+      <section id="ask" class="shell section-block ask-block dossier-chat-block">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Chat dédié à ce texte</p>
+            <h2>Posez vos questions sans répéter le nom du dossier.</h2>
+          </div>
+          <p class="section-heading__note">Recherche live · sources officielles uniquement</p>
+        </div>
+
+        <div class="research-trust" aria-label="Garanties de recherche">
+          <div><strong>Dossier verrouillé</strong><span>Le backend ajoute automatiquement l'identité du texte à chaque question.</span></div>
+          <div><strong>Version à vérifier</strong><span>Le modèle doit ouvrir les documents avant d'affirmer ce que dit le texte.</span></div>
+          <div><strong>Étapes distinguées</strong><span>Projet, amendement, adoption et promulgation ne sont pas confondus.</span></div>
+          <div><strong>Preuves vérifiées</strong><span>Une source n'est citable qu'après lecture effective.</span></div>
+        </div>
+
+        {% if ai_enabled %}
+          <div class="question-presets" aria-label="Questions suggérées">
+            <button type="button" data-question="Résume-moi ce texte simplement et indique clairement la version analysée.">Résumer simplement</button>
+            <button type="button" data-question="Qu'est-ce que ce texte changerait concrètement par rapport au droit actuel ?">Ce qui change</button>
+            <button type="button" data-question="Quels amendements importants ont modifié ce texte et lesquels ont été adoptés ou rejetés ?">Amendements importants</button>
+            <button type="button" data-question="Quels arguments ont été avancés pour et contre ce texte dans les sources parlementaires ?">Arguments pour / contre</button>
+          </div>
+
+          <div id="dossier-chat-thread" class="chat-thread" aria-live="polite">
+            <div class="chat-message chat-message--system">
+              <p>Vous analysez <strong>{{ dossier.title }}</strong>. Les réponses restent rattachées à ce dossier.</p>
+            </div>
+          </div>
+
+          <form id="dossier-chat-form" class="ask-form" data-dossier-id="{{ dossier.id }}">
+            <label for="dossier-chat-question">Votre question</label>
+            <div class="ask-form__row">
+              <textarea id="dossier-chat-question" name="question" rows="3" maxlength="600" required
+                placeholder="Ex. Est-ce que l'article qui concerne X est toujours présent dans la version actuelle ?"></textarea>
+              <button type="submit">Rechercher et répondre</button>
+            </div>
+            <p class="ask-form__hint">
+              Les deux derniers échanges peuvent être repris pour comprendre une question de suivi. Les sources restent vérifiées à chaque réponse.
+            </p>
+          </form>
+
+          <div id="research-progress" class="research-progress" hidden aria-live="polite">
+            <div class="research-progress__header">
+              <p class="eyebrow">Enquête en cours</p>
+              <p id="research-progress-status">Préparation…</p>
+            </div>
+            <ol id="research-progress-steps" class="research-progress__steps"></ol>
+          </div>
+        {% else %}
+          <div class="ai-disabled">
+            <p><strong>IA non configurée.</strong> Le dossier officiel reste consultable sans IA.</p>
+            <p>Configurez <code>ACFPF_LLM_API_KEY</code> côté serveur puis relancez ACFPF.</p>
+          </div>
+        {% endif %}
+
+        <details class="research-sources">
+          <summary>{{ research_sources|length }} sources officielles autorisées pour l'enquête</summary>
+          <div class="research-sources__list">
+            {% for source in research_sources %}<span>{{ source.name }}</span>{% endfor %}
+          </div>
+        </details>
+      </section>
+    {% endif %}
+  </main>
+
+  <footer class="shell footer">
+    <span>ACFPF · Dossier législatif {{ dossier.id if dossier else '' }}</span>
+    <a href="/">Rechercher un autre texte</a>
+  </footer>
+</body>
+</html>
