@@ -8,7 +8,6 @@ import unicodedata
 from dataclasses import dataclass
 from typing import Any
 
-
 STAGE_LABELS = {
     "deposit": "Dépôt",
     "committee": "Commission",
