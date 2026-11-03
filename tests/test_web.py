@@ -398,7 +398,7 @@ def test_legislation_source_failure_is_explicit() -> None:
     html = response.get_data(as_text=True)
 
     assert response.status_code == 503
-    assert "Impossible de charger les dossiers législatifs" in html
+    assert "Impossible d'afficher les dossiers législatifs" in html
     assert "simulated legislative source failure" in html
 
 
