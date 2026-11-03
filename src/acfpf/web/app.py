@@ -21,6 +21,7 @@ from acfpf.legislation import (
     parse_legislative_search,
 )
 from acfpf.legislation_browse import browse_legislation
+from acfpf.legislative_stages import classify_dossier_stage, enrich_dossier_payload
 from acfpf.macro import MacroService
 from acfpf.source_registry import load_sources
 
@@ -33,6 +34,7 @@ LEGISLATION_SOURCE_PAGES = (
 )
 EMPTY_FACETS = {
     "chambers": [],
+    "stages": [],
     "themes": [],
     "text_types": [],
     "min_year": None,
@@ -56,13 +58,15 @@ def _legislative_question(
             history_text = " Échanges récents: " + " | ".join(compact) + "."
 
     source_urls = [source.official_url for source in dossier.sources] or [dossier.official_url]
+    normalized_stage = classify_dossier_stage(dossier)
     return (
         "Contexte de dossier législatif fourni par le backend ACFPF. "
         "Ce contexte sert uniquement à orienter la recherche et ne constitue pas une preuve. "
         f"Dossier: {dossier.title}. Identifiant: {dossier.id}. "
         f"Dossiers officiels connus: {', '.join(source_urls)}. "
         f"Statut indicatif: {dossier.status_label}. "
-        f"Étape courante indicative: {dossier.current_stage or 'non renseignée'}."
+        f"Étape normalisée indicative: {normalized_stage.label} ({normalized_stage.code}). "
+        f"Libellé source de l'étape: {dossier.current_stage or 'non renseigné'}."
         f"{history_text} "
         f"Question actuelle de l'utilisateur: {question}"
     )
@@ -90,10 +94,22 @@ def _optional_year(value: str | None, label: str) -> int | None:
 def _browse_filters_from_request() -> dict[str, str | int | None]:
     return {
         "chamber": request.args.get("chamber", "").strip() or None,
+        "stage": request.args.get("stage", "").strip() or None,
         "theme": request.args.get("theme", "").strip() or None,
         "text_type": request.args.get("text_type", "").strip() or None,
         "from_year": _optional_year(request.args.get("from_year"), "L'année de début"),
         "to_year": _optional_year(request.args.get("to_year"), "L'année de fin"),
+    }
+
+
+def _empty_selected_filters() -> dict[str, str | int | None]:
+    return {
+        "chamber": None,
+        "stage": None,
+        "theme": None,
+        "text_type": None,
+        "from_year": None,
+        "to_year": None,
     }
 
 
@@ -136,7 +152,9 @@ def create_app(
                 selected_status=effective_status,
                 selected_filters=selected_filters,
                 facets=browse.facets.as_dict(),
-                dossiers=[item.as_dict(include_events=False) for item in browse.results],
+                dossiers=[
+                    enrich_dossier_payload(item, include_events=False) for item in browse.results
+                ],
                 legislation_error=None,
                 legislation_warnings=_legislation_warnings(civic_service),
                 legislation_sources=LEGISLATION_SOURCE_PAGES,
@@ -147,13 +165,7 @@ def create_app(
                 "home.html",
                 query=query,
                 selected_status=effective_status,
-                selected_filters={
-                    "chamber": None,
-                    "theme": None,
-                    "text_type": None,
-                    "from_year": None,
-                    "to_year": None,
-                },
+                selected_filters=_empty_selected_filters(),
                 facets=EMPTY_FACETS,
                 dossiers=[],
                 legislation_error=str(exc),
@@ -166,13 +178,7 @@ def create_app(
                 "home.html",
                 query=query,
                 selected_status=effective_status,
-                selected_filters={
-                    "chamber": None,
-                    "theme": None,
-                    "text_type": None,
-                    "from_year": None,
-                    "to_year": None,
-                },
+                selected_filters=_empty_selected_filters(),
                 facets=EMPTY_FACETS,
                 dossiers=[],
                 legislation_error=str(exc),
@@ -205,7 +211,7 @@ def create_app(
             ), 404
         return render_template(
             "dossier.html",
-            dossier=dossier.as_dict(),
+            dossier=enrich_dossier_payload(dossier),
             error=None,
             legislation_warnings=_legislation_warnings(civic_service),
             research_sources=[source.as_dict() for source in live_sources],
@@ -277,7 +283,9 @@ def create_app(
                 "facets": browse.facets.as_dict(),
                 "sources": list(LEGISLATION_SOURCE_PAGES),
                 "warnings": _legislation_warnings(civic_service),
-                "results": [item.as_dict(include_events=False) for item in browse.results],
+                "results": [
+                    enrich_dossier_payload(item, include_events=False) for item in browse.results
+                ],
             }
         )
 
@@ -289,7 +297,7 @@ def create_app(
             return jsonify({"error": "legislation_unavailable", "message": str(exc)}), 503
         if dossier is None:
             return jsonify({"error": "not_found"}), 404
-        payload = dossier.as_dict()
+        payload = enrich_dossier_payload(dossier)
         payload["warnings"] = _legislation_warnings(civic_service)
         return jsonify(payload)
 
