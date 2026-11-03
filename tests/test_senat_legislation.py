@@ -3,12 +3,7 @@
 
 from pathlib import Path
 
-from acfpf.data.senat_legislation import (
-    SenateLegislativeDossier,
-    fetch_senate_csv,
-    load_senate_dossiers,
-    parse_senate_csv,
-)
+import acfpf.data.senat_legislation as senat
 
 
 HEADER = (
@@ -29,7 +24,7 @@ def test_parse_senate_csv_reads_latin1_semicolon_export() -> None:
         '"Questions sociales et santé|Société"'
     )
 
-    dossiers = parse_senate_csv(blob, retrieved_at="2026-11-03T10:00:00+00:00")
+    dossiers = senat.parse_senate_csv(blob, retrieved_at="2026-11-03T10:00:00+00:00")
 
     assert len(dossiers) == 1
     dossier = dossiers[0]
@@ -48,7 +43,7 @@ def test_parse_senate_csv_reads_promulgation_metadata() -> None:
         '15/07/2026;07/08/2026;2026-777;Sports'
     )
 
-    dossier = parse_senate_csv(blob)[0]
+    dossier = senat.parse_senate_csv(blob)[0]
 
     assert dossier.promulgation_date == "2026-08-07"
     assert dossier.law_number == "2026-777"
@@ -83,7 +78,7 @@ def test_fetch_senate_csv_uses_official_https_endpoint() -> None:
     )
     session = FakeSession(content)
 
-    assert fetch_senate_csv(session=session, timeout=4.0) == content
+    assert senat.fetch_senate_csv(session=session, timeout=4.0) == content
     assert session.last_url == "https://data.senat.fr/data/dosleg/dossiers-legislatifs.csv"
     assert session.last_timeout == 4.0
 
@@ -96,7 +91,7 @@ def test_load_senate_dossiers_uses_fresh_cache(tmp_path: Path) -> None:
     cache = tmp_path / "senat.csv"
     cache.write_bytes(content)
 
-    dossiers = load_senate_dossiers(cache_path=cache)
+    dossiers = senat.load_senate_dossiers(cache_path=cache)
 
-    assert isinstance(dossiers[0], SenateLegislativeDossier)
+    assert isinstance(dossiers[0], senat.SenateLegislativeDossier)
     assert dossiers[0].from_cache is True
