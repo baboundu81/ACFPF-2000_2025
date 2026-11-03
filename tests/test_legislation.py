@@ -16,7 +16,6 @@ from acfpf.data.senat_legislation import (
 )
 from acfpf.legislation import LegislationService
 
-
 SENATE_HEADER = (
     "Titre;Type de dossier;Date initiale;URL du dossier;État du dossier;"
     "Décision du Conseil constitutionnel;Date de la décision du Conseil constitutionnel;"
