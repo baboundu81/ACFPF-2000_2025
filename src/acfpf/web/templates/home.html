@@ -36,13 +36,29 @@
         <label for="legislation-query">Que voulez-vous retrouver ?</label>
         <div class="legislation-search__row">
           <input id="legislation-query" name="q" type="search" value="{{ query }}"
-            placeholder="Ex. Quels textes sont en cours sur le logement ?" autocomplete="off">
+            placeholder="Ex. J'ai entendu parler d'un texte sur les jours de carence…" autocomplete="off">
           <button type="submit">Rechercher</button>
         </div>
+        {% if planner_available %}
+          <label class="search-assist-control" for="search-assist-mode">
+            <span>Mode de recherche</span>
+            <select id="search-assist-mode" name="assist">
+              <option value="1" {% if assist_enabled %}selected{% endif %}>Interpréter ma formulation</option>
+              <option value="0" {% if not assist_enabled %}selected{% endif %}>Recherche stricte</option>
+            </select>
+          </label>
+          <p class="filter-note">
+            L'interprétation assistée ne choisit jamais les textes : elle transforme seulement vos mots en critères,
+            puis ACFPF interroge les inventaires officiels.
+          </p>
+        {% else %}
+          <input type="hidden" name="assist" value="0">
+          <p class="filter-note">Recherche déterministe : l'interprétation assistée n'est pas configurée.</p>
+        {% endif %}
         <div class="search-examples" aria-label="Exemples de recherches">
-          <a href="/?q=Quels+sont+les+textes+en+cours+de+vote+%3F">Textes en cours</a>
-          <a href="/?q=Quels+textes+concernent+la+sant%C3%A9+%3F">Santé</a>
-          <a href="/?q=Quels+textes+ont+%C3%A9t%C3%A9+adopt%C3%A9s+r%C3%A9cemment+%3F">Adoptés récemment</a>
+          <a href="{{ url_for('home', q='Quels sont les textes en cours de vote ?', assist='1' if planner_available else '0') }}">Textes en cours</a>
+          <a href="{{ url_for('home', q='Quels textes concernent la santé ?', assist='1' if planner_available else '0') }}">Santé</a>
+          <a href="{{ url_for('home', q='Quels textes ont été adoptés récemment ?', assist='1' if planner_available else '0') }}">Adoptés récemment</a>
         </div>
       </form>
     </section>
@@ -63,12 +79,31 @@
         </div>
       {% endif %}
 
+      {% if search_interpretation and search_interpretation.planner_used %}
+        <div class="source-warning search-interpretation" role="status">
+          <strong>Recherche interprétée.</strong>
+          <span>
+            ACFPF a traduit votre formulation en critères puis interrogé uniquement l'inventaire officiel.
+            {% if search_interpretation.effective_query %}
+              Termes retenus : « {{ search_interpretation.effective_query }} ».
+            {% else %}
+              Aucun mot-clé libre n'a été nécessaire ; seuls les filtres structurés sont utilisés.
+            {% endif %}
+          </span>
+        </div>
+      {% elif search_interpretation and search_interpretation.planner_warning %}
+        <div class="source-warning" role="status">
+          <strong>Interprétation assistée indisponible.</strong>
+          <span>{{ search_interpretation.planner_warning }}</span>
+        </div>
+      {% endif %}
+
       <nav class="status-filters" aria-label="Filtrer les dossiers par statut">
-        <a href="{{ url_for('home', q=query or None, status='active', chamber=selected_filters.chamber, stage=selected_filters.stage, theme=selected_filters.theme, text_type=selected_filters.text_type, from_year=selected_filters.from_year, to_year=selected_filters.to_year) }}"
+        <a href="{{ url_for('home', q=query or None, status='active', assist='1' if assist_enabled else '0', chamber=selected_filters.chamber, stage=selected_filters.stage, theme=selected_filters.theme, text_type=selected_filters.text_type, from_year=selected_filters.from_year, to_year=selected_filters.to_year) }}"
            class="status-filter {% if selected_status == 'active' %}is-active{% endif %}">En cours</a>
-        <a href="{{ url_for('home', q=query or None, status='adopted_or_promulgated', chamber=selected_filters.chamber, stage=selected_filters.stage, theme=selected_filters.theme, text_type=selected_filters.text_type, from_year=selected_filters.from_year, to_year=selected_filters.to_year) }}"
+        <a href="{{ url_for('home', q=query or None, status='adopted_or_promulgated', assist='1' if assist_enabled else '0', chamber=selected_filters.chamber, stage=selected_filters.stage, theme=selected_filters.theme, text_type=selected_filters.text_type, from_year=selected_filters.from_year, to_year=selected_filters.to_year) }}"
            class="status-filter {% if selected_status == 'adopted_or_promulgated' %}is-active{% endif %}">Adoptés / promulgués</a>
-        <a href="{{ url_for('home', q=query or None, status='all', chamber=selected_filters.chamber, stage=selected_filters.stage, theme=selected_filters.theme, text_type=selected_filters.text_type, from_year=selected_filters.from_year, to_year=selected_filters.to_year) }}"
+        <a href="{{ url_for('home', q=query or None, status='all', assist='1' if assist_enabled else '0', chamber=selected_filters.chamber, stage=selected_filters.stage, theme=selected_filters.theme, text_type=selected_filters.text_type, from_year=selected_filters.from_year, to_year=selected_filters.to_year) }}"
            class="status-filter {% if selected_status == 'all' %}is-active{% endif %}">Tous</a>
       </nav>
 
@@ -76,6 +111,7 @@
         <form class="legislation-filters" method="get" action="/" aria-label="Filtres avancés">
           {% if query %}<input type="hidden" name="q" value="{{ query }}">{% endif %}
           <input type="hidden" name="status" value="{{ selected_status }}">
+          <input type="hidden" name="assist" value="{{ '1' if assist_enabled else '0' }}">
 
           <label>
             <span>Chambre courante</span>
@@ -131,7 +167,7 @@
 
           <div class="legislation-filters__actions">
             <button type="submit">Appliquer</button>
-            <a href="{{ url_for('home', q=query or None, status=selected_status) }}">Effacer les filtres</a>
+            <a href="{{ url_for('home', q=query or None, status=selected_status, assist='1' if assist_enabled else '0') }}">Effacer les filtres</a>
           </div>
         </form>
         <p class="filter-note">
@@ -195,7 +231,12 @@
         <p class="eyebrow">Méthode</p>
         <h2>Le modèle explique ; les sources établissent les faits.</h2>
         <p class="lede">La liste des textes vient des données officielles de l'Assemblée nationale et du Sénat. L'IA n'est pas chargée d'inventer quels dossiers existent.</p>
-        <p>Les dossiers dont les titres correspondent exactement après normalisation sont regroupés, mais chaque URL officielle reste conservée. Après sélection, la recherche assistée doit toujours ouvrir les textes officiels avant d'affirmer ce qu'une mesure prévoit.</p>
+        <p>
+          Lorsque l'interprétation assistée est activée, le modèle transforme seulement la formulation citoyenne en
+          critères de recherche autorisés. Les dossiers candidats sont ensuite sélectionnés exclusivement dans
+          l'inventaire officiel. Après sélection, la recherche assistée doit toujours ouvrir les textes officiels avant
+          d'affirmer ce qu'une mesure prévoit.
+        </p>
       </div>
       <aside class="editorial-note">
         <p class="editorial-note__title">Sources de découverte</p>
