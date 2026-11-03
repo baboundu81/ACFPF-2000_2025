@@ -7,7 +7,8 @@ import json
 
 from flask import Flask, Response, jsonify, render_template, request, stream_with_context
 
-from acfpf.ai import AnswerService, build_default_answer_service
+from acfpf.ai import AnswerService
+from acfpf.ai.civic import build_default_civic_answer_service
 from acfpf.ai.provider import AIError
 from acfpf.cofog import CofogService
 from acfpf.data.assemblee_legislation import ASSEMBLY_SOURCE_PAGE
@@ -62,7 +63,7 @@ def create_app(
     macro_service = service or MacroService()
     functional_service = cofog_service or CofogService()
     civic_service = legislation_service or LegislationService()
-    ai_service = answer_service or build_default_answer_service(
+    ai_service = answer_service or build_default_civic_answer_service(
         macro_service,
         functional_service,
     )
