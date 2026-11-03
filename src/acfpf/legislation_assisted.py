@@ -128,7 +128,7 @@ def assisted_browse_legislation(
                 refresh=refresh,
             )
             planned = planner.plan(original_query, inventory.facets)
-            effective_query = planned.query or original_query
+            effective_query = planned.query
             effective_filters = _merge_filters(explicit, planned)
             if status is None and planned.status is not None:
                 effective_status_arg = planned.status
