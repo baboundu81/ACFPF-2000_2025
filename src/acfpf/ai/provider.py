@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Protocol
+from typing import Any, Protocol
 
 
 class AIError(RuntimeError):
@@ -27,6 +27,8 @@ class AIGroundingError(AIError):
 class ProviderRequest:
     system_prompt: str
     user_prompt: str
+    response_schema: dict[str, Any] | None = None
+    response_schema_name: str | None = None
 
 
 class LLMProvider(Protocol):
