@@ -7,7 +7,7 @@ import zipfile
 from pathlib import Path
 
 from acfpf.data.assemblee_legislation import parse_assembly_archive
-from acfpf.legislation import LegislationService, parse_legislative_search
+from acfpf.legislation import LegislationService
 
 
 def _payload(uid: str, title: str, *, final: bool = False):
