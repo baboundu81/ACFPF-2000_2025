@@ -44,9 +44,9 @@ La couverture initiale limitée à l'Assemblée nationale a été levée lors de
 
 - [x] Ajouter un connecteur structuré Sénat à partir de l'export officiel DOSLEG.
 - [x] Dédupliquer les dossiers communs Assemblée/Sénat avec conservation des identifiants et URL de chaque chambre.
-- [~] Formaliser les états : le modèle distingue désormais en cours, adopté, promulgué et clôturé sans loi, ainsi que la chambre/étape courante lorsqu'elle est fournie ; la taxonomie fine dépôt/commission/séance/navette/CMP reste à enrichir.
+- [x] Normaliser une taxonomie d'étapes stable : dépôt, commission, séance/lecture, navette, CMP, Congrès, contrôle constitutionnel, adopté, promulgué, clos et inconnu.
 - [x] Ajouter les filtres chambre, période, type de texte et thème à partir de facettes calculées sur l'inventaire officiel chargé.
-- [ ] Ajouter un filtre d'étape précis après normalisation de la taxonomie dépôt/commission/séance/navette/CMP.
+- [x] Ajouter un filtre d'étape précis fondé sur la taxonomie normalisée.
 - [ ] Ajouter une recherche assistée pour les formulations approximatives sans laisser le LLM inventer les candidats.
 - [x] Conserver un comportement dégradé explicite si une seule source parlementaire est momentanément indisponible.
 - [ ] Documenter les règles de classement et de tri pour éviter toute notion opaque de « texte important ».
@@ -59,7 +59,25 @@ Pour les statuts terminaux, une information explicite de promulgation, adoption 
 
 ### Règles de facettes et de période
 
-Les facettes de chambre, thème, type et période sont calculées sur l'inventaire effectivement chargé avant application des filtres. Elles ne sont pas générées par le LLM. La période correspond à l'année de dépôt ou de début du dossier ; si cette date n'est pas fournie par la source, ACFPF utilise l'année de dernière activité comme repli explicite.
+Les facettes de chambre, étape, thème, type et période sont calculées sur l'inventaire effectivement chargé avant application des filtres. Elles ne sont pas générées par le LLM. La période correspond à l'année de dépôt ou de début du dossier ; si cette date n'est pas fournie par la source, ACFPF utilise l'année de dernière activité comme repli explicite.
+
+### Taxonomie des étapes
+
+Le champ `current_stage` conserve le libellé brut fourni par la source. ACFPF ajoute à côté un couple dérivé `stage` / `stage_label` afin de permettre des comparaisons et filtres cohérents entre les chambres. Cette classification est mécanique et conservatrice : lorsqu'un libellé ne permet pas d'établir une étape sans ambiguïté, `stage=unknown` et le libellé utilisateur devient « Étape à vérifier ». Une classification ACFPF ne remplace donc jamais la provenance ou le libellé officiel.
+
+Les codes normalisés sont :
+
+- `deposit` — dépôt ;
+- `committee` — commission ;
+- `plenary` — séance ou lecture ;
+- `shuttle` — navette parlementaire ;
+- `cmp` — commission mixte paritaire ;
+- `congress` — Congrès du Parlement ;
+- `constitutional_review` — contrôle constitutionnel ;
+- `adopted` — adopté ;
+- `promulgated` — promulgué ;
+- `closed` — clos sans promulgation ;
+- `unknown` — étape non déterminable sans ambiguïté.
 
 ## Phase 3 — dossier législatif riche
 
