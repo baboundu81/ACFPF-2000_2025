@@ -20,6 +20,7 @@ from acfpf.legislation import (
     LegislativeDossier,
     parse_legislative_search,
 )
+from acfpf.legislation_browse import browse_legislation
 from acfpf.macro import MacroService
 from acfpf.source_registry import load_sources
 
@@ -30,6 +31,13 @@ LEGISLATION_SOURCE_PAGES = (
     {"name": "Assemblée nationale", "url": ASSEMBLY_SOURCE_PAGE},
     {"name": "Sénat", "url": SENATE_SOURCE_PAGE},
 )
+EMPTY_FACETS = {
+    "chambers": [],
+    "themes": [],
+    "text_types": [],
+    "min_year": None,
+    "max_year": None,
+}
 
 
 def _legislative_question(
@@ -67,6 +75,28 @@ def _legislation_warnings(service: object) -> list[str]:
     return []
 
 
+def _optional_year(value: str | None, label: str) -> int | None:
+    if value is None or not value.strip():
+        return None
+    try:
+        year = int(value)
+    except ValueError as exc:
+        raise ValueError(f"{label} doit être une année entière.") from exc
+    if year < 1900 or year > 2100:
+        raise ValueError(f"{label} doit être comprise entre 1900 et 2100.")
+    return year
+
+
+def _browse_filters_from_request() -> dict[str, str | int | None]:
+    return {
+        "chamber": request.args.get("chamber", "").strip() or None,
+        "theme": request.args.get("theme", "").strip() or None,
+        "text_type": request.args.get("text_type", "").strip() or None,
+        "from_year": _optional_year(request.args.get("from_year"), "L'année de début"),
+        "to_year": _optional_year(request.args.get("to_year"), "L'année de fin"),
+    }
+
+
 def create_app(
     service: MacroService | None = None,
     answer_service: AnswerService | None = None,
@@ -91,22 +121,59 @@ def create_app(
         effective_status = parse_legislative_search(query, status=status).status
         refresh = request.args.get("refresh") == "1"
         try:
-            dossiers = civic_service.search(query, status=status, refresh=refresh, limit=30)
+            selected_filters = _browse_filters_from_request()
+            browse = browse_legislation(
+                civic_service,
+                query,
+                status=status,
+                refresh=refresh,
+                limit=30,
+                **selected_filters,
+            )
             return render_template(
                 "home.html",
                 query=query,
                 selected_status=effective_status,
-                dossiers=[item.as_dict(include_events=False) for item in dossiers],
+                selected_filters=selected_filters,
+                facets=browse.facets.as_dict(),
+                dossiers=[item.as_dict(include_events=False) for item in browse.results],
                 legislation_error=None,
                 legislation_warnings=_legislation_warnings(civic_service),
                 legislation_sources=LEGISLATION_SOURCE_PAGES,
                 legislation_source=ASSEMBLY_SOURCE_PAGE,
             )
+        except ValueError as exc:
+            return render_template(
+                "home.html",
+                query=query,
+                selected_status=effective_status,
+                selected_filters={
+                    "chamber": None,
+                    "theme": None,
+                    "text_type": None,
+                    "from_year": None,
+                    "to_year": None,
+                },
+                facets=EMPTY_FACETS,
+                dossiers=[],
+                legislation_error=str(exc),
+                legislation_warnings=_legislation_warnings(civic_service),
+                legislation_sources=LEGISLATION_SOURCE_PAGES,
+                legislation_source=ASSEMBLY_SOURCE_PAGE,
+            ), 400
         except LegislationError as exc:
             return render_template(
                 "home.html",
                 query=query,
                 selected_status=effective_status,
+                selected_filters={
+                    "chamber": None,
+                    "theme": None,
+                    "text_type": None,
+                    "from_year": None,
+                    "to_year": None,
+                },
+                facets=EMPTY_FACETS,
                 dossiers=[],
                 legislation_error=str(exc),
                 legislation_warnings=_legislation_warnings(civic_service),
@@ -189,19 +256,28 @@ def create_app(
         refresh = request.args.get("refresh") == "1"
         try:
             limit = max(1, min(int(request.args.get("limit", "30")), 100))
-        except ValueError:
-            return jsonify({"error": "invalid_limit"}), 400
-        try:
-            dossiers = civic_service.search(query, status=status, refresh=refresh, limit=limit)
+            selected_filters = _browse_filters_from_request()
+            browse = browse_legislation(
+                civic_service,
+                query,
+                status=status,
+                refresh=refresh,
+                limit=limit,
+                **selected_filters,
+            )
+        except ValueError as exc:
+            return jsonify({"error": "invalid_filter", "message": str(exc)}), 400
         except LegislationError as exc:
             return jsonify({"error": "legislation_unavailable", "message": str(exc)}), 503
         return jsonify(
             {
                 "query": query,
                 "status": effective_status,
+                "filters": selected_filters,
+                "facets": browse.facets.as_dict(),
                 "sources": list(LEGISLATION_SOURCE_PAGES),
                 "warnings": _legislation_warnings(civic_service),
-                "results": [item.as_dict(include_events=False) for item in dossiers],
+                "results": [item.as_dict(include_events=False) for item in browse.results],
             }
         )
 
