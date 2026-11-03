@@ -6,6 +6,7 @@ from __future__ import annotations
 import re
 import unicodedata
 from dataclasses import dataclass
+from typing import Any
 
 
 STAGE_LABELS = {
@@ -108,3 +109,43 @@ def classify_senate_stage(
     if "depot" in text:
         return stage("deposit")
     return stage("unknown")
+
+
+def classify_dossier_stage(dossier: Any) -> LegislativeStage:
+    """Derive a stable current stage while preserving the raw source label on the dossier."""
+    status = getattr(dossier, "status", "")
+    current_stage = getattr(dossier, "current_stage", None)
+
+    if status == "promulgated":
+        return stage("promulgated")
+    if status == "adopted":
+        return stage("adopted")
+    if status == "closed_without_law":
+        candidate = classify_senate_stage(current_stage)
+        if candidate.code == "constitutional_review":
+            return candidate
+        return stage("closed")
+
+    assembly = classify_assembly_stage(current_stage)
+    senate = classify_senate_stage(current_stage)
+    if assembly.code == senate.code:
+        return assembly
+    if assembly.code != "unknown" and senate.code == "unknown":
+        return assembly
+    if senate.code != "unknown" and assembly.code == "unknown":
+        return senate
+    return stage("unknown")
+
+
+def enrich_dossier_payload(dossier: Any, *, include_events: bool = True) -> dict[str, Any]:
+    """Serialize a dossier with derived stage metadata without mutating source data."""
+    payload = dossier.as_dict(include_events=include_events)
+    current = classify_dossier_stage(dossier)
+    payload["stage"] = current.code
+    payload["stage_label"] = current.label
+    if include_events:
+        for event_payload, event in zip(payload.get("events", []), dossier.events, strict=True):
+            event_stage = classify_assembly_stage(event.label, event.code)
+            event_payload["stage"] = event_stage.code
+            event_payload["stage_label"] = event_stage.label
+    return payload
