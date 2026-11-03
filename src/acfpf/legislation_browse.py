@@ -114,9 +114,7 @@ def _matches_year(
         return False
     if from_year is not None and year < from_year:
         return False
-    if to_year is not None and year > to_year:
-        return False
-    return True
+    return not (to_year is not None and year > to_year)
 
 
 def browse_legislation(
