@@ -70,20 +70,89 @@
       {% endif %}
 
       <nav class="status-filters" aria-label="Filtrer les dossiers par statut">
-        <a href="/?{% if query %}q={{ query|urlencode }}&{% endif %}status=active"
+        <a href="{{ url_for('home', q=query or None, status='active', chamber=selected_filters.chamber, theme=selected_filters.theme, text_type=selected_filters.text_type, from_year=selected_filters.from_year, to_year=selected_filters.to_year) }}"
            class="status-filter {% if selected_status == 'active' %}is-active{% endif %}">En cours</a>
-        <a href="/?{% if query %}q={{ query|urlencode }}&{% endif %}status=adopted_or_promulgated"
+        <a href="{{ url_for('home', q=query or None, status='adopted_or_promulgated', chamber=selected_filters.chamber, theme=selected_filters.theme, text_type=selected_filters.text_type, from_year=selected_filters.from_year, to_year=selected_filters.to_year) }}"
            class="status-filter {% if selected_status == 'adopted_or_promulgated' %}is-active{% endif %}">Adoptés / promulgués</a>
-        <a href="/?{% if query %}q={{ query|urlencode }}&{% endif %}status=all"
+        <a href="{{ url_for('home', q=query or None, status='all', chamber=selected_filters.chamber, theme=selected_filters.theme, text_type=selected_filters.text_type, from_year=selected_filters.from_year, to_year=selected_filters.to_year) }}"
            class="status-filter {% if selected_status == 'all' %}is-active{% endif %}">Tous</a>
       </nav>
 
+      {% if not legislation_error %}
+        <form class="legislation-filters" method="get" action="/" aria-label="Filtres avancés">
+          {% if query %}<input type="hidden" name="q" value="{{ query }}">{% endif %}
+          <input type="hidden" name="status" value="{{ selected_status }}">
+
+          <label>
+            <span>Chambre / étape</span>
+            <select name="chamber">
+              <option value="">Toutes</option>
+              {% for item in facets.chambers %}
+                <option value="{{ item }}" {% if selected_filters.chamber == item %}selected{% endif %}>{{ item }}</option>
+              {% endfor %}
+            </select>
+          </label>
+
+          <label>
+            <span>Thème</span>
+            <select name="theme">
+              <option value="">Tous</option>
+              {% for item in facets.themes %}
+                <option value="{{ item }}" {% if selected_filters.theme == item %}selected{% endif %}>{{ item }}</option>
+              {% endfor %}
+            </select>
+          </label>
+
+          <label>
+            <span>Type de texte</span>
+            <select name="text_type">
+              <option value="">Tous</option>
+              {% for item in facets.text_types %}
+                <option value="{{ item }}" {% if selected_filters.text_type == item %}selected{% endif %}>{{ item }}</option>
+              {% endfor %}
+            </select>
+          </label>
+
+          <label>
+            <span>Déposé à partir de</span>
+            <input
+              type="number"
+              name="from_year"
+              min="{{ facets.min_year or 1900 }}"
+              max="{{ facets.max_year or 2100 }}"
+              value="{{ selected_filters.from_year or '' }}"
+              inputmode="numeric"
+            >
+          </label>
+
+          <label>
+            <span>Déposé jusqu'à</span>
+            <input
+              type="number"
+              name="to_year"
+              min="{{ facets.min_year or 1900 }}"
+              max="{{ facets.max_year or 2100 }}"
+              value="{{ selected_filters.to_year or '' }}"
+              inputmode="numeric"
+            >
+          </label>
+
+          <div class="legislation-filters__actions">
+            <button type="submit">Appliquer</button>
+            <a href="{{ url_for('home', q=query or None, status=selected_status) }}">Effacer les filtres</a>
+          </div>
+        </form>
+        <p class="filter-note">
+          La période porte sur l'année de dépôt ou de début du dossier. Si cette date manque dans la source, ACFPF utilise l'année de dernière activité.
+        </p>
+      {% endif %}
+
       {% if legislation_error %}
         <div class="error-panel" role="alert">
-          <p class="eyebrow">Sources indisponibles</p>
-          <h2>Impossible de charger les dossiers législatifs.</h2>
+          <p class="eyebrow">Recherche indisponible</p>
+          <h2>Impossible d'afficher les dossiers législatifs.</h2>
           <p>{{ legislation_error }}</p>
-          <p>ACFPF n'invente aucun résultat de remplacement lorsque les sources officielles sont indisponibles.</p>
+          <p>ACFPF n'invente aucun résultat de remplacement lorsque les données ou les filtres sont invalides.</p>
         </div>
       {% elif dossiers %}
         <div class="dossier-list">
@@ -93,6 +162,7 @@
                 <span class="status-badge" data-status="{{ dossier.status }}">{{ dossier.status_label }}</span>
                 {% if dossier.current_chamber %}<span>Étape : {{ dossier.current_chamber }}</span>{% endif %}
                 {% if dossier.procedure_label %}<span>{{ dossier.procedure_label }}</span>{% endif %}
+                {% if dossier.initial_date %}<span>Dépôt : {{ dossier.initial_date }}</span>{% endif %}
                 {% if dossier.last_activity %}<span>Activité : {{ dossier.last_activity }}</span>{% endif %}
               </div>
               <h3><a href="/textes/{{ dossier.id }}">{{ dossier.title }}</a></h3>
@@ -109,7 +179,7 @@
       {% else %}
         <div class="empty-state">
           <h3>Aucun dossier correspondant.</h3>
-          <p>Essayez un sujet plus large ou affichez tous les textes. ACFPF ne complète pas artificiellement les résultats.</p>
+          <p>Essayez un sujet plus large, retirez un filtre ou affichez tous les textes. ACFPF ne complète pas artificiellement les résultats.</p>
         </div>
       {% endif %}
     </section>
