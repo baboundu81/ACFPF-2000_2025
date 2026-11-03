@@ -3,7 +3,7 @@
 
 from pathlib import Path
 
-import acfpf.data.senat_legislation as senat
+from acfpf.data import senat_legislation as senat
 
 
 HEADER = (
