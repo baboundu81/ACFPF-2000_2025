@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>ACFPF — Tableau de bord</title>
+  <title>ACFPF — Finances publiques</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/tokens.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/ai.css') }}">
@@ -15,10 +15,11 @@
     <div class="shell masthead__inner">
       <div>
         <a class="brand" href="/">ACFPF</a>
-        <p class="brand__subtitle">Analyse citoyenne des finances publiques françaises</p>
+        <p class="brand__subtitle">Analyse citoyenne de l'action publique française</p>
       </div>
       <nav class="primary-nav" aria-label="Navigation principale">
-        <a class="primary-nav__link is-active" href="/" aria-current="page">Vue d'ensemble</a>
+        <a class="primary-nav__link" href="/">Textes & décisions</a>
+        <a class="primary-nav__link is-active" href="/finances" aria-current="page">Finances publiques</a>
         {% if cofog %}<a class="primary-nav__link" href="#functions">Fonctions</a>{% endif %}
         {% if dashboard %}<a class="primary-nav__link" href="#ask">Enquêter</a>{% endif %}
         <a class="primary-nav__link" href="#sources">Sources</a>
@@ -28,7 +29,7 @@
 
   <main>
     <section class="hero shell">
-      <p class="eyebrow">France · Administrations publiques · 2000–2025</p>
+      <p class="eyebrow">Sous-outil finances · France · Administrations publiques · 2000–2025</p>
       <h1>Vingt-cinq ans de finances publiques, remis en perspective.</h1>
       <p class="hero__deck">
         Une lecture reproductible des grands agrégats, de la répartition fonctionnelle des dépenses
@@ -53,7 +54,7 @@
         <span>Jeux {{ dashboard.dataset_code }}</span>
         <span>Dernière mise à jour source : {{ dashboard.updated_at or 'non renseignée' }}</span>
         <span>{% if dashboard.from_cache %}Cache local{% else %}Source actualisée{% endif %}</span>
-        <a href="/?refresh=1">Actualiser</a>
+        <a href="/finances?refresh=1">Actualiser</a>
       </section>
 
       <section class="shell metrics" aria-label="Indicateurs clés">
@@ -90,7 +91,7 @@
         <div class="section-heading">
           <div>
             <p class="eyebrow">Enquête assistée</p>
-            <h2>Posez une question, ACFPF va vérifier.</h2>
+            <h2>Posez une question financière, ACFPF va vérifier.</h2>
           </div>
           <p class="section-heading__note">Recherche live · sources officielles uniquement</p>
         </div>
@@ -133,7 +134,7 @@
             <p><strong>IA non configurée.</strong> Le tableau de bord reste entièrement utilisable sans IA.</p>
             <p>
               Configurez un provider et une clé côté serveur, par exemple :
-              <code>export ACFPF_LLM_PROVIDER="groq"</code> puis
+              <code>export ACFPF_LLM_PROVIDER="gemini"</code> puis
               <code>export ACFPF_LLM_API_KEY="votre_clé"</code>, et relancez <code>acfpf</code>.
             </p>
           </div>
@@ -286,8 +287,8 @@
   </main>
 
   <footer class="footer shell">
-    <span>ACFPF · Analyse reproductible</span>
-    <span><a href="/api/macro">Macro</a> · <a href="/api/cofog">COFOG</a> · <a href="/api/evidence">Sources</a></span>
+    <span>ACFPF · Sous-outil finances publiques</span>
+    <span><a href="/">Textes</a> · <a href="/api/macro">Macro</a> · <a href="/api/cofog">COFOG</a> · <a href="/api/evidence">Sources</a></span>
   </footer>
 </body>
 </html>
