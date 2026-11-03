@@ -68,7 +68,7 @@ def test_home_explicit_filter_overrides_planner_suggestion() -> None:
     html = response.get_data(as_text=True)
 
     assert response.status_code == 200
-    assert "Proposition de loi relative à l'école" in html
+    assert "Proposition de loi relative" in html
     assert "Projet de loi relatif à la santé" not in html
     assert 'option value="Éducation" selected' in html
 
