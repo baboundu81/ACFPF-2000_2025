@@ -10,19 +10,58 @@ from flask import Flask, Response, jsonify, render_template, request, stream_wit
 from acfpf.ai import AnswerService, build_default_answer_service
 from acfpf.ai.provider import AIError
 from acfpf.cofog import CofogService
+from acfpf.data.assemblee_legislation import ASSEMBLY_SOURCE_PAGE
 from acfpf.data.eurostat import EurostatError, get_source_catalog
+from acfpf.legislation import (
+    LegislationError,
+    LegislationService,
+    LegislativeDossier,
+    parse_legislative_search,
+)
 from acfpf.macro import MacroService
 from acfpf.source_registry import load_sources
+
+MAX_SCOPED_QUESTION_CHARS = 600
+MAX_HISTORY_ITEMS = 2
+MAX_HISTORY_ITEM_CHARS = 220
+
+
+def _legislative_question(
+    dossier: LegislativeDossier, question: str, history: list[dict[str, str]] | None = None
+) -> str:
+    """Add trusted dossier orientation while keeping official documents as the only evidence."""
+    history_text = ""
+    if history:
+        compact = []
+        for item in history[-MAX_HISTORY_ITEMS:]:
+            role = "Utilisateur" if item.get("role") == "user" else "ACFPF"
+            content = item.get("content", "")[:MAX_HISTORY_ITEM_CHARS]
+            if content:
+                compact.append(f"{role}: {content}")
+        if compact:
+            history_text = " Échanges récents: " + " | ".join(compact) + "."
+
+    return (
+        "Contexte de dossier législatif fourni par le backend ACFPF. "
+        "Ce contexte sert uniquement à orienter la recherche et ne constitue pas une preuve. "
+        f"Dossier: {dossier.title}. Identifiant: {dossier.id}. "
+        f"URL officielle: {dossier.official_url}. "
+        f"Statut indicatif: {dossier.status_label}."
+        f"{history_text} "
+        f"Question actuelle de l'utilisateur: {question}"
+    )
 
 
 def create_app(
     service: MacroService | None = None,
     answer_service: AnswerService | None = None,
     cofog_service: CofogService | None = None,
+    legislation_service: LegislationService | None = None,
 ) -> Flask:
     app = Flask(__name__)
     macro_service = service or MacroService()
     functional_service = cofog_service or CofogService()
+    civic_service = legislation_service or LegislationService()
     ai_service = answer_service or build_default_answer_service(
         macro_service,
         functional_service,
@@ -31,6 +70,60 @@ def create_app(
     live_sources = [source for source in registered_sources if source.live_research]
 
     @app.get("/")
+    def home():
+        query = request.args.get("q", "").strip()
+        status = request.args.get("status") or None
+        effective_status = parse_legislative_search(query, status=status).status
+        refresh = request.args.get("refresh") == "1"
+        try:
+            dossiers = civic_service.search(query, status=status, refresh=refresh, limit=30)
+            return render_template(
+                "home.html",
+                query=query,
+                selected_status=effective_status,
+                dossiers=[item.as_dict(include_events=False) for item in dossiers],
+                legislation_error=None,
+                legislation_source=ASSEMBLY_SOURCE_PAGE,
+            )
+        except LegislationError as exc:
+            return render_template(
+                "home.html",
+                query=query,
+                selected_status=effective_status,
+                dossiers=[],
+                legislation_error=str(exc),
+                legislation_source=ASSEMBLY_SOURCE_PAGE,
+            ), 503
+
+    @app.get("/textes/<dossier_id>")
+    def legislative_dossier(dossier_id: str):
+        try:
+            dossier = civic_service.get(dossier_id)
+        except LegislationError as exc:
+            return render_template(
+                "dossier.html",
+                dossier=None,
+                error=str(exc),
+                research_sources=[source.as_dict() for source in live_sources],
+                ai_enabled=ai_service is not None,
+            ), 503
+        if dossier is None:
+            return render_template(
+                "dossier.html",
+                dossier=None,
+                error="Dossier législatif introuvable.",
+                research_sources=[source.as_dict() for source in live_sources],
+                ai_enabled=ai_service is not None,
+            ), 404
+        return render_template(
+            "dossier.html",
+            dossier=dossier.as_dict(),
+            error=None,
+            research_sources=[source.as_dict() for source in live_sources],
+            ai_enabled=ai_service is not None,
+        )
+
+    @app.get("/finances")
     def dashboard():
         refresh = request.args.get("refresh") == "1"
         sources = get_source_catalog()
@@ -65,6 +158,39 @@ def create_app(
                 research_sources=[source.as_dict() for source in live_sources],
                 ai_enabled=ai_service is not None,
             ), 503
+
+    @app.get("/api/legislation")
+    def legislation_api():
+        query = request.args.get("q", "").strip()
+        status = request.args.get("status") or None
+        effective_status = parse_legislative_search(query, status=status).status
+        refresh = request.args.get("refresh") == "1"
+        try:
+            limit = max(1, min(int(request.args.get("limit", "30")), 100))
+        except ValueError:
+            return jsonify({"error": "invalid_limit"}), 400
+        try:
+            dossiers = civic_service.search(query, status=status, refresh=refresh, limit=limit)
+        except LegislationError as exc:
+            return jsonify({"error": "legislation_unavailable", "message": str(exc)}), 503
+        return jsonify(
+            {
+                "query": query,
+                "status": effective_status,
+                "source": ASSEMBLY_SOURCE_PAGE,
+                "results": [item.as_dict(include_events=False) for item in dossiers],
+            }
+        )
+
+    @app.get("/api/legislation/<dossier_id>")
+    def legislation_dossier_api(dossier_id: str):
+        try:
+            dossier = civic_service.get(dossier_id)
+        except LegislationError as exc:
+            return jsonify({"error": "legislation_unavailable", "message": str(exc)}), 503
+        if dossier is None:
+            return jsonify({"error": "not_found"}), 404
+        return jsonify(dossier.as_dict())
 
     @app.get("/api/macro")
     def macro_api():
@@ -102,7 +228,49 @@ def create_app(
         question = payload.get("question", "")
         if not isinstance(question, str):
             return None, ({"error": "invalid_question"}, 400)
-        return question, None
+        question = question.strip()
+        if not question:
+            return None, (
+                {"error": "invalid_question", "message": "La question ne peut pas être vide."},
+                400,
+            )
+
+        dossier_id = payload.get("dossier_id")
+        if dossier_id is None:
+            return question, None
+        if not isinstance(dossier_id, str) or not dossier_id.strip():
+            return None, ({"error": "invalid_dossier"}, 400)
+        if len(question) > MAX_SCOPED_QUESTION_CHARS:
+            return None, (
+                {
+                    "error": "invalid_question",
+                    "message": (
+                        "Une question liée à un dossier est limitée à "
+                        f"{MAX_SCOPED_QUESTION_CHARS} caractères."
+                    ),
+                },
+                400,
+            )
+        history_payload = payload.get("history", [])
+        if not isinstance(history_payload, list):
+            return None, ({"error": "invalid_history"}, 400)
+        history: list[dict[str, str]] = []
+        for item in history_payload[-MAX_HISTORY_ITEMS:]:
+            if not isinstance(item, dict):
+                return None, ({"error": "invalid_history"}, 400)
+            role = item.get("role")
+            content = item.get("content")
+            if role not in {"user", "assistant"} or not isinstance(content, str):
+                return None, ({"error": "invalid_history"}, 400)
+            history.append({"role": role, "content": content})
+
+        try:
+            dossier = civic_service.get(dossier_id.strip())
+        except LegislationError as exc:
+            return None, ({"error": "legislation_unavailable", "message": str(exc)}, 503)
+        if dossier is None:
+            return None, ({"error": "dossier_not_found"}, 404)
+        return _legislative_question(dossier, question, history), None
 
     @app.post("/api/ask")
     def ask_api():
@@ -175,6 +343,7 @@ def create_app(
             "status": "ok",
             "ai": "enabled" if ai_service is not None else "disabled",
             "research_mode": "live_official_sources",
+            "primary_experience": "civic_legislation",
         }
 
     return app
