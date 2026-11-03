@@ -45,14 +45,12 @@ class OpenAICompatibleProvider:
                 {"role": "system", "content": request.system_prompt},
                 {"role": "user", "content": request.user_prompt},
             ],
-            "response_format": self._response_format(),
+            "response_format": self._response_format(request),
             "tool_choice": "none",
             "temperature": 0.1,
             "max_tokens": 900,
         }
         if self.name == "gemini" and self.model.startswith("gemini-3"):
-            # The agent only chooses the next deterministic action. Low reasoning
-            # reduces latency/token use while preserving structured execution.
             payload["reasoning_effort"] = "low"
 
         headers = {
@@ -87,7 +85,7 @@ class OpenAICompatibleProvider:
         except (KeyError, IndexError, TypeError, ValueError) as exc:
             raise AIProviderError(f"{self.name} API returned an unexpected response") from exc
 
-    def _response_format(self) -> dict[str, Any]:
+    def _response_format(self, request: ProviderRequest) -> dict[str, Any]:
         structured = self.name == "gemini" or (
             self.name == "groq" and self.model.startswith("openai/gpt-oss-")
         )
@@ -95,8 +93,8 @@ class OpenAICompatibleProvider:
             return {
                 "type": "json_schema",
                 "json_schema": {
-                    "name": "acfpf_agent_action",
-                    "schema": AGENT_ACTION_SCHEMA,
+                    "name": request.response_schema_name or "acfpf_agent_action",
+                    "schema": request.response_schema or AGENT_ACTION_SCHEMA,
                 },
             }
         return {"type": "json_object"}
