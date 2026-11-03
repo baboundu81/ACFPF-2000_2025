@@ -45,7 +45,8 @@ La couverture initiale limitée à l'Assemblée nationale a été levée lors de
 - [x] Ajouter un connecteur structuré Sénat à partir de l'export officiel DOSLEG.
 - [x] Dédupliquer les dossiers communs Assemblée/Sénat avec conservation des identifiants et URL de chaque chambre.
 - [~] Formaliser les états : le modèle distingue désormais en cours, adopté, promulgué et clôturé sans loi, ainsi que la chambre/étape courante lorsqu'elle est fournie ; la taxonomie fine dépôt/commission/séance/navette/CMP reste à enrichir.
-- [ ] Ajouter les filtres chambre, étape, période, type de texte et thème.
+- [x] Ajouter les filtres chambre, période, type de texte et thème à partir de facettes calculées sur l'inventaire officiel chargé.
+- [ ] Ajouter un filtre d'étape précis après normalisation de la taxonomie dépôt/commission/séance/navette/CMP.
 - [ ] Ajouter une recherche assistée pour les formulations approximatives sans laisser le LLM inventer les candidats.
 - [x] Conserver un comportement dégradé explicite si une seule source parlementaire est momentanément indisponible.
 - [ ] Documenter les règles de classement et de tri pour éviter toute notion opaque de « texte important ».
@@ -55,6 +56,10 @@ La couverture initiale limitée à l'Assemblée nationale a été levée lors de
 ACFPF ne fait pas de rapprochement flou automatique entre dossiers. Deux entrées Assemblée/Sénat sont regroupées uniquement lorsque leur titre canonique correspond exactement après normalisation mécanique (casse, accents et préfixe « projet/proposition de loi »). Les références de chaque chambre restent conservées dans `sources`. Cette règle privilégie les faux négatifs aux faux positifs : deux textes proches mais non identiques restent séparés tant qu'un identifiant officiel commun n'a pas été établi.
 
 Pour les statuts terminaux, une information explicite de promulgation, adoption définitive ou clôture sans loi prime sur un dossier qui apparaît encore actif dans l'autre source. Toute panne partielle est exposée comme avertissement et ne provoque pas l'invention d'un résultat de remplacement.
+
+### Règles de facettes et de période
+
+Les facettes de chambre, thème, type et période sont calculées sur l'inventaire effectivement chargé avant application des filtres. Elles ne sont pas générées par le LLM. La période correspond à l'année de dépôt ou de début du dossier ; si cette date n'est pas fournie par la source, ACFPF utilise l'année de dernière activité comme repli explicite.
 
 ## Phase 3 — dossier législatif riche
 
