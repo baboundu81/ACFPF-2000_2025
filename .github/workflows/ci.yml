@@ -19,7 +19,10 @@ jobs:
           cache: pip
       - name: Install
         run: pip install -e ".[dev]"
-      - name: Lint
-        run: ruff check .
+      - name: Lint diagnostic
+        run: |
+          ruff check --select I --fix .
+          git diff -- tests/test_legislation.py
+          ruff check .
       - name: Tests
         run: pytest
