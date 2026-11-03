@@ -6,11 +6,12 @@ from __future__ import annotations
 import json
 import re
 import zipfile
+from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from io import BytesIO
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any
 
 import requests
 
@@ -21,7 +22,7 @@ ASSEMBLY_DATASET_URL = (
 ASSEMBLY_SOURCE_PAGE = "https://data.assemblee-nationale.fr/travaux-parlementaires/dossiers-legislatifs"
 ASSEMBLY_DATASET_ID = "Dossiers_Legislatifs.json.zip"
 ASSEMBLY_PRODUCER = "Assemblée nationale"
-ASSEMBLY_LICENSE = "Licence ouverte selon le portail de données de l’Assemblée nationale"
+ASSEMBLY_LICENSE = "Licence Ouverte / Open Licence"
 ASSEMBLY_DOSSIER_BASE_URL = "https://www.assemblee-nationale.fr/dyn/{legislature}/dossiers/{slug}"
 
 
