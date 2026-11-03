@@ -90,6 +90,10 @@ def sample_dossier() -> LegislativeDossier:
 
 
 class FakeLegislationService:
+    def _all(self, *, refresh=False):
+        assert isinstance(refresh, bool)
+        return (sample_dossier(),)
+
     def search(self, query="", *, status=None, limit=20, refresh=False):
         assert isinstance(refresh, bool)
         assert limit >= 1
@@ -111,6 +115,9 @@ class PartialLegislationService(FakeLegislationService):
 
 
 class FailingLegislationService:
+    def _all(self, *, refresh=False):
+        raise LegislationError("simulated legislative source failure")
+
     def search(self, *args, **kwargs):
         raise LegislationError("simulated legislative source failure")
 
@@ -187,6 +194,33 @@ def test_natural_search_query_is_forwarded_to_legislation_service() -> None:
     assert "Aucun dossier correspondant" in html
 
 
+def test_home_combines_structured_legislative_filters() -> None:
+    client = make_app().test_client()
+
+    response = client.get(
+        "/?status=all&chamber=S%C3%A9nat&theme=Logement+et+urbanisme"
+        "&text_type=Projet+de+loi&from_year=2026&to_year=2026"
+    )
+    html = response.get_data(as_text=True)
+
+    assert response.status_code == 200
+    assert "Projet de loi relatif au logement" in html
+    assert 'option value="Sénat" selected' in html
+    assert 'option value="Logement et urbanisme" selected' in html
+    assert 'option value="Projet de loi" selected' in html
+    assert 'value="2026"' in html
+
+
+def test_home_rejects_inverted_legislative_period() -> None:
+    client = make_app().test_client()
+
+    response = client.get("/?status=all&from_year=2026&to_year=2025")
+    html = response.get_data(as_text=True)
+
+    assert response.status_code == 400
+    assert "année de début ne peut pas être postérieure" in html
+
+
 def test_legislative_dossier_page_has_dedicated_chat_and_both_chambers() -> None:
     client = make_app(FakeAnswerService()).test_client()
 
@@ -226,16 +260,33 @@ def test_scoped_chat_adds_server_side_dossier_context() -> None:
     assert "senat.fr" in answer_service.last_question
 
 
-def test_legislation_api_returns_structured_results_and_source_catalog() -> None:
+def test_legislation_api_returns_structured_results_facets_and_filters() -> None:
     client = make_app().test_client()
 
-    response = client.get("/api/legislation?q=logement")
+    response = client.get(
+        "/api/legislation?q=logement&status=all&chamber=S%C3%A9nat"
+        "&theme=Logement+et+urbanisme&text_type=Projet+de+loi&from_year=2026&to_year=2026"
+    )
     payload = response.get_json()
 
     assert response.status_code == 200
     assert payload["results"][0]["id"] == "DLR1"
     assert payload["results"][0]["status"] == "active"
     assert payload["results"][0]["current_chamber"] == "Sénat"
+    assert payload["filters"] == {
+        "chamber": "Sénat",
+        "theme": "Logement et urbanisme",
+        "text_type": "Projet de loi",
+        "from_year": 2026,
+        "to_year": 2026,
+    }
+    assert payload["facets"] == {
+        "chambers": ["Sénat"],
+        "themes": ["Logement et urbanisme"],
+        "text_types": ["Projet de loi"],
+        "min_year": 2026,
+        "max_year": 2026,
+    }
     assert {source["name"] for source in payload["sources"]} == {
         "Assemblée nationale",
         "Sénat",
@@ -244,6 +295,28 @@ def test_legislation_api_returns_structured_results_and_source_catalog() -> None
         "assemblee_nationale_open_data",
         "senat_open_data",
     }
+
+
+def test_legislation_api_rejects_invalid_year_filter() -> None:
+    client = make_app().test_client()
+
+    response = client.get("/api/legislation?from_year=pas-une-annee")
+    payload = response.get_json()
+
+    assert response.status_code == 400
+    assert payload["error"] == "invalid_filter"
+    assert "année entière" in payload["message"]
+
+
+def test_legislation_api_rejects_inverted_period() -> None:
+    client = make_app().test_client()
+
+    response = client.get("/api/legislation?from_year=2026&to_year=2025")
+    payload = response.get_json()
+
+    assert response.status_code == 400
+    assert payload["error"] == "invalid_filter"
+    assert "année de début" in payload["message"]
 
 
 def test_partial_legislation_source_is_visible_but_does_not_break_results() -> None:
