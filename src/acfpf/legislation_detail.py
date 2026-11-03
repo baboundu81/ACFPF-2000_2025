@@ -10,6 +10,11 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from acfpf.data.assemblee_amendment_detail import (
+    AssemblyAmendmentDetail,
+    AssemblyAmendmentDetailError,
+    load_assembly_amendment_detail,
+)
 from acfpf.data.assemblee_amendments import (
     ASSEMBLY_AMENDMENTS_SOURCE_PAGE,
     AssemblyAmendmentIndexItem,
@@ -55,6 +60,29 @@ class Amendment:
             "detail_url": self.detail_url,
             "source_id": self.source_id,
         }
+
+
+@dataclass(frozen=True)
+class AmendmentDetail:
+    amendment: Amendment
+    dispositif: str | None
+    purpose: str | None
+    sort_order: str | None
+    retrieved_at: str | None
+    from_cache: bool
+
+    def as_dict(self) -> dict[str, Any]:
+        payload = self.amendment.as_dict()
+        payload.update(
+            {
+                "dispositif": self.dispositif,
+                "purpose": self.purpose,
+                "sort_order": self.sort_order,
+                "retrieved_at": self.retrieved_at,
+                "from_cache": self.from_cache,
+            }
+        )
+        return payload
 
 
 @dataclass(frozen=True)
@@ -132,15 +160,28 @@ def _to_domain(item: AssemblyAmendmentIndexItem) -> Amendment:
     )
 
 
+def _merge_detail(amendment: Amendment, detail: AssemblyAmendmentDetail) -> AmendmentDetail:
+    return AmendmentDetail(
+        amendment=amendment,
+        dispositif=detail.dispositif,
+        purpose=detail.purpose,
+        sort_order=detail.sort_order,
+        retrieved_at=detail.retrieved_at,
+        from_cache=detail.from_cache,
+    )
+
+
 class AmendmentService:
     def __init__(
         self,
         *,
         cache_dir: Path = DEFAULT_AMENDMENTS_CACHE_DIR,
         loader: Callable[..., tuple[AssemblyAmendmentIndexItem, ...]] = load_assembly_amendments,
+        detail_loader: Callable[..., AssemblyAmendmentDetail] = load_assembly_amendment_detail,
     ) -> None:
         self.cache_dir = cache_dir
         self.loader = loader
+        self.detail_loader = detail_loader
 
     def for_dossier(
         self,
@@ -183,3 +224,30 @@ class AmendmentService:
             retrieved_at=retrieved_at,
             from_cache=from_cache,
         )
+
+    def detail_for(
+        self,
+        dossier: LegislativeDossier,
+        amendment_id: str,
+        *,
+        refresh: bool = False,
+    ) -> AmendmentDetail | None:
+        wanted = amendment_id.strip()
+        if not wanted:
+            return None
+        collection = self.for_dossier(dossier, refresh=refresh)
+        amendment = next((item for item in collection.amendments if item.id == wanted), None)
+        if amendment is None:
+            return None
+
+        cache_path = self.cache_dir / "details" / f"{amendment.id}.xml"
+        try:
+            detail = self.detail_loader(
+                uid=amendment.id,
+                url=amendment.detail_url,
+                cache_path=cache_path,
+                refresh=refresh,
+            )
+        except AssemblyAmendmentDetailError as exc:
+            raise LegislativeDetailError(str(exc)) from exc
+        return _merge_detail(amendment, detail)

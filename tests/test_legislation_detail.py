@@ -3,6 +3,7 @@
 
 from pathlib import Path
 
+from acfpf.data.assemblee_amendment_detail import AssemblyAmendmentDetail
 from acfpf.data.assemblee_amendments import AssemblyAmendmentIndexItem
 from acfpf.legislation import LegislativeDossier, LegislativeSourceRef
 from acfpf.legislation_detail import (
@@ -77,6 +78,17 @@ def amendment_item(fate: str = "Adopté") -> AssemblyAmendmentIndexItem:
     )
 
 
+def amendment_detail() -> AssemblyAmendmentDetail:
+    return AssemblyAmendmentDetail(
+        uid="AMANR5L17N000042",
+        dispositif="Remplacer 15 % par 12 %.",
+        purpose="Limiter la hausse proposée.",
+        sort_order="000042",
+        source_url="https://www.assemblee-nationale.fr/dyn/opendata/AMANR5L17N000042.xml",
+        retrieved_at="2026-11-03T14:00:00+00:00",
+    )
+
+
 def test_extracts_numeric_assembly_dossier_id_only_when_source_is_present() -> None:
     assert assembly_numeric_dossier_id(assembly_dossier()) == "54629"
     assert assembly_numeric_dossier_id(senate_only_dossier()) is None
@@ -139,3 +151,49 @@ def test_service_keeps_unknown_fate_instead_of_guessing(tmp_path: Path) -> None:
 
     assert collection.amendments[0].fate == "unknown"
     assert collection.amendments[0].fate_raw == "Mise en réserve"
+
+
+def test_detail_for_uses_url_from_official_index_and_merges_text(tmp_path: Path) -> None:
+    detail_calls = []
+
+    def loader(**_kwargs):
+        return (amendment_item(),)
+
+    def detail_loader(**kwargs):
+        detail_calls.append(kwargs)
+        return amendment_detail()
+
+    service = AmendmentService(
+        cache_dir=tmp_path,
+        loader=loader,
+        detail_loader=detail_loader,
+    )
+    detail = service.detail_for(assembly_dossier(), "AMANR5L17N000042")
+
+    assert detail is not None
+    assert detail.amendment.number == "I-42"
+    assert detail.dispositif == "Remplacer 15 % par 12 %."
+    assert detail.purpose == "Limiter la hausse proposée."
+    assert detail_calls[0]["url"].endswith("AMANR5L17N000042.xml")
+    assert detail_calls[0]["cache_path"] == tmp_path / "details" / "AMANR5L17N000042.xml"
+
+
+def test_detail_for_unknown_amendment_does_not_call_detail_loader(tmp_path: Path) -> None:
+    called = False
+
+    def loader(**_kwargs):
+        return (amendment_item(),)
+
+    def detail_loader(**_kwargs):
+        nonlocal called
+        called = True
+        return amendment_detail()
+
+    service = AmendmentService(
+        cache_dir=tmp_path,
+        loader=loader,
+        detail_loader=detail_loader,
+    )
+
+    assert service.detail_for(assembly_dossier(), "AMANR5L17N999999") is None
+    assert called is False
