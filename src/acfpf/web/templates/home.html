@@ -35,14 +35,8 @@
       <form class="legislation-search" method="get" action="/">
         <label for="legislation-query">Que voulez-vous retrouver ?</label>
         <div class="legislation-search__row">
-          <input
-            id="legislation-query"
-            name="q"
-            type="search"
-            value="{{ query }}"
-            placeholder="Ex. Quels textes sont en cours sur le logement ?"
-            autocomplete="off"
-          >
+          <input id="legislation-query" name="q" type="search" value="{{ query }}"
+            placeholder="Ex. Quels textes sont en cours sur le logement ?" autocomplete="off">
           <button type="submit">Rechercher</button>
         </div>
         <div class="search-examples" aria-label="Exemples de recherches">
@@ -70,11 +64,11 @@
       {% endif %}
 
       <nav class="status-filters" aria-label="Filtrer les dossiers par statut">
-        <a href="{{ url_for('home', q=query or None, status='active', chamber=selected_filters.chamber, theme=selected_filters.theme, text_type=selected_filters.text_type, from_year=selected_filters.from_year, to_year=selected_filters.to_year) }}"
+        <a href="{{ url_for('home', q=query or None, status='active', chamber=selected_filters.chamber, stage=selected_filters.stage, theme=selected_filters.theme, text_type=selected_filters.text_type, from_year=selected_filters.from_year, to_year=selected_filters.to_year) }}"
            class="status-filter {% if selected_status == 'active' %}is-active{% endif %}">En cours</a>
-        <a href="{{ url_for('home', q=query or None, status='adopted_or_promulgated', chamber=selected_filters.chamber, theme=selected_filters.theme, text_type=selected_filters.text_type, from_year=selected_filters.from_year, to_year=selected_filters.to_year) }}"
+        <a href="{{ url_for('home', q=query or None, status='adopted_or_promulgated', chamber=selected_filters.chamber, stage=selected_filters.stage, theme=selected_filters.theme, text_type=selected_filters.text_type, from_year=selected_filters.from_year, to_year=selected_filters.to_year) }}"
            class="status-filter {% if selected_status == 'adopted_or_promulgated' %}is-active{% endif %}">Adoptés / promulgués</a>
-        <a href="{{ url_for('home', q=query or None, status='all', chamber=selected_filters.chamber, theme=selected_filters.theme, text_type=selected_filters.text_type, from_year=selected_filters.from_year, to_year=selected_filters.to_year) }}"
+        <a href="{{ url_for('home', q=query or None, status='all', chamber=selected_filters.chamber, stage=selected_filters.stage, theme=selected_filters.theme, text_type=selected_filters.text_type, from_year=selected_filters.from_year, to_year=selected_filters.to_year) }}"
            class="status-filter {% if selected_status == 'all' %}is-active{% endif %}">Tous</a>
       </nav>
 
@@ -84,11 +78,21 @@
           <input type="hidden" name="status" value="{{ selected_status }}">
 
           <label>
-            <span>Chambre / étape</span>
+            <span>Chambre courante</span>
             <select name="chamber">
               <option value="">Toutes</option>
               {% for item in facets.chambers %}
                 <option value="{{ item }}" {% if selected_filters.chamber == item %}selected{% endif %}>{{ item }}</option>
+              {% endfor %}
+            </select>
+          </label>
+
+          <label>
+            <span>Étape</span>
+            <select name="stage">
+              <option value="">Toutes</option>
+              {% for item in facets.stages %}
+                <option value="{{ item.code }}" {% if selected_filters.stage == item.code %}selected{% endif %}>{{ item.label }}</option>
               {% endfor %}
             </select>
           </label>
@@ -115,26 +119,14 @@
 
           <label>
             <span>Déposé à partir de</span>
-            <input
-              type="number"
-              name="from_year"
-              min="{{ facets.min_year or 1900 }}"
-              max="{{ facets.max_year or 2100 }}"
-              value="{{ selected_filters.from_year or '' }}"
-              inputmode="numeric"
-            >
+            <input type="number" name="from_year" min="{{ facets.min_year or 1900 }}"
+              max="{{ facets.max_year or 2100 }}" value="{{ selected_filters.from_year or '' }}" inputmode="numeric">
           </label>
 
           <label>
             <span>Déposé jusqu'à</span>
-            <input
-              type="number"
-              name="to_year"
-              min="{{ facets.min_year or 1900 }}"
-              max="{{ facets.max_year or 2100 }}"
-              value="{{ selected_filters.to_year or '' }}"
-              inputmode="numeric"
-            >
+            <input type="number" name="to_year" min="{{ facets.min_year or 1900 }}"
+              max="{{ facets.max_year or 2100 }}" value="{{ selected_filters.to_year or '' }}" inputmode="numeric">
           </label>
 
           <div class="legislation-filters__actions">
@@ -143,7 +135,7 @@
           </div>
         </form>
         <p class="filter-note">
-          La période porte sur l'année de dépôt ou de début du dossier. Si cette date manque dans la source, ACFPF utilise l'année de dernière activité.
+          L'étape est une classification ACFPF dérivée du libellé officiel, qui reste affiché séparément. Une étape ambiguë n'est pas devinée. La période porte sur l'année de dépôt ou de début du dossier ; si elle manque, ACFPF utilise l'année de dernière activité.
         </p>
       {% endif %}
 
@@ -160,13 +152,14 @@
             <article class="dossier-row">
               <div class="dossier-row__meta">
                 <span class="status-badge" data-status="{{ dossier.status }}">{{ dossier.status_label }}</span>
-                {% if dossier.current_chamber %}<span>Étape : {{ dossier.current_chamber }}</span>{% endif %}
+                <span>{{ dossier.stage_label }}</span>
+                {% if dossier.current_chamber %}<span>{{ dossier.current_chamber }}</span>{% endif %}
                 {% if dossier.procedure_label %}<span>{{ dossier.procedure_label }}</span>{% endif %}
                 {% if dossier.initial_date %}<span>Dépôt : {{ dossier.initial_date }}</span>{% endif %}
                 {% if dossier.last_activity %}<span>Activité : {{ dossier.last_activity }}</span>{% endif %}
               </div>
               <h3><a href="/textes/{{ dossier.id }}">{{ dossier.title }}</a></h3>
-              {% if dossier.current_stage %}<p>{{ dossier.current_stage }}</p>{% endif %}
+              {% if dossier.current_stage %}<p>Libellé source : {{ dossier.current_stage }}</p>{% endif %}
               <div class="dossier-row__actions">
                 <a class="action-link" href="/textes/{{ dossier.id }}">Analyser ce texte</a>
                 {% for source in dossier.sources %}
@@ -188,10 +181,7 @@
       <div>
         <p class="eyebrow">Sous-outil</p>
         <h2>Explorer les finances publiques</h2>
-        <p>
-          Dépenses, recettes, dette, déficit et répartition fonctionnelle restent disponibles dans le module
-          spécialisé déjà développé.
-        </p>
+        <p>Dépenses, recettes, dette, déficit et répartition fonctionnelle restent disponibles dans le module spécialisé déjà développé.</p>
         <a class="action-link" href="/finances">Ouvrir les finances publiques</a>
       </div>
       <aside class="editorial-note">
@@ -204,13 +194,8 @@
       <div class="editorial-copy">
         <p class="eyebrow">Méthode</p>
         <h2>Le modèle explique ; les sources établissent les faits.</h2>
-        <p class="lede">
-          La liste des textes vient des données officielles de l'Assemblée nationale et du Sénat. L'IA n'est pas chargée d'inventer quels dossiers existent.
-        </p>
-        <p>
-          Les dossiers dont les titres correspondent exactement après normalisation sont regroupés, mais chaque URL officielle reste conservée.
-          Après sélection, la recherche assistée doit toujours ouvrir les textes officiels avant d'affirmer ce qu'une mesure prévoit.
-        </p>
+        <p class="lede">La liste des textes vient des données officielles de l'Assemblée nationale et du Sénat. L'IA n'est pas chargée d'inventer quels dossiers existent.</p>
+        <p>Les dossiers dont les titres correspondent exactement après normalisation sont regroupés, mais chaque URL officielle reste conservée. Après sélection, la recherche assistée doit toujours ouvrir les textes officiels avant d'affirmer ce qu'une mesure prévoit.</p>
       </div>
       <aside class="editorial-note">
         <p class="editorial-note__title">Sources de découverte</p>
