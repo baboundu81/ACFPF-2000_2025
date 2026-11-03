@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 # Copyright (C) 2026 ACFPF contributors
 
-import acfpf.data.senat_legislation
+from acfpf.data import senat_legislation
 
 
 HEADER = (
@@ -22,7 +22,7 @@ def test_parse_senate_csv_reads_latin1_semicolon_export() -> None:
         '"Questions sociales et santé|Société"'
     )
 
-    dossiers = acfpf.data.senat_legislation.parse_senate_csv(
+    dossiers = senat_legislation.parse_senate_csv(
         blob, retrieved_at="2026-11-03T10:00:00+00:00"
     )
 
@@ -43,7 +43,7 @@ def test_parse_senate_csv_reads_promulgation_metadata() -> None:
         '15/07/2026;07/08/2026;2026-777;Sports'
     )
 
-    dossier = acfpf.data.senat_legislation.parse_senate_csv(blob)[0]
+    dossier = senat_legislation.parse_senate_csv(blob)[0]
 
     assert dossier.promulgation_date == "2026-08-07"
     assert dossier.law_number == "2026-777"
@@ -78,7 +78,7 @@ def test_fetch_senate_csv_uses_official_https_endpoint() -> None:
     )
     session = FakeSession(content)
 
-    assert acfpf.data.senat_legislation.fetch_senate_csv(session=session, timeout=4.0) == content
+    assert senat_legislation.fetch_senate_csv(session=session, timeout=4.0) == content
     assert session.last_url == "https://data.senat.fr/data/dosleg/dossiers-legislatifs.csv"
     assert session.last_timeout == 4.0
 
@@ -91,7 +91,7 @@ def test_load_senate_dossiers_uses_fresh_cache(tmp_path) -> None:
     cache = tmp_path / "senat.csv"
     cache.write_bytes(content)
 
-    dossiers = acfpf.data.senat_legislation.load_senate_dossiers(cache_path=cache)
+    dossiers = senat_legislation.load_senate_dossiers(cache_path=cache)
 
-    assert isinstance(dossiers[0], acfpf.data.senat_legislation.SenateLegislativeDossier)
+    assert isinstance(dossiers[0], senat_legislation.SenateLegislativeDossier)
     assert dossiers[0].from_cache is True
