@@ -13,6 +13,7 @@ from acfpf.ai.provider import AIError
 from acfpf.cofog import CofogService
 from acfpf.data.assemblee_legislation import ASSEMBLY_SOURCE_PAGE
 from acfpf.data.eurostat import EurostatError, get_source_catalog
+from acfpf.data.senat_legislation import SENATE_SOURCE_PAGE
 from acfpf.legislation import (
     LegislationError,
     LegislationService,
@@ -25,6 +26,10 @@ from acfpf.source_registry import load_sources
 MAX_SCOPED_QUESTION_CHARS = 600
 MAX_HISTORY_ITEMS = 2
 MAX_HISTORY_ITEM_CHARS = 220
+LEGISLATION_SOURCE_PAGES = (
+    {"name": "Assemblée nationale", "url": ASSEMBLY_SOURCE_PAGE},
+    {"name": "Sénat", "url": SENATE_SOURCE_PAGE},
+)
 
 
 def _legislative_question(
@@ -42,15 +47,24 @@ def _legislative_question(
         if compact:
             history_text = " Échanges récents: " + " | ".join(compact) + "."
 
+    source_urls = [source.official_url for source in dossier.sources] or [dossier.official_url]
     return (
         "Contexte de dossier législatif fourni par le backend ACFPF. "
         "Ce contexte sert uniquement à orienter la recherche et ne constitue pas une preuve. "
         f"Dossier: {dossier.title}. Identifiant: {dossier.id}. "
-        f"URL officielle: {dossier.official_url}. "
-        f"Statut indicatif: {dossier.status_label}."
+        f"Dossiers officiels connus: {', '.join(source_urls)}. "
+        f"Statut indicatif: {dossier.status_label}. "
+        f"Étape courante indicative: {dossier.current_stage or 'non renseignée'}."
         f"{history_text} "
         f"Question actuelle de l'utilisateur: {question}"
     )
+
+
+def _legislation_warnings(service: object) -> list[str]:
+    getter = getattr(service, "warnings", None)
+    if callable(getter):
+        return list(getter())
+    return []
 
 
 def create_app(
@@ -84,6 +98,8 @@ def create_app(
                 selected_status=effective_status,
                 dossiers=[item.as_dict(include_events=False) for item in dossiers],
                 legislation_error=None,
+                legislation_warnings=_legislation_warnings(civic_service),
+                legislation_sources=LEGISLATION_SOURCE_PAGES,
                 legislation_source=ASSEMBLY_SOURCE_PAGE,
             )
         except LegislationError as exc:
@@ -93,6 +109,8 @@ def create_app(
                 selected_status=effective_status,
                 dossiers=[],
                 legislation_error=str(exc),
+                legislation_warnings=_legislation_warnings(civic_service),
+                legislation_sources=LEGISLATION_SOURCE_PAGES,
                 legislation_source=ASSEMBLY_SOURCE_PAGE,
             ), 503
 
@@ -105,6 +123,7 @@ def create_app(
                 "dossier.html",
                 dossier=None,
                 error=str(exc),
+                legislation_warnings=_legislation_warnings(civic_service),
                 research_sources=[source.as_dict() for source in live_sources],
                 ai_enabled=ai_service is not None,
             ), 503
@@ -113,6 +132,7 @@ def create_app(
                 "dossier.html",
                 dossier=None,
                 error="Dossier législatif introuvable.",
+                legislation_warnings=_legislation_warnings(civic_service),
                 research_sources=[source.as_dict() for source in live_sources],
                 ai_enabled=ai_service is not None,
             ), 404
@@ -120,6 +140,7 @@ def create_app(
             "dossier.html",
             dossier=dossier.as_dict(),
             error=None,
+            legislation_warnings=_legislation_warnings(civic_service),
             research_sources=[source.as_dict() for source in live_sources],
             ai_enabled=ai_service is not None,
         )
@@ -178,7 +199,8 @@ def create_app(
             {
                 "query": query,
                 "status": effective_status,
-                "source": ASSEMBLY_SOURCE_PAGE,
+                "sources": list(LEGISLATION_SOURCE_PAGES),
+                "warnings": _legislation_warnings(civic_service),
                 "results": [item.as_dict(include_events=False) for item in dossiers],
             }
         )
@@ -191,7 +213,9 @@ def create_app(
             return jsonify({"error": "legislation_unavailable", "message": str(exc)}), 503
         if dossier is None:
             return jsonify({"error": "not_found"}), 404
-        return jsonify(dossier.as_dict())
+        payload = dossier.as_dict()
+        payload["warnings"] = _legislation_warnings(civic_service)
+        return jsonify(payload)
 
     @app.get("/api/macro")
     def macro_api():
