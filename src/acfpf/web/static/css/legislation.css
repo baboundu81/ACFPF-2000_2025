@@ -124,7 +124,7 @@
 
 .legislation-filters {
   display: grid;
-  grid-template-columns: repeat(3, minmax(150px, 1fr)) repeat(2, minmax(120px, 0.65fr));
+  grid-template-columns: repeat(3, minmax(150px, 1fr));
   gap: var(--space-3);
   align-items: end;
   margin-bottom: var(--space-3);
