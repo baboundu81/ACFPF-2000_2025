@@ -7,7 +7,12 @@ from acfpf.ai.service import AgentEvent, Citation, GroundedAnswer
 from acfpf.cofog import build_cofog_analysis
 from acfpf.data.cofog import parse_cofog_payload
 from acfpf.data.eurostat import EurostatError
-from acfpf.legislation import LegislationError, LegislativeDossier, LegislativeEvent
+from acfpf.legislation import (
+    LegislationError,
+    LegislativeDossier,
+    LegislativeEvent,
+    LegislativeSourceRef,
+)
 from acfpf.macro import build_dashboard
 from acfpf.web import create_app
 from tests.test_cofog import sample_cofog_payload
@@ -45,14 +50,42 @@ def sample_dossier() -> LegislativeDossier:
         procedure_label="Projet de loi ordinaire",
         status="active",
         status_label="En cours",
-        current_stage="Examen en commission",
+        current_stage="Première lecture au Sénat",
+        current_chamber="Sénat",
         last_activity="2026-11-02",
+        initial_date="2026-10-20",
         official_url="https://www.assemblee-nationale.fr/dyn/17/dossiers/logement",
         source_url="https://data.assemblee-nationale.fr/travaux-parlementaires/dossiers-legislatifs",
         events=(
-            LegislativeEvent("2026-10-20", "Dépôt"),
-            LegislativeEvent("2026-11-02", "Examen en commission"),
+            LegislativeEvent(
+                "2026-10-20",
+                "Dépôt à l'Assemblée nationale",
+                chamber="Assemblée nationale",
+                source_id="assemblee_nationale_open_data",
+            ),
+            LegislativeEvent(
+                "2026-11-02",
+                "Première lecture au Sénat",
+                chamber="Sénat",
+                source_id="assemblee_nationale_open_data",
+            ),
         ),
+        sources=(
+            LegislativeSourceRef(
+                source_id="assemblee_nationale_open_data",
+                label="Assemblée nationale",
+                chamber="Assemblée nationale",
+                official_url="https://www.assemblee-nationale.fr/dyn/17/dossiers/logement",
+            ),
+            LegislativeSourceRef(
+                source_id="senat_open_data",
+                label="Sénat",
+                chamber="Sénat",
+                official_url="https://www.senat.fr/dossier-legislatif/pjl25-913.html",
+                state="Première lecture au Sénat",
+            ),
+        ),
+        themes=("Logement et urbanisme",),
     )
 
 
@@ -70,6 +103,11 @@ class FakeLegislationService:
     def get(self, dossier_id, *, refresh=False):
         assert isinstance(refresh, bool)
         return sample_dossier() if dossier_id == "DLR1" else None
+
+
+class PartialLegislationService(FakeLegislationService):
+    def warnings(self):
+        return ("Sénat : source temporairement indisponible",)
 
 
 class FailingLegislationService:
@@ -135,6 +173,7 @@ def test_home_is_now_civic_legislation_search() -> None:
     assert "Comprendre ce que décide réellement la puissance publique" in html
     assert "Projet de loi relatif au logement" in html
     assert "Textes & décisions" in html
+    assert "Assemblée nationale + Sénat" in html
     assert 'href="/finances"' in html
 
 
@@ -148,7 +187,7 @@ def test_natural_search_query_is_forwarded_to_legislation_service() -> None:
     assert "Aucun dossier correspondant" in html
 
 
-def test_legislative_dossier_page_has_dedicated_chat() -> None:
+def test_legislative_dossier_page_has_dedicated_chat_and_both_chambers() -> None:
     client = make_app(FakeAnswerService()).test_client()
 
     response = client.get("/textes/DLR1")
@@ -158,7 +197,10 @@ def test_legislative_dossier_page_has_dedicated_chat() -> None:
     assert "Projet de loi relatif au logement" in html
     assert "Chat dédié à ce texte" in html
     assert 'data-dossier-id="DLR1"' in html
-    assert "Examen en commission" in html
+    assert "Première lecture au Sénat" in html
+    assert "Ouvrir le dossier Assemblée nationale" in html
+    assert "Ouvrir le dossier Sénat" in html
+    assert "Logement et urbanisme" in html
 
 
 def test_scoped_chat_adds_server_side_dossier_context() -> None:
@@ -180,9 +222,11 @@ def test_scoped_chat_adds_server_side_dossier_context() -> None:
     assert "DLR1" in answer_service.last_question
     assert "Résume-le-moi" in answer_service.last_question
     assert "ne constitue pas une preuve" in answer_service.last_question
+    assert "assemblee-nationale.fr" in answer_service.last_question
+    assert "senat.fr" in answer_service.last_question
 
 
-def test_legislation_api_returns_structured_results() -> None:
+def test_legislation_api_returns_structured_results_and_source_catalog() -> None:
     client = make_app().test_client()
 
     response = client.get("/api/legislation?q=logement")
@@ -191,6 +235,30 @@ def test_legislation_api_returns_structured_results() -> None:
     assert response.status_code == 200
     assert payload["results"][0]["id"] == "DLR1"
     assert payload["results"][0]["status"] == "active"
+    assert payload["results"][0]["current_chamber"] == "Sénat"
+    assert {source["name"] for source in payload["sources"]} == {
+        "Assemblée nationale",
+        "Sénat",
+    }
+    assert {source["source_id"] for source in payload["results"][0]["sources"]} == {
+        "assemblee_nationale_open_data",
+        "senat_open_data",
+    }
+
+
+def test_partial_legislation_source_is_visible_but_does_not_break_results() -> None:
+    client = make_app(legislation_service=PartialLegislationService()).test_client()
+
+    response = client.get("/")
+    html = response.get_data(as_text=True)
+
+    assert response.status_code == 200
+    assert "Projet de loi relatif au logement" in html
+    assert "Vue partielle" in html
+    assert "source temporairement indisponible" in html
+
+    payload = client.get("/api/legislation").get_json()
+    assert payload["warnings"] == ["Sénat : source temporairement indisponible"]
 
 
 def test_finance_dashboard_remains_available_as_subtool() -> None:
