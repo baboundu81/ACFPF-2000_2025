@@ -73,6 +73,35 @@ def test_claude_native_provider_uses_structured_output() -> None:
     assert session.last_call["headers"]["anthropic-version"] == "2023-06-01"
 
 
+def test_claude_native_provider_uses_request_specific_schema() -> None:
+    custom_schema = {
+        "type": "object",
+        "properties": {"query": {"type": "string"}},
+        "required": ["query"],
+        "additionalProperties": False,
+    }
+    session = FakeSession(
+        {"content": [{"type": "text", "text": json.dumps({"query": "santé"})}]}
+    )
+    provider = AnthropicProvider(
+        api_key="secret-test-key",
+        model="claude-haiku-5-5",
+        session=session,
+    )
+
+    provider.complete_json(
+        ProviderRequest(
+            "system JSON",
+            "user",
+            response_schema=custom_schema,
+            response_schema_name="custom_plan",
+        )
+    )
+
+    payload = session.last_call["json"]
+    assert payload["output_config"]["format"]["schema"] == custom_schema
+
+
 def test_registry_selects_claude(monkeypatch) -> None:
     monkeypatch.setenv("ACFPF_LLM_PROVIDER", "claude")
     monkeypatch.setenv("ACFPF_LLM_API_KEY", "test-key")
