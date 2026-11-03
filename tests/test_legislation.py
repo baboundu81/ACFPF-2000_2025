@@ -7,8 +7,21 @@ import zipfile
 from pathlib import Path
 
 from acfpf.data.assemblee_legislation import AssemblyLegislationError, parse_assembly_archive
-from acfpf.data.senat_legislation import SenateLegislationError, SenateLegislativeDossier
+from acfpf.data.senat_legislation import (
+    SenateLegislationError,
+    SenateLegislativeDossier,
+    fetch_senate_csv,
+    load_senate_dossiers,
+    parse_senate_csv,
+)
 from acfpf.legislation import LegislationService
+
+
+SENATE_HEADER = (
+    "Titre;Type de dossier;Date initiale;URL du dossier;État du dossier;"
+    "Décision du Conseil constitutionnel;Date de la décision du Conseil constitutionnel;"
+    "Date de promulgation;Numéro de la loi;Thèmes\n"
+)
 
 
 def _payload(uid: str, title: str, *, final: bool = False):
@@ -54,6 +67,10 @@ def _archive(*payloads: dict) -> bytes:
     return output.getvalue()
 
 
+def _senate_csv(*rows: str) -> bytes:
+    return (SENATE_HEADER + "\n".join(rows) + "\n").encode("latin-1")
+
+
 def _senate(
     title: str,
     *,
@@ -86,6 +103,86 @@ def test_parse_assembly_archive_extracts_dossier_and_events() -> None:
     assert dossier.title == "Projet de loi sur le logement"
     assert dossier.last_activity == "2026-10-20"
     assert dossier.official_url.endswith("/dyn/17/dossiers/dossier_dlr1")
+
+
+def test_parse_senate_csv_reads_latin1_semicolon_export() -> None:
+    blob = _senate_csv(
+        '"Projet de loi relatif à la santé";Projet de loi;22/07/2026;'
+        'https://www.senat.fr/dossier-legislatif/pjl25-913.html;Première lecture au Sénat;;;;;'
+        '"Questions sociales et santé|Société"'
+    )
+
+    dossiers = parse_senate_csv(blob, retrieved_at="2026-11-03T10:00:00+00:00")
+
+    assert len(dossiers) == 1
+    dossier = dossiers[0]
+    assert dossier.uid == "senat:pjl25-913"
+    assert dossier.title == "Projet de loi relatif à la santé"
+    assert dossier.initial_date == "2026-07-22"
+    assert dossier.state == "Première lecture au Sénat"
+    assert dossier.themes == ("Questions sociales et santé", "Société")
+    assert dossier.retrieved_at == "2026-11-03T10:00:00+00:00"
+
+
+def test_parse_senate_csv_reads_promulgation_metadata() -> None:
+    blob = _senate_csv(
+        '"Proposition de loi relative au sport";Proposition de loi;01/02/2026;'
+        'https://www.senat.fr/dossier-legislatif/ppl25-100.html;Promulgué;Conforme;'
+        '15/07/2026;07/08/2026;2026-777;Sports'
+    )
+
+    dossier = parse_senate_csv(blob)[0]
+
+    assert dossier.promulgation_date == "2026-08-07"
+    assert dossier.law_number == "2026-777"
+    assert dossier.constitutional_date == "2026-07-15"
+    assert dossier.constitutional_result == "Conforme"
+
+
+class FakeSenateResponse:
+    def __init__(self, content: bytes) -> None:
+        self.content = content
+
+    def raise_for_status(self) -> None:
+        return None
+
+
+class FakeSenateSession:
+    def __init__(self, content: bytes) -> None:
+        self.content = content
+        self.last_url = None
+        self.last_timeout = None
+
+    def get(self, url, *, timeout):
+        self.last_url = url
+        self.last_timeout = timeout
+        return FakeSenateResponse(self.content)
+
+
+def test_fetch_senate_csv_uses_official_https_endpoint() -> None:
+    content = _senate_csv(
+        'Titre;Projet de loi;2026-01-01;https://www.senat.fr/dossier-legislatif/pjl25-1.html;'
+        'Première lecture au Sénat;;;;;Budget'
+    )
+    session = FakeSenateSession(content)
+
+    assert fetch_senate_csv(session=session, timeout=4.0) == content
+    assert session.last_url == "https://data.senat.fr/data/dosleg/dossiers-legislatifs.csv"
+    assert session.last_timeout == 4.0
+
+
+def test_load_senate_dossiers_uses_fresh_cache(tmp_path: Path) -> None:
+    content = _senate_csv(
+        'Titre;Projet de loi;2026-01-01;https://www.senat.fr/dossier-legislatif/pjl25-1.html;'
+        'Première lecture au Sénat;;;;;Budget'
+    )
+    cache = tmp_path / "senat.csv"
+    cache.write_bytes(content)
+
+    dossiers = load_senate_dossiers(cache_path=cache)
+
+    assert isinstance(dossiers[0], SenateLegislativeDossier)
+    assert dossiers[0].from_cache is True
 
 
 def test_search_understands_natural_active_query(tmp_path: Path) -> None:
