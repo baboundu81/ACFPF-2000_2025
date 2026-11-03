@@ -21,6 +21,7 @@ def _dossier(
     title: str,
     *,
     chamber: str,
+    stage_label: str,
     theme: str,
     procedure: str,
     year: int,
@@ -35,7 +36,7 @@ def _dossier(
         procedure_label=procedure,
         status=status,
         status_label="En cours" if status == "active" else "Promulgué",
-        current_stage=f"Étape {chamber}",
+        current_stage=stage_label,
         current_chamber=chamber,
         last_activity=f"{year}-10-20",
         initial_date=f"{year}-02-01",
@@ -60,6 +61,7 @@ def sample_inventory() -> FakeInventoryService:
             "D1",
             "Projet de loi relatif à la santé",
             chamber="Sénat",
+            stage_label="Première lecture au Sénat",
             theme="Santé",
             procedure="Projet de loi ordinaire",
             year=2026,
@@ -68,6 +70,7 @@ def sample_inventory() -> FakeInventoryService:
             "D2",
             "Proposition de loi relative à l'école",
             chamber="Assemblée nationale",
+            stage_label="Examen en commission",
             theme="Éducation",
             procedure="Proposition de loi",
             year=2025,
@@ -76,6 +79,7 @@ def sample_inventory() -> FakeInventoryService:
             "D3",
             "Projet de loi relatif au logement",
             chamber="Assemblée nationale",
+            stage_label="Promulgation de la loi",
             theme="Logement",
             procedure="Projet de loi",
             year=2024,
@@ -88,17 +92,19 @@ def test_browse_builds_facets_from_complete_inventory() -> None:
     result = browse_legislation(sample_inventory(), status="all")
 
     assert result.facets.chambers == ("Assemblée nationale", "Sénat")
+    assert [item.code for item in result.facets.stages] == ["committee", "promulgated", "plenary"]
     assert result.facets.themes == ("Éducation", "Logement", "Santé")
     assert result.facets.text_types == ("Projet de loi", "Proposition de loi")
     assert result.facets.min_year == 2024
     assert result.facets.max_year == 2026
 
 
-def test_browse_combines_chamber_theme_type_and_period_filters() -> None:
+def test_browse_combines_chamber_stage_theme_type_and_period_filters() -> None:
     result = browse_legislation(
         sample_inventory(),
         status="all",
         chamber="Sénat",
+        stage="plenary",
         theme="Santé",
         text_type="Projet de loi",
         from_year=2026,
@@ -106,6 +112,12 @@ def test_browse_combines_chamber_theme_type_and_period_filters() -> None:
     )
 
     assert [item.id for item in result.results] == ["D1"]
+
+
+def test_browse_stage_filter_uses_stable_code_not_raw_label() -> None:
+    result = browse_legislation(sample_inventory(), status="all", stage="committee")
+
+    assert [item.id for item in result.results] == ["D2"]
 
 
 def test_browse_keeps_natural_language_relevance_before_facets() -> None:

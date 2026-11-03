@@ -14,11 +14,13 @@ from acfpf.legislation import (
     _status_matches,
     parse_legislative_search,
 )
+from acfpf.legislative_stages import LegislativeStage, classify_dossier_stage
 
 
 @dataclass(frozen=True)
 class LegislativeFacets:
     chambers: tuple[str, ...]
+    stages: tuple[LegislativeStage, ...]
     themes: tuple[str, ...]
     text_types: tuple[str, ...]
     min_year: int | None
@@ -27,6 +29,7 @@ class LegislativeFacets:
     def as_dict(self) -> dict[str, Any]:
         return {
             "chambers": list(self.chambers),
+            "stages": [stage.as_dict() for stage in self.stages],
             "themes": list(self.themes),
             "text_types": list(self.text_types),
             "min_year": self.min_year,
@@ -74,6 +77,12 @@ def _facets(dossiers: tuple[LegislativeDossier, ...]) -> LegislativeFacets:
         {value for dossier in dossiers if (value := _facet_chamber(dossier))},
         key=_normalize,
     )
+    stages_by_code = {
+        item.code: item
+        for dossier in dossiers
+        if (item := classify_dossier_stage(dossier)).code != "unknown"
+    }
+    stages = sorted(stages_by_code.values(), key=lambda item: _normalize(item.label))
     themes = sorted(
         {theme for dossier in dossiers for theme in dossier.themes if theme},
         key=_normalize,
@@ -82,6 +91,7 @@ def _facets(dossiers: tuple[LegislativeDossier, ...]) -> LegislativeFacets:
     years = [year for dossier in dossiers if (year := dossier_reference_year(dossier))]
     return LegislativeFacets(
         chambers=tuple(chambers),
+        stages=tuple(stages),
         themes=tuple(themes),
         text_types=tuple(text_types),
         min_year=min(years) if years else None,
@@ -100,6 +110,12 @@ def _matches_theme(dossier: LegislativeDossier, theme: str | None) -> bool:
         return True
     wanted = _normalize(theme)
     return any(_normalize(item) == wanted for item in dossier.themes)
+
+
+def _matches_stage(dossier: LegislativeDossier, requested: str | None) -> bool:
+    if not requested:
+        return True
+    return classify_dossier_stage(dossier).code == requested
 
 
 def _matches_year(
@@ -123,6 +139,7 @@ def browse_legislation(
     *,
     status: str | None = None,
     chamber: str | None = None,
+    stage: str | None = None,
     theme: str | None = None,
     text_type: str | None = None,
     from_year: int | None = None,
@@ -130,12 +147,7 @@ def browse_legislation(
     limit: int = 30,
     refresh: bool = False,
 ) -> LegislativeBrowseResult:
-    """Search and facet one loaded legislative inventory.
-
-    Facets describe the complete currently loaded inventory, while filters only affect the returned
-    result set. The period is based on the dossier start/deposit year, with latest activity used only
-    when the source does not provide a start date.
-    """
+    """Search and facet one loaded legislative inventory."""
     if from_year is not None and to_year is not None and from_year > to_year:
         raise ValueError("L'année de début ne peut pas être postérieure à l'année de fin.")
 
@@ -150,6 +162,8 @@ def browse_legislation(
         if search.keywords and score == 0:
             continue
         if not _matches_value(_facet_chamber(dossier), chamber):
+            continue
+        if not _matches_stage(dossier, stage):
             continue
         if not _matches_theme(dossier, theme):
             continue

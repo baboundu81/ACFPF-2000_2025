@@ -39,13 +39,14 @@
         <p class="dossier-breadcrumb"><a href="/">Textes & décisions</a> / {{ dossier.id }}</p>
         <div class="dossier-hero__meta">
           <span class="status-badge" data-status="{{ dossier.status }}">{{ dossier.status_label }}</span>
-          {% if dossier.current_chamber %}<span>Étape : {{ dossier.current_chamber }}</span>{% endif %}
+          <span>{{ dossier.stage_label }}</span>
+          {% if dossier.current_chamber %}<span>{{ dossier.current_chamber }}</span>{% endif %}
           {% if dossier.procedure_label %}<span>{{ dossier.procedure_label }}</span>{% endif %}
           {% if dossier.last_activity %}<span>Dernière activité : {{ dossier.last_activity }}</span>{% endif %}
           {% if dossier.law_number %}<span>Loi n° {{ dossier.law_number }}</span>{% endif %}
         </div>
         <h1>{{ dossier.title }}</h1>
-        {% if dossier.current_stage %}<p class="hero__deck">Dernière étape repérée : {{ dossier.current_stage }}</p>{% endif %}
+        {% if dossier.current_stage %}<p class="hero__deck">Libellé source de l'étape : {{ dossier.current_stage }}</p>{% endif %}
         <div class="official-source-links">
           {% for source in dossier.sources %}
             <a href="{{ source.official_url }}" target="_blank" rel="noreferrer">Ouvrir le dossier {{ source.label }}</a>
@@ -66,8 +67,8 @@
           <h2>Un dossier, deux chambres, plusieurs versions.</h2>
           <p>
             ACFPF conserve séparément les références officielles de l'Assemblée nationale et du Sénat puis les regroupe
-            lorsque le titre normalisé correspond exactement. Ces métadonnées identifient le parcours mais ne prouvent pas
-            le contenu juridique : le chat doit toujours ouvrir les textes officiels avant d'affirmer ce que prévoit une mesure.
+            lorsque le titre normalisé correspond exactement. L'étape ACFPF est une classification mécanique du libellé officiel,
+            qui reste affiché séparément. Si le libellé n'est pas reconnu sans ambiguïté, l'étape reste « Étape à vérifier ».
           </p>
           {% if dossier.themes %}
             <p class="source-block__technical">Thèmes Sénat : {{ dossier.themes|join(' · ') }}</p>
@@ -79,7 +80,7 @@
               <time>{{ event.date or 'date non renseignée' }}</time>
               <span>
                 {{ event.label }}
-                {% if event.chamber %}<small>{{ event.chamber }}</small>{% endif %}
+                <small>{{ event.stage_label }}{% if event.chamber %} · {{ event.chamber }}{% endif %}</small>
               </span>
             </div>
           {% endfor %}
@@ -98,7 +99,7 @@
         <div class="research-trust" aria-label="Garanties de recherche">
           <div><strong>Dossier verrouillé</strong><span>Le backend ajoute automatiquement l'identité du texte et ses références officielles.</span></div>
           <div><strong>Version à vérifier</strong><span>Le modèle doit ouvrir les documents avant d'affirmer ce que dit le texte.</span></div>
-          <div><strong>Chambres distinguées</strong><span>Assemblée, Sénat, CMP, adoption et promulgation ne sont pas confondus.</span></div>
+          <div><strong>Étape distinguée</strong><span>La classification ACFPF n'efface jamais le libellé officiel utilisé pour l'établir.</span></div>
           <div><strong>Preuves vérifiées</strong><span>Une source n'est citable qu'après lecture effective.</span></div>
         </div>
 
