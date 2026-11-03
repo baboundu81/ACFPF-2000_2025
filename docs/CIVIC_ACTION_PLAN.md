@@ -38,16 +38,23 @@ Objectif : rendre le nouveau parcours utilisable de bout en bout sans attendre l
 - [x] Conserver le dossier côté serveur lors des questions afin qu'un client ne puisse pas substituer silencieusement son titre ou son URL.
 - [x] Ajouter des tests unitaires et web sans dépendance réseau réelle.
 
-Limite volontaire de cette première verticale : la découverte structurée repose d'abord sur le jeu de données de l'Assemblée nationale. L'interface doit le dire explicitement et ne pas présenter cette couverture comme exhaustive de tout le Parlement.
+La couverture initiale limitée à l'Assemblée nationale a été levée lors de l'étape suivante avec l'intégration de DOSLEG au Sénat.
 
 ## Phase 2 — couverture parlementaire complète
 
-- [ ] Ajouter un connecteur structuré Sénat.
-- [ ] Dédupliquer les dossiers communs Assemblée/Sénat avec conservation des identifiants de chaque chambre.
-- [ ] Formaliser les états : dépôt, commission, séance, navette, CMP, adoption définitive, contrôle constitutionnel, promulgation, clôture sans loi.
+- [x] Ajouter un connecteur structuré Sénat à partir de l'export officiel DOSLEG.
+- [x] Dédupliquer les dossiers communs Assemblée/Sénat avec conservation des identifiants et URL de chaque chambre.
+- [~] Formaliser les états : le modèle distingue désormais en cours, adopté, promulgué et clôturé sans loi, ainsi que la chambre/étape courante lorsqu'elle est fournie ; la taxonomie fine dépôt/commission/séance/navette/CMP reste à enrichir.
 - [ ] Ajouter les filtres chambre, étape, période, type de texte et thème.
 - [ ] Ajouter une recherche assistée pour les formulations approximatives sans laisser le LLM inventer les candidats.
+- [x] Conserver un comportement dégradé explicite si une seule source parlementaire est momentanément indisponible.
 - [ ] Documenter les règles de classement et de tri pour éviter toute notion opaque de « texte important ».
+
+### Règle de fusion inter-chambres
+
+ACFPF ne fait pas de rapprochement flou automatique entre dossiers. Deux entrées Assemblée/Sénat sont regroupées uniquement lorsque leur titre canonique correspond exactement après normalisation mécanique (casse, accents et préfixe « projet/proposition de loi »). Les références de chaque chambre restent conservées dans `sources`. Cette règle privilégie les faux négatifs aux faux positifs : deux textes proches mais non identiques restent séparés tant qu'un identifiant officiel commun n'a pas été établi.
+
+Pour les statuts terminaux, une information explicite de promulgation, adoption définitive ou clôture sans loi prime sur un dossier qui apparaît encore actif dans l'autre source. Toute panne partielle est exposée comme avertissement et ne provoque pas l'invention d'un résultat de remplacement.
 
 ## Phase 3 — dossier législatif riche
 

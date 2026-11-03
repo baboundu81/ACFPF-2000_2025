@@ -25,11 +25,11 @@
 
   <main>
     <section class="hero shell civic-hero">
-      <p class="eyebrow">Sources primaires · Parlement · Légifrance · données publiques</p>
+      <p class="eyebrow">Sources primaires · Assemblée nationale · Sénat · Légifrance</p>
       <h1>Comprendre ce que décide réellement la puissance publique.</h1>
       <p class="hero__deck">
-        Recherchez un texte par son nom, son sujet ou simplement avec vos mots. ACFPF vous aide d'abord
-        à retrouver le bon dossier officiel, puis vous permet de l'analyser dans un espace dédié.
+        Recherchez un texte par son nom, son sujet ou simplement avec vos mots. ACFPF croise les inventaires
+        officiels des deux chambres, puis vous permet d'analyser le dossier dans un espace dédié.
       </p>
 
       <form class="legislation-search" method="get" action="/">
@@ -59,8 +59,15 @@
           <p class="eyebrow">Dossiers législatifs</p>
           <h2>{% if query %}Résultats pour « {{ query }} »{% else %}Textes en cours{% endif %}</h2>
         </div>
-        <p class="section-heading__note">{{ dossiers|length }} résultat(s) · Assemblée nationale</p>
+        <p class="section-heading__note">{{ dossiers|length }} résultat(s) · Assemblée nationale + Sénat</p>
       </div>
+
+      {% if legislation_warnings %}
+        <div class="source-warning" role="status">
+          <strong>Vue partielle.</strong>
+          {% for warning in legislation_warnings %}<span>{{ warning }}</span>{% endfor %}
+        </div>
+      {% endif %}
 
       <nav class="status-filters" aria-label="Filtrer les dossiers par statut">
         <a href="/?{% if query %}q={{ query|urlencode }}&{% endif %}status=active"
@@ -73,10 +80,10 @@
 
       {% if legislation_error %}
         <div class="error-panel" role="alert">
-          <p class="eyebrow">Source indisponible</p>
+          <p class="eyebrow">Sources indisponibles</p>
           <h2>Impossible de charger les dossiers législatifs.</h2>
           <p>{{ legislation_error }}</p>
-          <p>ACFPF n'invente aucun résultat de remplacement lorsque la source officielle est indisponible.</p>
+          <p>ACFPF n'invente aucun résultat de remplacement lorsque les sources officielles sont indisponibles.</p>
         </div>
       {% elif dossiers %}
         <div class="dossier-list">
@@ -84,6 +91,7 @@
             <article class="dossier-row">
               <div class="dossier-row__meta">
                 <span class="status-badge" data-status="{{ dossier.status }}">{{ dossier.status_label }}</span>
+                {% if dossier.current_chamber %}<span>Étape : {{ dossier.current_chamber }}</span>{% endif %}
                 {% if dossier.procedure_label %}<span>{{ dossier.procedure_label }}</span>{% endif %}
                 {% if dossier.last_activity %}<span>Activité : {{ dossier.last_activity }}</span>{% endif %}
               </div>
@@ -91,7 +99,9 @@
               {% if dossier.current_stage %}<p>{{ dossier.current_stage }}</p>{% endif %}
               <div class="dossier-row__actions">
                 <a class="action-link" href="/textes/{{ dossier.id }}">Analyser ce texte</a>
-                <a href="{{ dossier.official_url }}" target="_blank" rel="noreferrer">Voir le dossier officiel</a>
+                {% for source in dossier.sources %}
+                  <a href="{{ source.official_url }}" target="_blank" rel="noreferrer">{{ source.label }}</a>
+                {% endfor %}
               </div>
             </article>
           {% endfor %}
@@ -125,23 +135,29 @@
         <p class="eyebrow">Méthode</p>
         <h2>Le modèle explique ; les sources établissent les faits.</h2>
         <p class="lede">
-          La liste des textes vient des données officielles. L'IA n'est pas chargée d'inventer quels dossiers existent.
+          La liste des textes vient des données officielles de l'Assemblée nationale et du Sénat. L'IA n'est pas chargée d'inventer quels dossiers existent.
         </p>
         <p>
-          Après sélection d'un dossier, la recherche assistée reste bornée aux sources autorisées par ACFPF et une
-          affirmation factuelle doit être reliée à un document effectivement ouvert et lu.
+          Les dossiers dont les titres correspondent exactement après normalisation sont regroupés, mais chaque URL officielle reste conservée.
+          Après sélection, la recherche assistée doit toujours ouvrir les textes officiels avant d'affirmer ce qu'une mesure prévoit.
         </p>
       </div>
       <aside class="editorial-note">
-        <p class="editorial-note__title">Source de découverte</p>
-        <p><a href="{{ legislation_source }}" target="_blank" rel="noreferrer">Open data de l'Assemblée nationale</a></p>
+        <p class="editorial-note__title">Sources de découverte</p>
+        {% for source in legislation_sources %}
+          <p><a href="{{ source.url }}" target="_blank" rel="noreferrer">{{ source.name }}</a></p>
+        {% endfor %}
       </aside>
     </section>
   </main>
 
   <footer class="shell footer">
     <span>ACFPF · Analyse citoyenne de l'action publique française</span>
-    <a href="{{ legislation_source }}" target="_blank" rel="noreferrer">Source des dossiers</a>
+    <span>
+      {% for source in legislation_sources %}
+        <a href="{{ source.url }}" target="_blank" rel="noreferrer">{{ source.name }}</a>{% if not loop.last %} · {% endif %}
+      {% endfor %}
+    </span>
   </footer>
 </body>
 </html>
