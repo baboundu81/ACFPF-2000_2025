@@ -322,6 +322,38 @@ def test_gemini_uses_structured_actions_and_low_reasoning() -> None:
     assert session.last_call["json"]["reasoning_effort"] == "low"
 
 
+def test_gemini_uses_request_specific_json_schema() -> None:
+    custom_schema = {
+        "type": "object",
+        "properties": {"query": {"type": "string"}},
+        "required": ["query"],
+        "additionalProperties": False,
+    }
+    session = FakeSession(
+        {"choices": [{"message": {"content": json.dumps({"query": "santé"})}}]}
+    )
+    provider = OpenAICompatibleProvider(
+        name="gemini",
+        api_key="secret-test-key",
+        model="gemini-3.8-flash",
+        api_url="https://generativelanguage.googleapis.test/v1beta/openai/chat/completions",
+        session=session,
+    )
+
+    provider.complete_json(
+        ProviderRequest(
+            "system JSON",
+            "user",
+            response_schema=custom_schema,
+            response_schema_name="custom_plan",
+        )
+    )
+
+    response_format = session.last_call["json"]["response_format"]
+    assert response_format["json_schema"]["name"] == "custom_plan"
+    assert response_format["json_schema"]["schema"] == custom_schema
+
+
 def test_other_compatible_provider_keeps_json_object_mode() -> None:
     generated = {"action": "answer"}
     session = FakeSession(
