@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/ai.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/legislation.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/amendments.css') }}">
+  <script defer src="{{ url_for('static', filename='js/versions.js') }}"></script>
   <script defer src="{{ url_for('static', filename='js/amendments.js') }}"></script>
   <script defer src="{{ url_for('static', filename='js/dossier_chat.js') }}"></script>
 </head>
@@ -87,6 +88,27 @@
             </div>
           {% endfor %}
         </div>
+      </section>
+
+      <section id="versions" class="shell section-block versions-block"
+        data-versions-dossier-id="{{ dossier.id }}">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Versions du texte</p>
+            <h2>Retrouver les documents associés aux étapes parlementaires.</h2>
+          </div>
+          <p id="versions-count" class="section-heading__note">Chargement des notices officielles…</p>
+        </div>
+        <p class="filter-note">
+          Il s'agit de notices et de références de documents publiées par l'Assemblée nationale.
+          Elles ne constituent pas le texte intégral ; aucune comparaison automatique d'articles
+          n'est proposée tant que le contenu des versions n'a pas été récupéré et vérifié.
+        </p>
+        <p id="versions-status" class="filter-note" role="status" aria-live="polite"></p>
+        <div id="versions-list" class="amendments-list"></div>
+        <button id="versions-more" type="button" class="amendments-more" hidden>
+          Afficher les versions suivantes
+        </button>
       </section>
 
       <section id="amendments" class="shell section-block amendments-block"

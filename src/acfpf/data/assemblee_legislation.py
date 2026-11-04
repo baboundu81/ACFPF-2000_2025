@@ -112,7 +112,12 @@ def _first_text(mapping: Any, *keys: str) -> str | None:
 
 def _walk_events(value: Any) -> Iterable[AssemblyLegislativeEvent]:
     if isinstance(value, dict):
-        label = _first_text(value, "libelleActe", "libelle", "nom", "titre")
+        label_value = value.get("libelleActe")
+        label = (
+            _first_text(label_value, "libelleCourt", "nomCanonique")
+            if isinstance(label_value, dict)
+            else _text(label_value)
+        ) or _first_text(value, "libelle", "nom", "titre")
         code = _first_text(value, "codeActe", "code")
         date = _date(value.get("dateActe")) or _date(value.get("date"))
         if label and (date or code):
