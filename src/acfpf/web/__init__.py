@@ -11,8 +11,8 @@ from acfpf.legislation_detail import AmendmentService
 from acfpf.legislative_versions import TextVersionService
 from acfpf.macro import MacroService
 from acfpf.web.amendments import register_amendment_routes
-from acfpf.web.versions import register_version_routes
 from acfpf.web.app import create_app as _create_app
+from acfpf.web.versions import register_version_routes
 
 
 def create_app(
