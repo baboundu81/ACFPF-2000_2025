@@ -47,7 +47,7 @@ La couverture initiale limitée à l'Assemblée nationale a été levée lors de
 - [x] Normaliser une taxonomie d'étapes stable : dépôt, commission, séance/lecture, navette, CMP, Congrès, contrôle constitutionnel, adopté, promulgué, clos et inconnu.
 - [x] Ajouter les filtres chambre, période, type de texte et thème à partir de facettes calculées sur l'inventaire officiel chargé.
 - [x] Ajouter un filtre d'étape précis fondé sur la taxonomie normalisée.
-- [ ] Ajouter une recherche assistée pour les formulations approximatives sans laisser le LLM inventer les candidats.
+- [x] Ajouter une recherche assistée pour les formulations approximatives sans laisser le LLM inventer les candidats.
 - [x] Conserver un comportement dégradé explicite si une seule source parlementaire est momentanément indisponible.
 - [ ] Documenter les règles de classement et de tri pour éviter toute notion opaque de « texte important ».
 
@@ -93,8 +93,9 @@ Introduire des objets structurés :
 
 Puis intégrer :
 
-- [ ] versions successives du texte ;
-- [ ] amendements, auteurs, objet et sort ;
+- [x] Référencer les versions successives à partir des actes et notices officiels (identifiant, titre, provenance, date, étape) ;
+- [ ] Récupérer et vérifier le contenu intégral des versions avant toute comparaison d'articles ;
+- [x] Amendements Assemblée : index, auteur, article, sort et détail XML à la demande ;
 - [ ] scrutins publics et positions de vote ;
 - [ ] rapports de commission ;
 - [ ] débats en séance ;
@@ -150,3 +151,15 @@ Chaque phase doit conserver :
 - validation des citations côté backend ;
 - benchmark futur sur fidélité claim → preuve, version correcte du texte et refus correct ;
 - `ruff check .` et `pytest` verts avant fusion.
+
+### Garde-fou sur les versions documentaires (novembre 2026)
+
+La source Assemblée nationale fournit des références `texteAssocie` au sein des actes et des notices
+`json/document/<UID>.json` contenant titre, provenance et dates. Une notice documentaire ne contient
+**pas** le texte des articles. ACFPF expose `full_text_available=false` et un lien vers le **dossier**
+officiel plutôt que de construire une URL de document non confirmée.
+
+Les changements entre articles, l'imputation certaine aux amendements et les résumés sur le fond
+ne devront pas être annoncés avant la récupération et le contrôle des contenus de chaque version.
+
+Validation réseau : `ACFPF_LIVE_SOURCES=1 pytest -q -s tests/test_live_official_legislation.py tests/test_live_official_documents.py`.
