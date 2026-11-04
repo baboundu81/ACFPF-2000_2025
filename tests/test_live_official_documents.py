@@ -25,6 +25,7 @@ def test_live_official_dossier_document_metadata(tmp_path) -> None:
 
     target = next((item for item in dossiers if item.uid.endswith("N54629")), None)
     assert target is not None, "PLF 2027 dossier absent de l'archive officielle"
+    assert target.events, "Le schéma réel contient des actes, le parseur doit les restituer"
     print("LIVE-DOSSIER-UID:", target.uid)
     print("LIVE-DOSSIER-EVENTS:", len(target.events))
 
@@ -38,4 +39,11 @@ def test_live_official_dossier_document_metadata(tmp_path) -> None:
         dossier = payload.get("dossierParlementaire", payload)
         print("LIVE-DOSSIER-KEYS:", sorted(dossier))
         acts = dossier.get("actesLegislatifs", {})
-        print("LIVE-ACTS-SAMPLE:", json.dumps(acts, ensure_ascii=False)[:5000])
+        print("LIVE-ACTS-SAMPLE:", json.dumps(acts, ensure_ascii=False)[:1700])
+
+        document_uid = "PRJLANR5L17B3210"
+        matches = [name for name in names if document_uid in name]
+        print("LIVE-TEXT-DOCUMENT-NAMES:", matches[:3])
+        if matches:
+            document = json.loads(archive.read(matches[0]))
+            print("LIVE-TEXT-DOCUMENT-SAMPLE:", json.dumps(document, ensure_ascii=False)[:3800])
