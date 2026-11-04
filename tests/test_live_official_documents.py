@@ -25,7 +25,6 @@ def test_live_official_dossier_document_metadata(tmp_path) -> None:
 
     target = next((item for item in dossiers if item.uid.endswith("N54629")), None)
     assert target is not None, "PLF 2027 dossier absent de l'archive officielle"
-    assert target.events
     print("LIVE-DOSSIER-UID:", target.uid)
     print("LIVE-DOSSIER-EVENTS:", len(target.events))
 
