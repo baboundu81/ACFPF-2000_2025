@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/ai.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/legislation.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/amendments.css') }}">
   <script defer src="{{ url_for('static', filename='js/amendments.js') }}"></script>
   <script defer src="{{ url_for('static', filename='js/dossier_chat.js') }}"></script>
 </head>
@@ -115,6 +116,7 @@
               <option value="not_supported">Non soutenus</option>
               <option value="fallen">Tombés</option>
               <option value="inadmissible">Irrecevables</option>
+              <option value="discussed">Discutés — sort à vérifier</option>
               <option value="unknown">Sort à vérifier</option>
             </select>
           </label>
