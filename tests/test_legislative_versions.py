@@ -8,8 +8,8 @@ from io import BytesIO
 import pytest
 
 from acfpf.legislative_versions import (
-    TextVersionService,
     TextVersionsError,
+    TextVersionService,
     parse_assembly_text_versions,
 )
 from tests.test_legislation_detail import assembly_dossier, senate_only_dossier
