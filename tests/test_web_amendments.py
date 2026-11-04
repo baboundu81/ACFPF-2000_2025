@@ -165,3 +165,54 @@ def test_amendment_detail_endpoint_returns_404_for_unknown_amendment() -> None:
 
     assert response.status_code == 404
     assert response.get_json()["error"] == "amendment_not_found"
+
+
+def test_dossier_page_exposes_amendments_with_styles_and_filters() -> None:
+    client = make_app().test_client()
+
+    response = client.get("/textes/DLR5L17N54629")
+    html = response.get_data(as_text=True)
+
+    assert response.status_code == 200
+    assert 'data-amendments-dossier-id="DLR5L17N54629"' in html
+    assert 'href="/static/css/amendments.css"' in html
+    assert 'src="/static/js/amendments.js"' in html
+    assert 'id="amendments-list"' in html
+    assert 'id="amendments-more"' in html
+    assert 'value="adopted"' in html
+    assert 'value="discussed"' in html
+    assert "ne sont téléchargés qu'au moment" in html
+
+
+def test_dossier_page_does_not_eagerly_load_amendment_index_or_details() -> None:
+    class NoEagerAmendmentService:
+        def for_dossier(self, *args, **kwargs):
+            raise AssertionError("Index must not load during server render")
+
+        def detail_for(self, *args, **kwargs):
+            raise AssertionError("XML detail must not load during server render")
+
+    app = create_app(
+        FakeMacroService(),
+        FakeAnswerService(),
+        cofog_service=FakeCofogService(),
+        legislation_service=FakeLegislationService(),
+        amendment_service=NoEagerAmendmentService(),
+    )
+    response = app.test_client().get("/textes/DLR5L17N54629")
+
+    assert response.status_code == 200
+    assert b'id="amendments-list"' in response.data
+
+
+def test_amendments_static_assets_are_served() -> None:
+    client = make_app().test_client()
+
+    script = client.get("/static/js/amendments.js")
+    styles = client.get("/static/css/amendments.css")
+
+    assert script.status_code == 200
+    assert "AbortController" in script.get_data(as_text=True)
+    assert "textContent" in script.get_data(as_text=True)
+    assert styles.status_code == 200
+    assert ".amendment-row" in styles.get_data(as_text=True)

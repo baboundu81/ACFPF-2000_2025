@@ -8,6 +8,8 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/ai.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/legislation.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/amendments.css') }}">
+  <script defer src="{{ url_for('static', filename='js/amendments.js') }}"></script>
   <script defer src="{{ url_for('static', filename='js/dossier_chat.js') }}"></script>
 </head>
 <body>
@@ -85,6 +87,47 @@
             </div>
           {% endfor %}
         </div>
+      </section>
+
+      <section id="amendments" class="shell section-block amendments-block"
+        data-amendments-dossier-id="{{ dossier.id }}">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Amendements</p>
+            <h2>Voir ce que les parlementaires ont proposé de modifier.</h2>
+          </div>
+          <p id="amendments-count" class="section-heading__note">Chargement de l'index officiel…</p>
+        </div>
+
+        <p class="lede amendments-intro">
+          L'index est chargé depuis les données officielles de l'Assemblée nationale. Le dispositif et l'exposé des motifs
+          d'un amendement ne sont téléchargés qu'au moment où vous ouvrez son détail.
+        </p>
+
+        <div class="amendments-toolbar">
+          <label for="amendments-fate">
+            <span>Filtrer par sort</span>
+            <select id="amendments-fate">
+              <option value="">Tous les amendements</option>
+              <option value="adopted">Adoptés</option>
+              <option value="rejected">Rejetés</option>
+              <option value="pending">En attente</option>
+              <option value="withdrawn">Retirés</option>
+              <option value="not_supported">Non soutenus</option>
+              <option value="fallen">Tombés</option>
+              <option value="inadmissible">Irrecevables</option>
+              <option value="discussed">Discutés — sort à vérifier</option>
+              <option value="unknown">Sort à vérifier</option>
+            </select>
+          </label>
+          <p id="amendments-status" class="filter-note" role="status" aria-live="polite"></p>
+        </div>
+
+        <div id="amendments-list" class="amendments-list" aria-live="polite"></div>
+        <button id="amendments-more" class="amendments-more" type="button" hidden>Afficher la suite</button>
+        <noscript>
+          <p class="source-warning">Activez JavaScript pour parcourir les amendements structurés depuis cette fiche.</p>
+        </noscript>
       </section>
 
       <section id="ask" class="shell section-block ask-block dossier-chat-block">
