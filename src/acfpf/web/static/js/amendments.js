@@ -14,6 +14,8 @@
   let offset = 0;
   let loading = false;
   let filteredCount = 0;
+  let requestToken = 0;
+  let activeController = null;
 
   const apiBase = `/api/legislation/${encodeURIComponent(dossierId)}/amendments`;
 
@@ -25,7 +27,10 @@
   }
 
   function amendmentMeta(item) {
-    const values = [item.fate_label, item.instance, item.article, item.author].filter(Boolean);
+    const rawFate = item.fate_raw && item.fate_raw !== item.fate_label
+      ? `Sort officiel : ${item.fate_raw}`
+      : null;
+    const values = [item.fate_label, rawFate, item.instance, item.article, item.author].filter(Boolean);
     return values.join(" · ");
   }
 
@@ -33,11 +38,13 @@
     if (!panel.hidden) {
       panel.hidden = true;
       button.textContent = "Voir le détail";
+      button.setAttribute("aria-expanded", "false");
       return;
     }
     if (panel.dataset.loaded === "1") {
       panel.hidden = false;
       button.textContent = "Masquer le détail";
+      button.setAttribute("aria-expanded", "true");
       return;
     }
 
@@ -70,10 +77,12 @@
       panel.dataset.loaded = "1";
       panel.hidden = false;
       button.textContent = "Masquer le détail";
+      button.setAttribute("aria-expanded", "true");
     } catch (error) {
       panel.replaceChildren(element("p", "source-warning", `Détail indisponible : ${error.message}`));
       panel.hidden = false;
       button.textContent = "Réessayer";
+      button.setAttribute("aria-expanded", "true");
     } finally {
       button.disabled = false;
     }
@@ -92,6 +101,7 @@
     const actions = element("div", "amendment-row__actions");
     const detailButton = element("button", "amendment-detail-button", "Voir le détail");
     detailButton.type = "button";
+    detailButton.setAttribute("aria-expanded", "false");
     const official = element("a", "", "Source officielle");
     official.href = item.official_url;
     official.target = "_blank";
@@ -107,16 +117,22 @@
   }
 
   async function loadPage({ reset = false } = {}) {
-    if (loading) return;
-    loading = true;
-    moreButton.disabled = true;
-    status.textContent = "Chargement des amendements…";
     if (reset) {
+      requestToken += 1;
+      activeController?.abort();
+      loading = false;
       offset = 0;
       filteredCount = 0;
       list.replaceChildren();
       moreButton.hidden = true;
     }
+    if (loading) return;
+    const token = ++requestToken;
+    const controller = new AbortController();
+    activeController = controller;
+    loading = true;
+    moreButton.disabled = true;
+    status.textContent = "Chargement des amendements…";
 
     const params = new URLSearchParams({
       offset: String(offset),
@@ -127,8 +143,10 @@
     try {
       const response = await fetch(`${apiBase}?${params.toString()}`, {
         headers: { Accept: "application/json" },
+        signal: controller.signal,
       });
       const payload = await response.json();
+      if (token !== requestToken) return;
       if (!response.ok) throw new Error(payload.message || "Index indisponible");
 
       if (!payload.available) {
@@ -148,12 +166,16 @@
         ? `${offset} sur ${filteredCount} affiché(s).`
         : "Aucun amendement ne correspond à ce filtre.";
     } catch (error) {
+      if (token !== requestToken || error.name === "AbortError") return;
       status.textContent = `Impossible de charger les amendements : ${error.message}`;
       if (reset) list.replaceChildren();
       moreButton.hidden = true;
     } finally {
-      loading = false;
-      moreButton.disabled = false;
+      if (token === requestToken) {
+        loading = false;
+        activeController = null;
+        moreButton.disabled = false;
+      }
     }
   }
 
