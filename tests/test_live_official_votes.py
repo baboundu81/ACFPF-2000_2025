@@ -34,4 +34,19 @@ def test_live_official_vote_archive_schema() -> None:
         sample = json.loads(archive.read(names[0]))
         scrutin = sample.get("scrutin", sample)
         print("LIVE-SCRUTIN-KEYS:", sorted(scrutin))
-        print("LIVE-SCRUTIN-SAMPLE:", json.dumps(scrutin, ensure_ascii=False)[:4300])
+        print("LIVE-SCRUTIN-SAMPLE:", json.dumps(scrutin, ensure_ascii=False)[:1200])
+
+        linked = []
+        for name in names:
+            record = json.loads(archive.read(name)).get("scrutin", {})
+            objet = record.get("objet") or {}
+            if not isinstance(objet, dict):
+                continue
+            if objet.get("dossierLegislatif") is not None or objet.get("referenceLegislative") is not None:
+                linked.append({
+                    "uid": record.get("uid"),
+                    "dossier": objet.get("dossierLegislatif"),
+                    "reference": objet.get("referenceLegislative"),
+                })
+        print("LIVE-SCRUTIN-EXPLICIT-LINKS:", len(linked))
+        print("LIVE-SCRUTIN-LINK-SAMPLES:", json.dumps(linked[:5], ensure_ascii=False)[:1600])
