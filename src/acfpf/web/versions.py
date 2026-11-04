@@ -6,7 +6,7 @@
 from flask import Flask, jsonify, request
 
 from acfpf.legislation import LegislationError, LegislationService
-from acfpf.legislative_versions import TextVersionService, TextVersionsError
+from acfpf.legislative_versions import TextVersionsError, TextVersionService
 from acfpf.web.amendments import _bounded_integer
 
 
