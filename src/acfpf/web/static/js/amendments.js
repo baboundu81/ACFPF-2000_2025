@@ -35,7 +35,7 @@
   }
 
   async function loadDetail(button, panel, amendmentId) {
-    if (!panel.hidden) {
+    if (!panel.hidden && panel.dataset.loaded === "1") {
       panel.hidden = true;
       button.textContent = "Voir le détail";
       button.setAttribute("aria-expanded", "false");
