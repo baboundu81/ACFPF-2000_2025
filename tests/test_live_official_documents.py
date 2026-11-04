@@ -12,6 +12,7 @@ import zipfile
 import pytest
 
 from acfpf.data.assemblee_legislation import load_assembly_dossiers
+from acfpf.legislative_versions import parse_assembly_text_versions
 
 
 @pytest.mark.skipif(
@@ -28,6 +29,18 @@ def test_live_official_dossier_document_metadata(tmp_path) -> None:
     assert target.events, "Le schéma réel contient des actes, le parseur doit les restituer"
     print("LIVE-DOSSIER-UID:", target.uid)
     print("LIVE-DOSSIER-EVENTS:", len(target.events))
+
+    version_collection = parse_assembly_text_versions(
+        archive_path.read_bytes(),
+        dossier_uid=target.uid,
+        dossier_url=target.official_url,
+    )
+    assert version_collection.versions, "Aucune version documentaire officielle reconnue"
+    assert any(
+        item.uid == "PRJLANR5L17B3210" and item.title
+        for item in version_collection.versions
+    )
+    print("LIVE-STRUCTURED-VERSIONS:", len(version_collection.versions))
 
     with zipfile.ZipFile(archive_path) as archive:
         names = [name for name in archive.namelist() if name.lower().endswith(".json")]
