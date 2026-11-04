@@ -8,8 +8,10 @@ from acfpf.ai.legislation_query import LegislativeQueryPlanner
 from acfpf.cofog import CofogService
 from acfpf.legislation import LegislationService
 from acfpf.legislation_detail import AmendmentService
+from acfpf.legislative_versions import TextVersionService
 from acfpf.macro import MacroService
 from acfpf.web.amendments import register_amendment_routes
+from acfpf.web.versions import register_version_routes
 from acfpf.web.app import create_app as _create_app
 
 
@@ -20,6 +22,7 @@ def create_app(
     legislation_service: LegislationService | None = None,
     legislation_query_planner: LegislativeQueryPlanner | None = None,
     amendment_service: AmendmentService | None = None,
+    version_service: TextVersionService | None = None,
 ):
     """Create the ACFPF web app and register optional structured civic-data routes."""
     civic_service = legislation_service or LegislationService()
@@ -35,6 +38,7 @@ def create_app(
         civic_service,
         amendment_service or AmendmentService(),
     )
+    register_version_routes(app, civic_service, version_service or TextVersionService())
     return app
 
 
