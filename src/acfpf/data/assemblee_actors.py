@@ -12,10 +12,10 @@ from __future__ import annotations
 import json
 import re
 import zipfile
+from collections.abc import Callable, Iterable
 from datetime import UTC, datetime
 from io import BytesIO
 from pathlib import Path
-from typing import Callable, Iterable
 
 import requests
 
