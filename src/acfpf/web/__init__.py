@@ -28,6 +28,7 @@ def create_app(
     version_service: TextVersionService | None = None,
     vote_loader: Callable | None = None,
     vote_position_loader: Callable | None = None,
+    vote_actor_resolver: Callable | None = None,
 ):
     """Create the ACFPF web app and register optional structured civic-data routes."""
     civic_service = legislation_service or LegislationService()
@@ -44,9 +45,10 @@ def create_app(
         amendment_service or AmendmentService(),
     )
     register_version_routes(app, civic_service, version_service or TextVersionService())
-    if vote_loader is None and vote_position_loader is None:
+    if vote_loader is None and vote_position_loader is None and vote_actor_resolver is None:
         register_vote_routes(app, civic_service)
     else:
+        from acfpf.data.assemblee_actors import resolve_actor_names
         from acfpf.data.assemblee_votes import load_votes
         from acfpf.legislative_vote_positions import load_nominal_positions
 
@@ -54,6 +56,7 @@ def create_app(
             app, civic_service,
             vote_loader=vote_loader or load_votes,
             position_loader=vote_position_loader or load_nominal_positions,
+            actor_resolver=vote_actor_resolver or resolve_actor_names,
         )
     return app
 
