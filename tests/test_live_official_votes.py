@@ -53,6 +53,20 @@ def test_live_official_vote_archive_schema() -> None:
         print("LIVE-SCRUTIN-EXPLICIT-LINKS:", len(linked))
         print("LIVE-SCRUTIN-LINK-SAMPLES:", json.dumps(linked[:5], ensure_ascii=False)[:1600])
 
+        sample_with_voters = None
+        for name in names:
+            record = json.loads(archive.read(name)).get("scrutin", {})
+            ventilation = record.get("ventilationVotes")
+            if not isinstance(ventilation, dict) or not ventilation:
+                continue
+            sample_with_voters = {"uid": record.get("uid"), "ventilation": ventilation}
+            break
+        assert sample_with_voters is not None
+        print("LIVE-NOMINAL-SCHEMA:", json.dumps(
+            sample_with_voters, ensure_ascii=False
+        )[:6000])
+
+
         # Exercise the production parser against the real official archive, not a synthetic fixture.
         dossier_uid = next(
             (item["dossier"].get("dossierRef") for item in linked
