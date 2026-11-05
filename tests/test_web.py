@@ -239,6 +239,9 @@ def test_legislative_dossier_page_has_dedicated_chat_and_both_chambers() -> None
     assert "Ouvrir le dossier Assemblée nationale" in html
     assert "Ouvrir le dossier Sénat" in html
     assert "Logement et urbanisme" in html
+    assert "document HTML officiel individuellement" in html
+    assert "ne garantit ni la structure des articles" in html
+    assert 'js/versions.js' in html
     assert 'data-votes-dossier-id="DLR1"' in html
     assert 'js/votes.js' in html
     assert "Scrutins publics" in html
