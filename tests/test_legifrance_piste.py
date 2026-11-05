@@ -53,7 +53,7 @@ def test_exact_official_search_structure_and_date_bounds():
     assert body["recherche"]["champs"][0]["criteres"][0]["typeRecherche"] == "EXACTE"
     assert body["recherche"]["filtres"][1]["valeur"] == "VIGUEUR"
     assert body["recherche"]["filtres"][0]["singleDate"] > 0
-    for bad in ("2026-5", "2019-290/../../", "http://evil", "", "2019-290?x=y"):
+    for bad in ("2026", "2019-290/../../", "http://evil", "", "2019-290?x=y"):
         with pytest.raises(PisteError, match="Invalid law number"):
             exact_number_query(bad, as_of="2026-11-06")
     for bad in ("", "2026-13-05", "20261106", "tomorrow"):
