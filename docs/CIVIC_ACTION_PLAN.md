@@ -308,3 +308,36 @@ le comportement antérieur n'est pas modifié.
 
 Validation : `tests/test_assemblee_actors.py` et
 `ACFPF_LIVE_SOURCES=1 pytest -q -s tests/test_live_official_actors.py`.
+
+
+### Notices de rapports parlementaires — tranche initiale
+
+L'export JSON `Dossiers_Legislatifs.json.zip` de l'Assemblée nationale
+contient les notices de rapports (`classification.type.code=RAPP`) avec
+un `document.dossierRef` explicite. ACFPF ne rattache un rapport à un
+dossier que sur correspondance **strictement identique** de cet UID et
+vérification du dossier lui-même dans l'archive. Le test live a établi
+l'existence de notices de rapports d'origine Assemblée et Sénat dans le
+même export ; la provenance documentaire est conservée et ne doit pas
+être confondue avec le producteur de l'archive.
+
+L'endpoint `GET /api/legislation/<dossier>/reports` fournit la liste
+paginée des notices et leurs dates renseignées, sans construire de lien
+vers une ressource dont l'adresse n'a pas été vérifiée. L'endpoint
+`GET /api/legislation/<dossier>/reports/<uid>/text` utilise le lecteur
+HTML officiel déjà validé seulement pour les UID d'origine Assemblée
+`RAPPANR...` correctement rattachés, et refuse une URL HTML inventée
+pour les rapports d'origine Sénat. Une notice ne garantit pas que le
+contenu HTML soit disponible. Aucun extrait de rapport n'est une preuve
+juridique du contenu applicable d'une loi.
+
+Sources :
+https://data.assemblee-nationale.fr/travaux-parlementaires/dossiers-legislatifs ;
+https://data.assemblee-nationale.fr/foire-aux-questions .
+Validation : `tests/test_legislative_reports.py` et
+`ACFPF_LIVE_SOURCES=1 pytest -q -s tests/test_live_official_reports.py`.
+
+La couverture de tous les rapports de commission, leur interface dédiée
+et les publications du Sénat indépendantes de l'archive Assemblée
+restent à compléter : la case générale « rapports de commission » n'est
+pas cochée sur cette seule tranche.
