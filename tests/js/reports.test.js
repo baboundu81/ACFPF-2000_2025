@@ -16,6 +16,7 @@ class Node {
     this.tag = tag;
     this.children = [];
     this.listeners = {};
+    this.attributes = {};
     this.hidden = false;
     this.disabled = false;
     this.textContent = "";
@@ -24,6 +25,7 @@ class Node {
   append(...children) { this.children.push(...children); }
   replaceChildren(...children) { this.children = children; }
   addEventListener(type, callback) { this.listeners[type] = callback; }
+  setAttribute(name, value) { this.attributes[name] = String(value); }
   click() { if (this.listeners.click) return this.listeners.click(); }
 }
 
