@@ -13,6 +13,8 @@ from io import BytesIO
 import pytest
 import requests
 
+from acfpf.data.assemblee_votes import parse_votes_archive
+
 SCRUTINS_URL = (
     "https://data.assemblee-nationale.fr/static/openData/repository/"
     "17/loi/scrutins/Scrutins.json.zip"
@@ -50,3 +52,17 @@ def test_live_official_vote_archive_schema() -> None:
                 })
         print("LIVE-SCRUTIN-EXPLICIT-LINKS:", len(linked))
         print("LIVE-SCRUTIN-LINK-SAMPLES:", json.dumps(linked[:5], ensure_ascii=False)[:1600])
+
+        # Exercise the production parser against the real official archive, not a synthetic fixture.
+        dossier_uid = next(
+            (item["dossier"].get("dossierRef") for item in linked
+             if isinstance(item["dossier"], dict) and item["dossier"].get("dossierRef")),
+            None,
+        )
+        assert dossier_uid, "No explicit dossier reference found in the official archive"
+        votes = parse_votes_archive(response.content, dossier_uid=dossier_uid)
+        assert votes, "The production parser found no votes for an official dossier reference"
+        assert all(vote.dossier_id == dossier_uid for vote in votes)
+        assert all(vote.uid for vote in votes)
+
+
