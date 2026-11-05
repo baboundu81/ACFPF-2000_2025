@@ -214,3 +214,15 @@ des articles restent à valider.
 
 Tests : `tests/test_legislative_fulltext.py` (déterministes) et
 `ACFPF_LIVE_SOURCES=1 pytest -q -s tests/test_live_official_fulltext.py`.
+
+### Lecture depuis la fiche dossier
+
+Les notices du dossier affichent désormais un bouton « Afficher le texte officiel »
+quand une notice officielle est disponible. Le navigateur appelle alors l'endpoint
+borné, affiche la transcription textuelle du HTML, son empreinte, sa date de
+consultation et le lien original. La lecture n'est pas déclenchée au chargement de
+la page afin d'éviter des téléchargements non demandés. Les erreurs et absences
+de HTML sont affichées sans présenter la notice comme un texte intégral.
+
+L'absence de validation de la structure article par article reste explicite et
+interdit de qualifier cet affichage de comparaison juridique entre versions.
