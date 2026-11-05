@@ -7,6 +7,7 @@ from flask import Flask, jsonify, request
 
 from acfpf.legislation import LegislationError, LegislationService
 from acfpf.legislative_fulltext import OfficialTextError, fetch_official_text
+from acfpf.legislative_text_diff import TextComparisonError, compare_official_texts
 from acfpf.legislative_versions import TextVersionsError, TextVersionService
 from acfpf.web.amendments import _bounded_integer
 
@@ -70,3 +71,44 @@ def register_version_routes(
         payload["dossier_id"] = dossier.id
         payload["version"] = version.as_dict()
         return jsonify(payload)
+
+    @app.get("/api/legislation/<dossier_id>/versions/compare")
+    def legislative_text_diff_api(dossier_id: str):
+        before_uid = request.args.get("before", "")
+        after_uid = request.args.get("after", "")
+        if not before_uid or not after_uid or before_uid == after_uid:
+            return jsonify({
+                "error": "invalid_versions", "message": "Sélectionnez deux versions distinctes."
+            }), 400
+        try:
+            dossier = legislation_service.get(dossier_id)
+        except LegislationError as exc:
+            return jsonify({"error": "legislation_unavailable", "message": str(exc)}), 503
+        if dossier is None:
+            return jsonify({"error": "dossier_not_found"}), 404
+        try:
+            collection = version_service.for_dossier(dossier)
+        except TextVersionsError as exc:
+            return jsonify({"error": "versions_unavailable", "message": str(exc)}), 503
+        notice_by_uid = {
+            version.uid: version
+            for version in collection.versions
+            if version.notice_available
+        }
+        if before_uid not in notice_by_uid or after_uid not in notice_by_uid:
+            return jsonify({
+                "error": "document_not_linked",
+                "message": "Les deux documents doivent être liés à ce dossier officiel.",
+            }), 404
+        try:
+            before = fetch_official_text(before_uid)
+            after = fetch_official_text(after_uid)
+            diff = compare_official_texts(before, after)
+        except OfficialTextError as exc:
+            return jsonify({"error": "official_text_unavailable", "message": str(exc)}), 503
+        except TextComparisonError as exc:
+            return jsonify({"error": "comparison_unavailable", "message": str(exc)}), 422
+        diff["dossier_id"] = dossier.id
+        diff["before"]["version"] = notice_by_uid[before_uid].as_dict()
+        diff["after"]["version"] = notice_by_uid[after_uid].as_dict()
+        return jsonify(diff)
