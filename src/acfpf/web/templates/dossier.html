@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/legislation.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/amendments.css') }}">
   <script defer src="{{ url_for('static', filename='js/versions.js') }}"></script>
+  <script defer src="{{ url_for('static', filename='js/votes.js') }}"></script>
   <script defer src="{{ url_for('static', filename='js/amendments.js') }}"></script>
   <script defer src="{{ url_for('static', filename='js/dossier_chat.js') }}"></script>
 </head>
@@ -109,6 +110,29 @@
         <button id="versions-more" type="button" class="amendments-more" hidden>
           Afficher les versions suivantes
         </button>
+      </section>
+
+      <section id="votes" class="shell section-block versions-block"
+        data-votes-dossier-id="{{ dossier.id }}">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Scrutins publics</p>
+            <h2>Consulter les scrutins explicitement rattachés à ce dossier.</h2>
+          </div>
+          <p id="votes-count" class="section-heading__note">Chargement des scrutins officiels…</p>
+        </div>
+        <p class="filter-note">
+          Seuls les scrutins de l'Assemblée nationale dont la référence officielle correspond
+          exactement à ce dossier sont affichés. L'absence de scrutin dans cette liste ne signifie
+          pas qu'aucun vote n'a eu lieu. Un vote sur un article ou un amendement ne constitue pas
+          à lui seul l'adoption définitive de la loi.
+        </p>
+        <p id="votes-status" class="filter-note" role="status" aria-live="polite"></p>
+        <div id="votes-list" class="amendments-list" aria-live="polite"></div>
+        <button id="votes-more" class="amendments-more" type="button" hidden>
+          Afficher les scrutins suivants
+        </button>
+        <noscript><p class="filter-note">Activez JavaScript pour consulter les scrutins depuis cette page.</p></noscript>
       </section>
 
       <section id="amendments" class="shell section-block amendments-block"
