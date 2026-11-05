@@ -246,3 +246,25 @@ l'inventaire réellement chargé avant application des filtres. En mode assisté
 le LLM ne peut que proposer une requête ou des filtres : cette même formule
 déterministe classe les dossiers retenus. Aucun élément n'est présenté comme
 « important » ou prioritaire pour des raisons éditoriales.
+
+
+### Votes nominatifs — première tranche
+
+L'API `GET /api/legislation/<dossier_id>/votes/<vote_uid>/positions`
+expose les identifiants officiels `acteurRef`, `mandatRef`, `organeRef`,
+la position nominative publiée (`pour`, `contre`, `abstention`,
+`non_votant`) et le drapeau de délégation lorsque disponible.
+
+Ce service ne s'appuie que sur les listes `ventilationVotes.organe.groupes.groupe
+.vote.decompteNominatif` de l'archive JSON officielle de l'Assemblée
+nationale. Il exige le rattachement exact du scrutin par
+`objet.dossierLegislatif.dossierRef` et une identité de scrutin vérifiée ;
+aucun nom de député n'est fabriqué à partir des références.
+Un acteur absent des listes ne doit **jamais** être qualifié d'absent,
+d'abstentionniste ou de non-votant par déduction. Les incohérences
+contradictoires entraînent un refus de restitution.
+
+Validation structure réelle : test live utilisant un scrutin lié à un dossier
+et la ventilation nominative publiée par l'Assemblée (XVIIe législature).
+La résolution des noms depuis le référentiel des acteurs, la couverture
+historique et la consultation des positions dans l'UI restent à traiter.
