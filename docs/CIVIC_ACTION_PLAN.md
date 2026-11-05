@@ -180,5 +180,6 @@ Source : https://data.assemblee-nationale.fr/travaux-parlementaires/votes
 Validation : le test `tests/test_live_official_votes.py`, lancé avec
 `ACFPF_LIVE_SOURCES=1`, vérifie le format réel et exerce le parseur de production
 sur une référence de dossier présente dans l'archive. L'API est une première brique :
-l'interface dédiée, la couverture du Sénat, les scrutins sans référence explicite et
+l'interface de consultation paginée des scrutins rattachés est désormais présente
+sur la fiche dossier ; la couverture du Sénat, les scrutins sans référence explicite et
 les votes nominatifs restent à développer et à valider.
