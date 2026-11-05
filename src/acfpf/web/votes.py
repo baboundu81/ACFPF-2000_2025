@@ -7,6 +7,11 @@ from collections.abc import Callable
 
 from flask import Flask, jsonify, request
 
+from acfpf.data.assemblee_actors import (
+    ACTORS_SOURCE,
+    ActorDirectoryError,
+    resolve_actor_names,
+)
 from acfpf.data.assemblee_votes import VoteSourceError, load_votes
 from acfpf.legislation import LegislationError, LegislationService
 from acfpf.legislative_vote_positions import load_nominal_positions
@@ -16,6 +21,7 @@ from acfpf.web.amendments import _bounded_integer
 def register_vote_routes(
     app: Flask, legislation_service: LegislationService, vote_loader: Callable = load_votes,
     position_loader: Callable = load_nominal_positions,
+    actor_resolver: Callable = resolve_actor_names,
 ) -> None:
     @app.get("/api/legislation/<dossier_id>/votes")
     def legislation_votes_api(dossier_id: str):
@@ -81,9 +87,24 @@ def register_vote_routes(
         except VoteSourceError as exc:
             return jsonify({"error": "vote_positions_unavailable", "message": str(exc)}), 503
         payload = collection.as_dict()
+        page = collection.positions[offset:offset + limit]
+        entries = [item.as_dict() for item in page]
+        payload["actor_names_available"] = False
+        if request.args.get("names") == "1" and entries:
+            try:
+                resolved = actor_resolver([item.actor_ref for item in page])
+            except ActorDirectoryError:
+                payload["actor_names_warning"] = (
+                    "Annuaire historique indisponible : identifiants officiels conservés."
+                )
+            else:
+                payload["actor_names_available"] = True
+                payload["actors_source_url"] = ACTORS_SOURCE
+                for item in entries:
+                    item["actor_name"] = resolved.get(item["actor_ref"])
         payload.update({
             "offset": offset, "limit": limit,
-            "positions": [item.as_dict() for item in collection.positions[offset:offset + limit]],
+            "positions": entries,
             "source_url": "https://data.assemblee-nationale.fr/travaux-parlementaires/votes",
         })
         return jsonify(payload)
