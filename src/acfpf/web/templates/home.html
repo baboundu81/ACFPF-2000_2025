@@ -72,6 +72,14 @@
         <p class="section-heading__note">{{ dossiers|length }} résultat(s) · Assemblée nationale + Sénat</p>
       </div>
 
+      <p class="filter-note">
+        Ordre des résultats : pertinence lexicale sur les champs officiels (titre,
+        procédure, étape et thèmes), puis date de dernière activité décroissante,
+        puis titre et identifiant décroissants en cas d'égalité. Sans mots-clés,
+        la date prime. Le score n'est ni une mesure d'importance politique ni une
+        recommandation éditoriale. Les filtres sont appliqués avant la limite d'affichage.
+      </p>
+
       {% if legislation_warnings %}
         <div class="source-warning" role="status">
           <strong>Vue partielle.</strong>
