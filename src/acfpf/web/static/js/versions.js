@@ -13,6 +13,70 @@
   const pageSize = 20;
   let offset = 0;
   let busy = false;
+  const beforeSelect = document.getElementById("compare-before");
+  const afterSelect = document.getElementById("compare-after");
+  const compareStart = document.getElementById("compare-start");
+  const compareStatus = document.getElementById("compare-status");
+  const compareResult = document.getElementById("compare-result");
+
+  function updateComparisonControls() {
+    if (!compareStart || !beforeSelect || !afterSelect) return;
+    compareStart.disabled = !beforeSelect.value || !afterSelect.value ||
+      beforeSelect.value === afterSelect.value;
+  }
+
+  async function compareSelected() {
+    if (!compareStart || !beforeSelect || !afterSelect || !compareStatus || !compareResult) return;
+    if (!beforeSelect.value || !afterSelect.value || beforeSelect.value === afterSelect.value) return;
+    const firstUid = beforeSelect.value;
+    const secondUid = afterSelect.value;
+    compareStart.disabled = true;
+    compareStatus.textContent = "Consultation des deux textes officiels…";
+    compareResult.hidden = true;
+    compareResult.replaceChildren();
+    try {
+      const params = new URLSearchParams({ before: firstUid, after: secondUid });
+      const response = await fetch(`${api}/compare?${params}`, {
+        headers: { Accept: "application/json" },
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.message || "Comparaison indisponible");
+      if (payload.dossier_id !== dossierId ||
+          payload.before?.uid !== firstUid || payload.after?.uid !== secondUid) {
+        throw new Error("Références officielles incohérentes");
+      }
+      compareResult.append(node("p", "filter-note", payload.warning));
+      for (const [label, item] of [["Départ", payload.before], ["Arrivée", payload.after]]) {
+        compareResult.append(node("p", "amendment-row__meta",
+          `${label} : ${item.uid} · SHA-256 : ${item.sha256} · consulté le ${item.retrieved_at}`));
+        const link = node("a", "amendment-detail__source", `Ouvrir l'original – ${label}`);
+        link.href = item.url;
+        link.target = "_blank";
+        link.rel = "noreferrer";
+        compareResult.append(link);
+      }
+      const diff = node("pre", "amendment-detail__text",
+        payload.changed ? payload.diff : "Aucune différence dans l'extraction textuelle.");
+      diff.style.whiteSpace = "pre-wrap";
+      diff.style.overflowWrap = "anywhere";
+      compareResult.append(diff);
+      compareResult.hidden = false;
+      compareStatus.textContent = payload.changed
+        ? "Différences textuelles détectées — sans validation juridique des articles."
+        : "Aucune différence détectée dans les transcriptions HTML.";
+    } catch (error) {
+      compareStatus.textContent = `Comparaison impossible : ${error.message}`;
+    } finally {
+      updateComparisonControls();
+    }
+  }
+
+  if (beforeSelect && afterSelect && compareStart) {
+    beforeSelect.addEventListener("change", updateComparisonControls);
+    afterSelect.addEventListener("change", updateComparisonControls);
+    compareStart.addEventListener("click", compareSelected);
+  }
+
 
   function node(tag, className, text) {
     const item = document.createElement(tag);
@@ -78,6 +142,13 @@
     row.append(node("p", "filter-note", `Référence officielle : ${version.uid}`));
     if (!version.notice_available) {
       row.append(node("p", "filter-note", "Notice individuelle non disponible dans l'archive."));
+    }
+    if (version.notice_available && beforeSelect && afterSelect) {
+      for (const target of [beforeSelect, afterSelect]) {
+        const choice = node("option", "", version.title || version.uid);
+        choice.value = version.uid;
+        target.append(choice);
+      }
     }
     if (version.notice_available) {
       const actions = node("div", "amendment-row__actions");
