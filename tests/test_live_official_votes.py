@@ -14,6 +14,7 @@ import pytest
 import requests
 
 from acfpf.data.assemblee_votes import parse_votes_archive
+from acfpf.legislative_vote_positions import parse_nominal_positions
 
 SCRUTINS_URL = (
     "https://data.assemblee-nationale.fr/static/openData/repository/"
@@ -52,6 +53,42 @@ def test_live_official_vote_archive_schema() -> None:
                 })
         print("LIVE-SCRUTIN-EXPLICIT-LINKS:", len(linked))
         print("LIVE-SCRUTIN-LINK-SAMPLES:", json.dumps(linked[:5], ensure_ascii=False)[:1600])
+
+        sample_with_voters = None
+        for name in names:
+            record = json.loads(archive.read(name)).get("scrutin", {})
+            ventilation = record.get("ventilationVotes")
+            if not isinstance(ventilation, dict) or not ventilation:
+                continue
+            sample_with_voters = {"uid": record.get("uid"), "ventilation": ventilation}
+            break
+        assert sample_with_voters is not None
+        print("LIVE-NOMINAL-SCHEMA:", json.dumps(
+            sample_with_voters, ensure_ascii=False
+        )[:6000])
+        # The real nested nominal schema must be accepted by the production parser,
+        # including the list-or-singleton shapes published by the Assembly.
+        verified_positions = None
+        for name in names:
+            raw = archive.read(name)
+            record = json.loads(raw).get("scrutin", {})
+            obj = record.get("objet") or {}
+            linked_dossier = obj.get("dossierLegislatif") if isinstance(obj, dict) else None
+            vent = record.get("ventilationVotes")
+            if not isinstance(linked_dossier, dict) or not linked_dossier.get("dossierRef"):
+                continue
+            if not isinstance(vent, dict) or not vent.get("organe"):
+                continue
+            verified_positions = parse_nominal_positions(
+                raw, dossier_uid=linked_dossier["dossierRef"], vote_uid=record["uid"],
+            )
+            if verified_positions.available:
+                break
+        assert verified_positions is not None and verified_positions.available
+        assert verified_positions.positions
+        print("LIVE-NOMINAL-POSITIONS:", len(verified_positions.positions))
+
+
 
         # Exercise the production parser against the real official archive, not a synthetic fixture.
         dossier_uid = next(
