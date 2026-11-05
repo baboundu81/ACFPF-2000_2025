@@ -49,7 +49,7 @@ La couverture initiale limitée à l'Assemblée nationale a été levée lors de
 - [x] Ajouter un filtre d'étape précis fondé sur la taxonomie normalisée.
 - [x] Ajouter une recherche assistée pour les formulations approximatives sans laisser le LLM inventer les candidats.
 - [x] Conserver un comportement dégradé explicite si une seule source parlementaire est momentanément indisponible.
-- [ ] Documenter les règles de classement et de tri pour éviter toute notion opaque de « texte important ».
+- [x] Documenter les règles de classement et de tri pour éviter toute notion opaque de « texte important ».
 
 ### Règle de fusion inter-chambres
 
@@ -226,3 +226,23 @@ de HTML sont affichées sans présenter la notice comme un texte intégral.
 
 L'absence de validation de la structure article par article reste explicite et
 interdit de qualifier cet affichage de comparaison juridique entre versions.
+
+
+### Classement et neutralité des résultats
+
+Le moteur `browse_legislation` applique d'abord les filtres déterministes, sans
+présélection par un modèle. Pour chaque terme lexical normalisé (minuscules,
+accents supprimés), une occurrence dans le titre ajoute **10** au score ;
+une occurrence ailleurs dans les champs indexés (titre, procédure, étape brute,
+thèmes) ajoute **3**. Les termes sans occurrence sont exclus de la recherche
+lorsqu'au moins un mot-clé a été extrait. La correspondance est actuellement
+une inclusion de chaîne, sans analyse sémantique ni jugement d'intérêt public.
+
+L'ordre est décroissant : score lexical, dernière activité connue (date ISO),
+titre, puis UID du dossier comme départage stable. Sans mot-clé, tous les
+scores valent zéro et la dernière activité détermine d'abord l'ordre. Les
+filtres s'appliquent avant la limite de 100 résultats. Les facettes utilisent
+l'inventaire réellement chargé avant application des filtres. En mode assisté,
+le LLM ne peut que proposer une requête ou des filtres : cette même formule
+déterministe classe les dossiers retenus. Aucun élément n'est présenté comme
+« important » ou prioritaire pour des raisons éditoriales.
