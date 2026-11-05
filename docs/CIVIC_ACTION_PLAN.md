@@ -376,3 +376,26 @@ Ni un événement de première lecture ni sa date ne permettent d'inférer
 qu'une personne donnée a pris la parole. L'étape générale « débats en
 séance » reste ouverte jusqu'au raccordement des comptes rendus XML
 officiels et à la vérification du lien avec chaque dossier.
+
+
+### Comparaison textuelle expérimentale de deux HTML officiels
+
+`GET /api/legislation/<dossier>/versions/compare?before=<uid>&after=<uid>`
+vérifie d'abord que **les deux** UID différents correspondent à des
+notices existantes du même dossier structuré. Aucune URL arbitraire n'est
+acceptée. Les deux sources HTML officielles sont téléchargées et validées
+indépendamment ; le résultat inclut les deux URL, horodatages et SHA-256
+des octets sources, ainsi qu'un diff unifié par lignes.
+
+La comparaison est bornée (longueur, nombre de lignes et sortie). Si
+les limites empêchent un diff complet, l'API refuse la comparaison plutôt
+que d'en présenter une version tronquée. La fiche dossier propose un
+sélecteur des versions déjà affichées et montre le diff ainsi que les
+liens vers les deux documents originaux.
+
+**Ce n'est pas une comparaison juridique article par article.** Une
+différence apparente peut résulter du HTML, de sa conversion en texte ou
+de sections non normatives ; aucun alignement des articles n'est
+certifié, pas plus que le droit applicable. Les cases générales de la
+phase 4 restent ouvertes jusqu'à validation du modèle `Article` et
+du rapprochement fiable des contenus.
