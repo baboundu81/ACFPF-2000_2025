@@ -174,7 +174,7 @@ def browse_legislation(
         candidates.append((score, dossier))
 
     candidates.sort(
-        key=lambda item: (item[0], item[1].last_activity or "", item[1].title),
+        key=lambda item: (item[0], item[1].last_activity or "", item[1].title, item[1].id),
         reverse=True,
     )
     max_results = max(1, min(limit, 100))
