@@ -183,3 +183,34 @@ sur une référence de dossier présente dans l'archive. L'API est une première
 l'interface de consultation paginée des scrutins rattachés est désormais présente
 sur la fiche dossier ; la couverture du Sénat, les scrutins sans référence explicite et
 les votes nominatifs restent à développer et à valider.
+
+
+### Consultation des textes HTML officiels — tranche initiale (novembre 2026)
+
+L'Assemblée nationale documente la publication individuelle des textes en HTML et PDF
+sur https://data.assemblee-nationale.fr/foire-aux-questions (section
+« Récupérations au fil de l'eau »). Une page réelle de la XVIIe législature,
+`PIONANR5L17B2562.html`, sert de contrôle d'intégration.
+
+`GET /api/legislation/<dossier_id>/versions/<document_uid>/text` ne télécharge
+un document que si son UID est **explicitement lié au dossier** par les actes de
+l'archive structurée et qu'une notice officielle de ce document existe. Le contenu
+HTML est récupéré à la demande par HTTPS sans redirection, avec contrôle du type
+de réponse et une limite de 2 Mio. La réponse conserve l'URL consultée,
+l'horodatage UTC et le SHA-256 des octets téléchargés. Les HTML absents,
+trop volumineux, invalides ou non reconnus produisent une erreur explicite.
+
+La conversion du HTML en texte demeure une extraction mécanique ; elle ne prouve
+**pas** une segmentation juridique fiable par article, la présence exhaustive des
+annexes ou l'identité entre HTML et version légalement applicable. Le document
+HTML source doit être ouvert pour vérifier les détails. Le booléen
+`article_structure_verified=false` interdit toute comparaison automatique
+prématurée. Le champ `full_text_available=false` des notices reste volontairement
+inchangé, car la disponibilité est vérifiée au moment de la consultation uniquement.
+
+Cette première tranche **ne coche pas** la récupération complète de toutes
+les versions : couverture Assemblée incomplète, formats PDF, Sénat et comparaison
+des articles restent à valider.
+
+Tests : `tests/test_legislative_fulltext.py` (déterministes) et
+`ACFPF_LIVE_SOURCES=1 pytest -q -s tests/test_live_official_fulltext.py`.
