@@ -8,7 +8,10 @@ from io import BytesIO
 
 import pytest
 
-from acfpf.legislative_reports import ReportsError, parse_report_notices
+from acfpf.legislative_fulltext import OfficialText
+from acfpf.legislative_reports import ReportCollection, ReportReference, ReportsError, parse_report_notices
+from acfpf.web import create_app
+from tests.test_web import FakeCofogService, FakeLegislationService, FakeMacroService
 
 DOSSIER = "DLR123456"
 REPORT = "RAPPANR5L17B1234"
@@ -63,3 +66,48 @@ def test_rejects_broken_report_uid_without_guessing():
     data = archive(notice("bad", DOSSIER))
     with pytest.raises(ReportsError, match="UID mismatch"):
         parse_report_notices(data, dossier_uid=DOSSIER, dossier_url="ignored")
+
+
+class ReportServiceStub:
+    def for_dossier(self, dossier, **kwargs):
+        assert dossier.id == "DLR1"
+        reports = (
+            ReportReference(REPORT, "DLR1", "Rapport de commission", "Commission",
+                            "2026-10-20", "Assemblée nationale", dossier.official_url),
+            ReportReference(SENATE, "DLR1", "Rapport du Sénat", "Commission",
+                            "2026-10-21", "Autre provenance", dossier.official_url),
+        )
+        return ReportCollection("DLR1", reports)
+
+
+def test_report_routes_enforce_dossier_scope_and_pagination(monkeypatch):
+    import acfpf.web.reports as routes
+
+    called = []
+
+    def fake_fetch(uid):
+        called.append(uid)
+        return OfficialText(
+            uid=uid, url=f"https://www.assemblee-nationale.fr/dyn/opendata/{uid}.html",
+            text="ASSEMBLÉE NATIONALE - Rapport officiel", sha256="f" * 64,
+            retrieved_at="2026-11-05T00:00:00+00:00",
+        )
+
+    monkeypatch.setattr(routes, "fetch_official_text", fake_fetch)
+    app = create_app(
+        service=FakeMacroService(), cofog_service=FakeCofogService(),
+        legislation_service=FakeLegislationService(), report_service=ReportServiceStub(),
+    )
+    client = app.test_client()
+    assert client.get("/api/legislation/UNKNOWN/reports").status_code == 404
+    response = client.get("/api/legislation/DLR1/reports?limit=1&offset=1")
+    assert response.status_code == 200
+    assert response.get_json()["reports"][0]["uid"] == SENATE
+    assert client.get("/api/legislation/DLR1/reports?limit=bad").status_code == 400
+    assert client.get("/api/legislation/DLR1/reports/RAPPANR5L17B9999/text").status_code == 404
+    assert client.get(f"/api/legislation/DLR1/reports/{SENATE}/text").status_code == 422
+    assert called == []
+    verified = client.get(f"/api/legislation/DLR1/reports/{REPORT}/text")
+    assert verified.status_code == 200
+    assert verified.get_json()["report"]["uid"] == REPORT
+    assert called == [REPORT]
