@@ -26,6 +26,8 @@ jobs:
           for script in src/acfpf/web/static/js/*.js; do
             node --check "$script"
           done
+      - name: JavaScript behavior
+        run: node --test tests/js/*.test.js
       - name: Tests
         run: pytest
       - name: Live Assemblée nationale smoke test
