@@ -97,7 +97,8 @@ Puis intégrer :
 - [ ] Récupérer et vérifier le contenu intégral des versions avant toute comparaison d'articles ;
 - [x] Amendements Assemblée : index, auteur, article, sort et détail XML à la demande ;
 - [ ] scrutins publics et positions de vote ;
-- [ ] rapports de commission ;
+- [x] notices de rapports de commission liées aux dossiers et consultation HTML Assemblée lorsque disponible ;
+- [ ] couverture complète des rapports Sénat et des commissions hors notices Assemblée ;
 - [ ] débats en séance ;
 - [ ] texte définitivement adopté et, lorsqu'elle existe, décision du Conseil constitutionnel ;
 - [ ] loi promulguée sur Légifrance.
@@ -341,3 +342,16 @@ La couverture de tous les rapports de commission, leur interface dédiée
 et les publications du Sénat indépendantes de l'archive Assemblée
 restent à compléter : la case générale « rapports de commission » n'est
 pas cochée sur cette seule tranche.
+
+
+### Interface de consultation des rapports
+
+La fiche `/textes/<id>` présente les rapports publiés dans l'inventaire
+officiel avec leur UID, leur date, leur provenance et leur rattachement
+exact au dossier. Le bouton « Lire le rapport HTML » n'est proposé que
+pour les notices d'origine Assemblée `RAPPANR...`, et charge la source
+à la demande. Une erreur de disponibilité laisse accessible le dossier
+officiel ; le Sénat n'est pas assimilé artificiellement à une URL
+Assemblée. La transcription HTML distingue clairement rapport et droit
+applicable. La couverture exhaustive des rapports de commissions est
+encore limitée aux notices présentes dans l'archive vérifiée.
