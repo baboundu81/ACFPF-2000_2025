@@ -4,7 +4,6 @@
 """Actor identity enrichment is exclusively UID-based, not fuzzy names."""
 
 import json
-import os
 import zipfile
 
 import pytest
