@@ -163,3 +163,22 @@ Les changements entre articles, l'imputation certaine aux amendements et les ré
 ne devront pas être annoncés avant la récupération et le contrôle des contenus de chaque version.
 
 Validation réseau : `ACFPF_LIVE_SOURCES=1 pytest -q -s tests/test_live_official_legislation.py tests/test_live_official_documents.py`.
+
+### Scrutins publics de l'Assemblée — première intégration (novembre 2026)
+
+L'API `GET /api/legislation/<dossier_id>/votes` expose les scrutins de la XVIIe législature
+uniquement lorsque l'archive JSON officielle contient un lien exact
+`objet.dossierLegislatif.dossierRef` avec l'identifiant du dossier Assemblée.
+Les scrutins sans cette référence explicite ne sont **pas** imputés au dossier par
+similarité de titre : une liste vide ne prouve donc pas l'absence de votes.
+Les décomptes sont des données de scrutin et ne constituent pas un relevé individuel
+exhaustif des positions de chaque parlementaire.
+
+Source : https://data.assemblee-nationale.fr/travaux-parlementaires/votes
+(archive `Scrutins.json.zip`, XVIIe législature).
+
+Validation : le test `tests/test_live_official_votes.py`, lancé avec
+`ACFPF_LIVE_SOURCES=1`, vérifie le format réel et exerce le parseur de production
+sur une référence de dossier présente dans l'archive. L'API est une première brique :
+l'interface dédiée, la couverture du Sénat, les scrutins sans référence explicite et
+les votes nominatifs restent à développer et à valider.
