@@ -44,7 +44,7 @@
     morePositions.hidden = true;
     panel.append(
       element("p", "filter-note",
-        "Les noms ne sont pas encore résolus depuis l'annuaire historique : seuls les identifiants officiels sont présentés. Une absence de liste ne permet pas de déduire un non-vote."),
+        "Les identités sont recherchées dans l'annuaire officiel historique. Les identifiants restent visibles pour permettre la vérification ; un nom manquant ne signifie pas qu'une personne n'a pas voté."),
       summary, positions, morePositions,
     );
     wrapper.append(button);
@@ -62,7 +62,7 @@
       morePositions.disabled = true;
       summary.textContent = "Consultation des positions officielles…";
       const params = new URLSearchParams({
-        limit: String(pageSize), offset: String(shown),
+        limit: String(pageSize), offset: String(shown), names: "1",
       });
       try {
         const response = await fetch(`${api}?${params}`, {
@@ -82,13 +82,16 @@
         const items = payload.positions || [];
         total = payload.count;
         items.forEach((actor) => {
+          const officialIdentity = actor.actor_name
+            ? `${actor.actor_name} (${actor.actor_ref})` : actor.actor_ref;
           const line = element("p", "amendment-row__meta",
-            `${actor.actor_ref} · ${positionLabel(actor.position)} · Groupe : ${actor.group_ref}` +
+            `${officialIdentity} · ${positionLabel(actor.position)} · Groupe : ${actor.group_ref}` +
             (actor.by_delegation === true ? " · Par délégation" : ""));
           positions.append(line);
         });
         shown += items.length;
-        summary.textContent = `${shown} sur ${total} position(s) nominative(s) publiée(s).`;
+        summary.textContent = `${shown} sur ${total} position(s) nominative(s) publiée(s).` +
+          (payload.actor_names_warning ? ` ${payload.actor_names_warning}` : "");
         morePositions.hidden = shown >= total || items.length === 0;
         fetched = true;
       } catch (error) {
