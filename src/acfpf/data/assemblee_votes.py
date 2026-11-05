@@ -101,9 +101,12 @@ def parse_votes_archive(blob: bytes, *, dossier_uid: str) -> tuple[Vote, ...]:
 
 def load_votes(*, dossier_uid: str, cache_path: Path = VOTE_CACHE, refresh=False):
     cache_path.parent.mkdir(parents=True, exist_ok=True)
-    if cache_path.exists() and not refresh:
-        if datetime.now(UTC).timestamp() - cache_path.stat().st_mtime <= 21600:
-            return parse_votes_archive(cache_path.read_bytes(), dossier_uid=dossier_uid)
+    if (
+        cache_path.exists()
+        and not refresh
+        and datetime.now(UTC).timestamp() - cache_path.stat().st_mtime <= 21600
+    ):
+        return parse_votes_archive(cache_path.read_bytes(), dossier_uid=dossier_uid)
     try:
         response = requests.get(VOTE_ZIP, timeout=(15, 90))
         response.raise_for_status()
