@@ -13,7 +13,11 @@ from io import BytesIO
 from pathlib import Path
 from typing import Any
 
-from acfpf.data.assemblee_legislation import ASSEMBLY_SOURCE_PAGE, AssemblyLegislationError, load_assembly_dossiers
+from acfpf.data.assemblee_legislation import (
+    ASSEMBLY_SOURCE_PAGE,
+    AssemblyLegislationError,
+    load_assembly_dossiers,
+)
 from acfpf.legislation import DEFAULT_CACHE_PATH, LegislativeDossier
 
 _DOSSIER = re.compile(r"DLR[A-Za-z0-9_-]{5,100}\Z")
