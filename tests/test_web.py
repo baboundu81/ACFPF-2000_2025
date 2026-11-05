@@ -246,6 +246,8 @@ def test_legislative_dossier_page_has_dedicated_chat_and_both_chambers() -> None
     assert 'data-votes-dossier-id="DLR1"' in html
     assert 'js/votes.js' in html
     assert "Scrutins publics" in html
+    assert "Les positions nominatives sont accessibles" in html
+    assert "appartenance historique aux groupes" in html
     assert "ne signifie" in html
 
 
