@@ -165,6 +165,33 @@
         <noscript><p class="filter-note">Activez JavaScript pour consulter les rapports sur cette page.</p></noscript>
       </section>
 
+      <section id="debates" class="shell section-block versions-block">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Débats et séances</p>
+            <h2>Retrouver les étapes de séance mentionnées dans le dossier.</h2>
+          </div>
+        </div>
+        <p class="filter-note">
+          Une étape de lecture n'est pas un compte rendu : ACFPF ne l'attribue
+          à aucun orateur ni à une séance précise sans identifiant documentaire vérifié.
+          Vous pouvez rechercher les interventions dans le portail officiel de l'Assemblée.
+        </p>
+        <div class="amendments-list">
+          {% for event in dossier.events %}
+            {% if event.stage == 'plenary' and event.source_id == 'assemblee_nationale_open_data' and (not event.chamber or event.chamber == 'Assemblée nationale') %}
+              <article class="amendment-row">
+                <h3 class="amendment-row__number">{{ event.label }}</h3>
+                <p class="amendment-row__meta">Étape officielle · {{ event.date or 'date non renseignée' }}{% if event.code %} · {{ event.code }}{% endif %}</p>
+              </article>
+            {% endif %}
+          {% endfor %}
+        </div>
+        <p><a class="amendment-detail__source" target="_blank" rel="noreferrer"
+          href="https://www.assemblee-nationale.fr/dyn/17/comptes-rendus/seance">Rechercher les comptes rendus officiels des séances</a></p>
+        <p class="filter-note">L'absence d'étape affichée ne démontre pas l'absence de débat.</p>
+      </section>
+
       <section id="amendments" class="shell section-block amendments-block"
         data-amendments-dossier-id="{{ dossier.id }}">
         <div class="section-heading">
