@@ -268,3 +268,17 @@ Validation structure réelle : test live utilisant un scrutin lié à un dossier
 et la ventilation nominative publiée par l'Assemblée (XVIIe législature).
 La résolution des noms depuis le référentiel des acteurs, la couverture
 historique et la consultation des positions dans l'UI restent à traiter.
+
+
+### Consultation des positions nominatives depuis la fiche dossier
+
+Chaque scrutin public explicitement rattaché possède désormais une vue
+à la demande des positions nominatives, paginée par lots de 50. Les listes
+reprennent les identifiants officiels `acteurRef` et `organeRef`, la
+position déclarée et l'éventuelle délégation. Le navigateur valide les
+UID de dossier et de scrutin renvoyés par l'API avant de présenter les
+résultats ; aucune interprétation politique n'est déduite.
+
+La résolution du nom de chaque acteur depuis l'annuaire **historique**
+de l'Assemblée reste une tâche distincte. Jusqu'à sa validation, les
+identifiants sont préférés à des identités ou affiliations supposées.
