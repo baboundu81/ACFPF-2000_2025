@@ -355,3 +355,24 @@ officiel ; le Sénat n'est pas assimilé artificiellement à une URL
 Assemblée. La transcription HTML distingue clairement rapport et droit
 applicable. La couverture exhaustive des rapports de commissions est
 encore limitée aux notices présentes dans l'archive vérifiée.
+
+
+### Débats : références d'étapes officielles, pas de transcriptions (novembre 2026)
+
+`GET /api/legislation/<dossier_id>/debates` expose uniquement des
+**références aux étapes de séance ou lecture** déjà présentes dans la
+chronologie officielle de l'Assemblée. Les doublons exacts sont éliminés ;
+les étapes Sénat ne sont pas transformées en séances de l'Assemblée.
+L'interface du dossier permet également de retrouver ces étapes et de
+rechercher les comptes rendus via le portail officiel :
+https://www.assemblee-nationale.fr/dyn/17/comptes-rendus/seance .
+
+La source indépendante des comptes rendus existe :
+https://data.assemblee-nationale.fr/travaux-parlementaires/debats .
+Cependant, aucun identifiant de transcription ou d'intervention n'est
+encore lié par preuve structurée à ces étapes. L'API retourne donc
+`transcripts_available=false` et `transcript_verified=false`.
+Ni un événement de première lecture ni sa date ne permettent d'inférer
+qu'une personne donnée a pris la parole. L'étape générale « débats en
+séance » reste ouverte jusqu'au raccordement des comptes rendus XML
+officiels et à la vérification du lien avec chaque dossier.
