@@ -108,6 +108,22 @@
           vérifie l'identifiant et la provenance, mais ne garantit ni la structure des articles,
           ni la présence des annexes. Aucune comparaison automatique n'est encore proposée.
         </p>
+        <div class="amendments-toolbar" aria-label="Comparer deux transcriptions de versions">
+          <label for="compare-before"><span>Version de départ</span>
+            <select id="compare-before"><option value="">Choisir une version affichée</option></select>
+          </label>
+          <label for="compare-after"><span>Version d'arrivée</span>
+            <select id="compare-after"><option value="">Choisir une version affichée</option></select>
+          </label>
+          <button id="compare-start" type="button" disabled>Comparer les deux textes HTML</button>
+        </div>
+        <p class="filter-note">
+          Comparaison expérimentale de lignes textuelles extraites de deux HTML officiels.
+          Elle ne valide ni les articles juridiques, ni la version du droit applicable.
+          Les deux documents doivent être effectivement disponibles et vérifiés.
+        </p>
+        <p id="compare-status" class="filter-note" role="status" aria-live="polite"></p>
+        <div id="compare-result" class="amendment-detail" hidden></div>
         <p id="versions-status" class="filter-note" role="status" aria-live="polite"></p>
         <div id="versions-list" class="amendments-list"></div>
         <button id="versions-more" type="button" class="amendments-more" hidden>
