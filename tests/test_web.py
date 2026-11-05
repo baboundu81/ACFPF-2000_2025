@@ -239,6 +239,10 @@ def test_legislative_dossier_page_has_dedicated_chat_and_both_chambers() -> None
     assert "Ouvrir le dossier Assemblée nationale" in html
     assert "Ouvrir le dossier Sénat" in html
     assert "Logement et urbanisme" in html
+    assert 'data-votes-dossier-id="DLR1"' in html
+    assert 'js/votes.js' in html
+    assert "Scrutins publics" in html
+    assert "ne signifie" in html
 
 
 def test_scoped_chat_adds_server_side_dossier_context() -> None:
