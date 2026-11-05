@@ -6,6 +6,7 @@
 from flask import Flask, jsonify, request
 
 from acfpf.legislation import LegislationError, LegislationService
+from acfpf.legislative_fulltext import OfficialTextError, fetch_official_text
 from acfpf.legislative_versions import TextVersionsError, TextVersionService
 from acfpf.web.amendments import _bounded_integer
 
@@ -39,4 +40,33 @@ def register_version_routes(
             "limit": limit,
             "versions": [item.as_dict() for item in collection.versions[offset:offset + limit]],
         })
+        return jsonify(payload)
+
+    @app.get("/api/legislation/<dossier_id>/versions/<document_uid>/text")
+    def legislative_version_fulltext_api(dossier_id: str, document_uid: str):
+        """Never fetch arbitrary UIDs: require a notice linked in the official archive."""
+        try:
+            dossier = legislation_service.get(dossier_id)
+        except LegislationError as exc:
+            return jsonify({"error": "legislation_unavailable", "message": str(exc)}), 503
+        if dossier is None:
+            return jsonify({"error": "dossier_not_found"}), 404
+        try:
+            collection = version_service.for_dossier(dossier)
+        except TextVersionsError as exc:
+            return jsonify({"error": "versions_unavailable", "message": str(exc)}), 503
+        version = next(
+            (item for item in collection.versions
+             if item.uid == document_uid and item.notice_available),
+            None,
+        )
+        if version is None:
+            return jsonify({"error": "document_not_linked"}), 404
+        try:
+            document = fetch_official_text(document_uid)
+        except OfficialTextError as exc:
+            return jsonify({"error": "official_text_unavailable", "message": str(exc)}), 503
+        payload = document.as_dict()
+        payload["dossier_id"] = dossier.id
+        payload["version"] = version.as_dict()
         return jsonify(payload)
