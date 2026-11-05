@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/legislation.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/amendments.css') }}">
   <script defer src="{{ url_for('static', filename='js/versions.js') }}"></script>
+  <script defer src="{{ url_for('static', filename='js/reports.js') }}"></script>
   <script defer src="{{ url_for('static', filename='js/votes.js') }}"></script>
   <script defer src="{{ url_for('static', filename='js/amendments.js') }}"></script>
   <script defer src="{{ url_for('static', filename='js/dossier_chat.js') }}"></script>
@@ -138,6 +139,30 @@
           Afficher les scrutins suivants
         </button>
         <noscript><p class="filter-note">Activez JavaScript pour consulter les scrutins depuis cette page.</p></noscript>
+      </section>
+
+      <section id="reports" class="shell section-block versions-block"
+        data-reports-dossier-id="{{ dossier.id }}">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Rapports parlementaires</p>
+            <h2>Lire les analyses et travaux associés à ce dossier.</h2>
+          </div>
+          <p id="reports-count" class="section-heading__note">Chargement des notices de rapports…</p>
+        </div>
+        <p class="filter-note">
+          Ces notices sont reliées par référence documentaire officielle exacte.
+          Un rapport expose des travaux ou positions parlementaires : il ne prouve
+          ni l'adoption définitive ni l'entrée en vigueur d'une disposition.
+          Les rapports d'origine Sénat référencés ici ne sont pas présumés
+          disponibles sur le site HTML de l'Assemblée nationale.
+        </p>
+        <p id="reports-status" class="filter-note" role="status" aria-live="polite"></p>
+        <div id="reports-list" class="amendments-list" aria-live="polite"></div>
+        <button id="reports-more" type="button" class="amendments-more" hidden>
+          Afficher les rapports suivants
+        </button>
+        <noscript><p class="filter-note">Activez JavaScript pour consulter les rapports sur cette page.</p></noscript>
       </section>
 
       <section id="amendments" class="shell section-block amendments-block"
