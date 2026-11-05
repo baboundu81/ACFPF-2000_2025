@@ -153,6 +153,13 @@ Une fois ACFPF lancé :
 
 - `/api/legislation` : recherche et découverte des dossiers législatifs ;
 - `/api/legislation/<id>` : métadonnées et chronologie d'un dossier ;
+- `/api/legislation/<id>/versions` : notices des versions documentaires ;
+- `/api/legislation/<id>/versions/<uid>/text` : récupération HTML officielle à la demande ;
+- `/api/legislation/<id>/amendments` : index des amendements ;
+- `/api/legislation/<id>/votes` : scrutins explicitement rattachés ;
+- `/api/legislation/<id>/votes/<uid>/positions` : positions nominatives, noms historiques facultatifs avec `?names=1` ;
+- `/api/legislation/<id>/reports` : notices officielles des rapports rattachés ;
+- `/api/legislation/<id>/reports/<uid>/text` : HTML officiel d'un rapport Assemblée lié ;
 - `/api/macro` : agrégats macro ;
 - `/api/cofog` : dépenses par grande fonction ;
 - `/api/evidence` : registre et liste blanche des sources ;
@@ -207,12 +214,12 @@ Le registre est dans [config/sources.yml](config/sources.yml). Il comprend notam
 
 La trajectoire est détaillée dans [docs/CIVIC_ACTION_PLAN.md](docs/CIVIC_ACTION_PLAN.md). Les prochaines briques prioritaires sont :
 
-- connecteur structuré Sénat et déduplication inter-chambres ;
-- modélisation explicite des versions, articles, amendements, votes et débats ;
-- comparaison des versions successives ;
-- recherche conversationnelle plus robuste pour les formulations approximatives ;
-- connexion entre décisions, budgets, mise en œuvre et évaluations ;
-- poursuite du sous-outil finances : prélèvements obligatoires, euros constants/par habitant et exécution détaillée.
+- consolider les contenus complets de toutes les versions et leur structure juridique ;
+- documenter et consulter les rapports, débats et décisions constitutionnelles ;
+- comparer article par article les versions vérifiées sans imputation approximative ;
+- relier la promulgation, les textes d'application et les publications Légifrance ;
+- établir les liens vérifiables entre décisions, budgets et évaluations ;
+- compléter le sous-outil finances : prélèvements obligatoires, euros constants/par habitant et exécution détaillée.
 
 ## Licences
 
