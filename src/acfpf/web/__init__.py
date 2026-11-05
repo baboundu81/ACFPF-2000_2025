@@ -15,6 +15,7 @@ from acfpf.legislative_versions import TextVersionService
 from acfpf.macro import MacroService
 from acfpf.web.amendments import register_amendment_routes
 from acfpf.web.app import create_app as _create_app
+from acfpf.web.debates import register_debate_routes
 from acfpf.web.reports import register_report_routes
 from acfpf.web.versions import register_version_routes
 from acfpf.web.votes import register_vote_routes
@@ -49,6 +50,7 @@ def create_app(
     )
     register_version_routes(app, civic_service, version_service or TextVersionService())
     register_report_routes(app, civic_service, report_service or ReportsService())
+    register_debate_routes(app, civic_service)
     if vote_loader is None and vote_position_loader is None and vote_actor_resolver is None:
         register_vote_routes(app, civic_service)
     else:
