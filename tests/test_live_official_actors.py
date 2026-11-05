@@ -11,6 +11,8 @@ from io import BytesIO
 import pytest
 import requests
 
+from acfpf.data.assemblee_actors import parse_actor_identity
+
 HISTORICAL_ACTORS_URL = (
     "https://data.assemblee-nationale.fr/static/openData/repository/"
     "17/amo/tous_acteurs_mandats_organes_xi_legislature/"
@@ -34,4 +36,8 @@ def test_live_historical_actors_schema():
         print("LIVE-ACTOR-FILES:", actor_files[:4])
         actor = json.loads(archive.read(actor_files[0]))
         print("LIVE-ACTOR-SAMPLE:", json.dumps(actor, ensure_ascii=False)[:3000])
+        first = actor_files[0].split("/")[-1].removesuffix(".json")
+        identity = parse_actor_identity(archive.read(actor_files[0]), actor_ref=first)
+        assert identity, "The real official actor schema did not resolve through production parser"
+        print("LIVE-ACTOR-IDENTITY:", first, identity)
         print("LIVE-ACTOR-SIZE:", len(response.content))
