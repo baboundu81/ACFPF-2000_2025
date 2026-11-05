@@ -13,9 +13,8 @@ from io import BytesIO
 import pytest
 import requests
 
-from acfpf.legislative_vote_positions import parse_nominal_positions
-
 from acfpf.data.assemblee_votes import parse_votes_archive
+from acfpf.legislative_vote_positions import parse_nominal_positions
 
 SCRUTINS_URL = (
     "https://data.assemblee-nationale.fr/static/openData/repository/"
