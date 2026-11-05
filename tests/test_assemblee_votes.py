@@ -9,7 +9,7 @@ from io import BytesIO
 
 from acfpf.data.assemblee_votes import Vote, parse_votes_archive
 from acfpf.web import create_app
-from tests.test_web import FakeLegislationService, FakeMacroService, FakeCofogService
+from tests.test_web import FakeCofogService, FakeLegislationService, FakeMacroService
 
 
 def _archive(*scrutins):
