@@ -11,7 +11,8 @@ from __future__ import annotations
 import json
 import re
 import time
-from datetime import UTC, date, datetime, time as day_time
+from datetime import UTC, date, datetime
+from datetime import time as day_time
 from typing import Any
 
 import requests
