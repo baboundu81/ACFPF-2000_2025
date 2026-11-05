@@ -247,7 +247,7 @@ def test_legislative_dossier_page_has_dedicated_chat_and_both_chambers() -> None
     assert 'js/votes.js' in html
     assert "Scrutins publics" in html
     assert "Les positions nominatives sont accessibles" in html
-    assert "appartenance historique aux groupes" in html
+    assert "l&#39;annuaire historique de l&#39;Assemblée" in html
     assert "ne signifie" in html
 
 
