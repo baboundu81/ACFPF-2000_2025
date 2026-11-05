@@ -425,3 +425,24 @@ La consultation de Légifrance via API officielle suppose un accès
 PISTE enregistré (voir https://www.data.gouv.fr/dataservices/legifrance).
 Les cases générales d'intégration des décisions constitutionnelles et
 du texte Légifrance restent ouvertes.
+
+
+### Connecteur PISTE/Légifrance : transport préparé, contenu juridique non validé
+
+`acfpf.data.legifrance_piste` implémente OAuth2 client_credentials, la
+recherche exacte d'un numéro de loi dans le fonds LODA_ETAT à une date
+donnée, des délais d'attente, des hôtes HTTPS fixes, aucune redirection
+et des limites de réponse. Secrets et jetons ne sont pas retournés ;
+le jeton est gardé temporairement en mémoire.
+
+Cette brique est **optionnelle et non branchée au parcours public**
+jusqu'à la validation réelle avec un compte PISTE habilité. Les réponses
+brutes restent des candidats : `match_verified=false` et
+`legal_text_verified=false`. La validation du LEGITEXT exact,
+la consultation du texte et le suivi de sa version restent ouverts.
+Les tests déterministes sont dans `tests/test_legifrance_piste.py`.
+Aucun test réseau PISTE n'a été réalisé faute d'identifiants.
+
+Sources techniques :
+https://www.legifrance.gouv.fr/contenu/pied-de-page/foire-aux-questions-api ;
+https://www.data.gouv.fr/dataservices/legifrance .
