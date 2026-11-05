@@ -282,3 +282,29 @@ résultats ; aucune interprétation politique n'est déduite.
 La résolution du nom de chaque acteur depuis l'annuaire **historique**
 de l'Assemblée reste une tâche distincte. Jusqu'à sa validation, les
 identifiants sont préférés à des identités ou affiliations supposées.
+
+
+### Résolution exacte des députés — annuaire historique officiel
+
+Pour les positions nominatives, l'API peut résoudre `acteurRef` en
+`prenom nom` uniquement après vérification d'une correspondance **identique**
+de l'UID dans `json/acteur/PA....json` du jeu historique AMO30.
+Source : https://data.assemblee-nationale.fr/acteurs/historique-des-deputes
+(XVIIe législature, export historique des acteurs depuis la XIe législature).
+
+L'archive est limitée en taille et mise en cache durant 24 heures. Si la
+source réseau est indisponible, un cache antérieur intact peut être utilisé.
+En l'absence de source exploitable, les positions du scrutin restent
+accessibles : le nom est inconnu, l'UID n'est jamais remplacé par une
+recherche floue ou une identité présumée. Les fichiers d'état civil
+contiennent d'autres informations personnelles qui ne sont pas exposées
+par cette fonctionnalité. L'appartenance à un groupe au moment du scrutin
+ne doit jamais être inférée depuis les mandats contemporains.
+
+`GET /api/legislation/<dossier_id>/votes/<vote_uid>/positions?names=1`
+ajoute facultativement `actor_name` à chaque entrée résolue,
+`actors_source_url` et une indication de disponibilité ; sans `names=1`,
+le comportement antérieur n'est pas modifié.
+
+Validation : `tests/test_assemblee_actors.py` et
+`ACFPF_LIVE_SOURCES=1 pytest -q -s tests/test_live_official_actors.py`.
