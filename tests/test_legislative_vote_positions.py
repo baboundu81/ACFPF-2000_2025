@@ -49,7 +49,7 @@ def payload(**kwargs):
 def test_parses_official_nested_nominal_votes_without_guessing_absentees():
     result = parse_nominal_positions(payload(), dossier_uid=DOSSIER, vote_uid=SCRUTIN)
     assert result.available
-    assert result.count if hasattr(result, "count") else len(result.positions) == 3
+    assert len(result.positions) == 3
     assert [item.actor_ref for item in result.positions] == ["PA1", "PA2", "PA3"]
     assert [item.position for item in result.positions] == ["pour", "pour", "contre"]
     assert result.positions[0].by_delegation is True
