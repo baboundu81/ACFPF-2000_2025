@@ -16,7 +16,7 @@ from tests.test_web import FakeCofogService, FakeLegislationService, FakeMacroSe
 
 UID = "PIONANR5L17B2562"
 HTML = (
-    b"<html><body><header>ASSEMBLÃE NATIONALE</header>"
+    "<html><body><header>ASSEMBLÉE NATIONALE</header>".encode("utf-8")
     b"<h1>PROPOSITION DE LOI</h1><h2>Article 1</h2><p>"
     + b"Un texte officiel de controle pour verifier le decodage et la provenance. " * 3
     + b"</p><script>THIS_SHOULD_BE_IGNORED</script></body></html>"
