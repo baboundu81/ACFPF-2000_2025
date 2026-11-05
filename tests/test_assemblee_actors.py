@@ -14,7 +14,7 @@ from acfpf.data.assemblee_actors import (
     parse_actor_identity,
     resolve_actor_names,
 )
-from acfpf.legislative_vote_positions import NominalVoteCollection, NominalPosition
+from acfpf.legislative_vote_positions import NominalPosition, NominalVoteCollection
 from acfpf.web import create_app
 from tests.test_web import FakeCofogService, FakeLegislationService, FakeMacroService
 
