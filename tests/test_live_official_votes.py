@@ -13,6 +13,8 @@ from io import BytesIO
 import pytest
 import requests
 
+from acfpf.legislative_vote_positions import parse_nominal_positions
+
 from acfpf.data.assemblee_votes import parse_votes_archive
 
 SCRUTINS_URL = (
@@ -65,6 +67,28 @@ def test_live_official_vote_archive_schema() -> None:
         print("LIVE-NOMINAL-SCHEMA:", json.dumps(
             sample_with_voters, ensure_ascii=False
         )[:6000])
+        # The real nested nominal schema must be accepted by the production parser,
+        # including the list-or-singleton shapes published by the Assembly.
+        verified_positions = None
+        for name in names:
+            raw = archive.read(name)
+            record = json.loads(raw).get("scrutin", {})
+            obj = record.get("objet") or {}
+            linked_dossier = obj.get("dossierLegislatif") if isinstance(obj, dict) else None
+            vent = record.get("ventilationVotes")
+            if not isinstance(linked_dossier, dict) or not linked_dossier.get("dossierRef"):
+                continue
+            if not isinstance(vent, dict) or not vent.get("organe"):
+                continue
+            verified_positions = parse_nominal_positions(
+                raw, dossier_uid=linked_dossier["dossierRef"], vote_uid=record["uid"],
+            )
+            if verified_positions.available:
+                break
+        assert verified_positions is not None and verified_positions.available
+        assert verified_positions.positions
+        print("LIVE-NOMINAL-POSITIONS:", len(verified_positions.positions))
+
 
 
         # Exercise the production parser against the real official archive, not a synthetic fixture.
