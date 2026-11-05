@@ -31,4 +31,4 @@ jobs:
       - name: Live Assemblée nationale smoke test
         env:
           ACFPF_LIVE_SOURCES: "1"
-        run: pytest -q -s tests/test_live_official_legislation.py tests/test_live_official_documents.py tests/test_live_official_votes.py tests/test_live_official_fulltext.py tests/test_live_official_actors.py
+        run: pytest -q -s tests/test_live_official_legislation.py tests/test_live_official_documents.py tests/test_live_official_votes.py tests/test_live_official_fulltext.py tests/test_live_official_actors.py tests/test_live_official_reports.py
