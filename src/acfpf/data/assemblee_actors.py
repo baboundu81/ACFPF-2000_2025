@@ -13,6 +13,7 @@ import json
 import re
 import zipfile
 from datetime import UTC, datetime
+from io import BytesIO
 from pathlib import Path
 from typing import Callable, Iterable
 
@@ -66,7 +67,7 @@ def parse_actor_identity(blob: bytes, *, actor_ref: str) -> str | None:
 def _validate_zip(payload: bytes) -> None:
     if len(payload) > MAX_ARCHIVE:
         raise ActorDirectoryError("Official actor archive is too large")
-    if not zipfile.is_zipfile(__import__("io").BytesIO(payload)):
+    if not zipfile.is_zipfile(BytesIO(payload)):
         raise ActorDirectoryError("Unreadable official actor archive")
 
 
