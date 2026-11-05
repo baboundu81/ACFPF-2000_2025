@@ -7,7 +7,7 @@ import json
 import zipfile
 from io import BytesIO
 
-from acfpf.data.assemblee_votes import parse_votes_archive
+from acfpf.data.assemblee_votes import Vote, parse_votes_archive
 from acfpf.web import create_app
 from tests.test_web import FakeLegislationService, FakeMacroService, FakeCofogService
 
@@ -61,9 +61,10 @@ def test_vote_api_paginates_and_reports_exact_linkage():
         service=FakeMacroService(),
         cofog_service=FakeCofogService(),
         legislation_service=FakeLegislationService(),
-        vote_loader=lambda **kwargs: parse_votes_archive(
-            _archive(_scrutin("VT1", "DLR1", 1), _scrutin("VT2", "DLR1", 2)),
-            dossier_uid="DLR1",
+        vote_loader=lambda **kwargs: tuple(
+            Vote(uid=f"VT{i}", number=str(i), date="2026-10-15",
+                 title="Scrutin public", result="Adopté", pour=12, contre=5,
+                 abstentions=1, dossier_id="DLR1") for i in (1, 2)
         ),
     )
     response = app.test_client().get("/api/legislation/DLR1/votes?limit=1&offset=1")
