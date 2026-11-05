@@ -92,6 +92,37 @@
         </div>
       </section>
 
+      <section id="outcomes" class="shell section-block versions-block">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Décisions et entrée en vigueur</p>
+            <h2>Identifier les jalons constitutionnels et de promulgation.</h2>
+          </div>
+        </div>
+        <p class="filter-note">
+          Les événements ci-dessous sont des métadonnées Sénat (DOSLEG), lorsqu'elles sont disponibles.
+          Ils ne remplacent ni la décision publiée du Conseil constitutionnel, ni le texte
+          d'une loi au Journal officiel ou sa version consolidée sur Légifrance.
+          Aucun lien vers un texte de loi n'est inventé depuis son numéro.
+        </p>
+        <div class="amendments-list">
+          {% for event in dossier.events %}
+            {% if event.source_id == 'senat_open_data' and event.code in ['CONSTITUTIONAL_COUNCIL', 'PROMULGATION'] %}
+              <article class="amendment-row">
+                <h3 class="amendment-row__number">{{ event.label }}</h3>
+                <p class="amendment-row__meta">Date source : {{ event.date or 'non renseignée' }} · Sénat</p>
+              </article>
+            {% endif %}
+          {% endfor %}
+        </div>
+        <p class="filter-note">Une liste vide n'est pas la preuve qu'aucune décision n'a été rendue.</p>
+        {% for source in dossier.sources %}
+          {% if source.source_id == 'senat_open_data' %}
+            <a class="amendment-detail__source" href="{{ source.official_url }}" target="_blank" rel="noreferrer">Vérifier ces jalons dans le dossier officiel du Sénat</a>
+          {% endif %}
+        {% endfor %}
+      </section>
+
       <section id="versions" class="shell section-block versions-block"
         data-versions-dossier-id="{{ dossier.id }}">
         <div class="section-heading">
