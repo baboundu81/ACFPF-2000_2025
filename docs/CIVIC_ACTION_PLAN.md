@@ -399,3 +399,29 @@ de sections non normatives ; aucun alignement des articles n'est
 certifié, pas plus que le droit applicable. Les cases générales de la
 phase 4 restent ouvertes jusqu'à validation du modèle `Article` et
 du rapprochement fiable des contenus.
+
+
+### Jalons vérifiés de contrôle constitutionnel et de promulgation
+
+Les champs officiels de DOSLEG (Sénat) renseignent le résultat et la date
+de la décision constitutionnelle, la date de promulgation et, le cas
+échéant, le numéro de loi. ACFPF les convertit déjà en événements de
+chronologie avec `source_id=senat_open_data`. L'API
+`GET /api/legislation/<dossier_id>/outcomes` isole ces événements
+uniquement sur les codes structurés `CONSTITUTIONAL_COUNCIL` et
+`PROMULGATION`, élimine les doublons et conserve l'URL du dossier Sénat
+comme provenance. La fiche dossier présente ces jalons et rappelle leur
+périmètre exact.
+
+Aucun `JORFTEXT` n'est généré par calcul à partir du numéro de loi,
+ni aucune décision constitutionnelle reconstituée depuis sa date.
+`legifrance_text_verified=false` et
+`constitutional_decision_text_verified=false` demeurent vrais jusqu'à
+la consultation directe des documents. Le statut final d'application,
+les éventuelles censures partielles et les versions consolidées
+demeurent **non déterminés** par ce seul export.
+
+La consultation de Légifrance via API officielle suppose un accès
+PISTE enregistré (voir https://www.data.gouv.fr/dataservices/legifrance).
+Les cases générales d'intégration des décisions constitutionnelles et
+du texte Légifrance restent ouvertes.
