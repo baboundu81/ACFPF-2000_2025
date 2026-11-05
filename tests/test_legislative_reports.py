@@ -9,7 +9,12 @@ from io import BytesIO
 import pytest
 
 from acfpf.legislative_fulltext import OfficialText
-from acfpf.legislative_reports import ReportCollection, ReportReference, ReportsError, parse_report_notices
+from acfpf.legislative_reports import (
+    ReportCollection,
+    ReportReference,
+    ReportsError,
+    parse_report_notices,
+)
 from acfpf.web import create_app
 from tests.test_web import FakeCofogService, FakeLegislationService, FakeMacroService
 
