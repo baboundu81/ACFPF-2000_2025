@@ -183,6 +183,7 @@ def test_home_is_now_civic_legislation_search() -> None:
     assert "Libellé source : Première lecture au Sénat" in html
     assert "Textes & décisions" in html
     assert "Assemblée nationale + Sénat" in html
+    assert "Ordre des résultats : pertinence lexicale" in html
     assert 'href="/finances"' in html
 
 

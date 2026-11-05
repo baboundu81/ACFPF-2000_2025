@@ -141,3 +141,35 @@ def test_canonical_text_type_coarsens_assembly_procedure_label() -> None:
     dossier = sample_inventory().dossiers[0]
 
     assert canonical_text_type(dossier) == "Projet de loi"
+
+
+def test_identical_title_and_date_are_stably_tiebroken_by_id() -> None:
+    first = _dossier(
+        "D10", "Projet de loi relatif à la santé", chamber="Sénat",
+        stage_label="Première lecture", theme="Santé",
+        procedure="Projet de loi ordinaire", year=2026,
+    )
+    second = _dossier(
+        "D20", "Projet de loi relatif à la santé", chamber="Sénat",
+        stage_label="Première lecture", theme="Santé",
+        procedure="Projet de loi ordinaire", year=2026,
+    )
+    forwards = browse_legislation(FakeInventoryService(first, second), status="all")
+    backwards = browse_legislation(FakeInventoryService(second, first), status="all")
+    assert [item.id for item in forwards.results] == ["D20", "D10"]
+    assert [item.id for item in backwards.results] == ["D20", "D10"]
+
+
+def test_relevance_has_priority_over_more_recent_but_irrelevant_titles() -> None:
+    recent = _dossier(
+        "D2", "Projet de loi sur le logement", chamber="Sénat",
+        stage_label="Première lecture santé", theme="Santé",
+        procedure="Projet de loi", year=2026,
+    )
+    older = _dossier(
+        "D1", "Projet de loi relatif à la santé", chamber="Sénat",
+        stage_label="Première lecture", theme="Logement",
+        procedure="Projet de loi", year=2025,
+    )
+    result = browse_legislation(FakeInventoryService(recent, older), "santé", status="all")
+    assert [item.id for item in result.results] == ["D1", "D2"]
