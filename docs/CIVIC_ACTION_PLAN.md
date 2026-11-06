@@ -585,7 +585,12 @@ et des CRC. L'ancien cache intègre peut être conservé en cas d'échec
 réseau, avec `from_cache=true`.
 
 Les tests déterministes de transport sont dans
-`tests/test_assemblee_debates.py`. L'audit du **contenu et schéma XML**
-reste opt-in via `ACFPF_LIVE_DEBATES_FULL=1` : une archive complète
-et validée est indispensable avant d'établir des liens entre débat,
-séance, orateur et dossier.
+`tests/test_assemblee_debates.py`. Un premier audit live complet a
+**réussi** : archive de 61 335 085 octets, 656 comptes rendus XML et
+contrôle CRC intégral. Le fichier `compteRendu` possède des métadonnées
+`uid`, `seanceRef`, `sessionRef` et `dateSeance`.
+L'audit approfondi reste opt-in via
+`ACFPF_LIVE_DEBATES_FULL=1`, car cette acquisition réseau coûteuse
+ne doit pas ralentir toutes les PR. La présence de `seanceRef` ne suffit
+pas à elle seule à relier une séance à un dossier ni à attribuer des
+propos à un texte ; cette jointure doit être vérifiée séparément.
