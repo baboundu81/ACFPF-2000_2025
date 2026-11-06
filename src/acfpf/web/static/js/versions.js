@@ -128,6 +128,56 @@
     }
   }
 
+  async function toggleArticleCandidates(button, panel, version) {
+    if (panel.dataset.loaded === "1") {
+      panel.hidden = !panel.hidden;
+      button.setAttribute("aria-expanded", String(!panel.hidden));
+      button.textContent = panel.hidden ? "Repérer les intitulés d'articles" : "Masquer les intitulés";
+      return;
+    }
+    button.disabled = true;
+    panel.hidden = false;
+    panel.replaceChildren(node("p", "filter-note", "Repérage dans la source officielle…"));
+    try {
+      const response = await fetch(
+        `${api}/${encodeURIComponent(version.uid)}/article-candidates`,
+        { headers: { Accept: "application/json" } },
+      );
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.message || "Repérage indisponible");
+      if (payload.dossier_id !== dossierId || payload.uid !== version.uid) {
+        throw new Error("Identité documentaire incohérente");
+      }
+      panel.replaceChildren(node("p", "filter-note", payload.warning));
+      panel.append(node("p", "amendment-row__meta",
+        `Texte consulté le ${payload.source_retrieved_at} · SHA-256 : ${payload.source_sha256}`));
+      if (!payload.count) {
+        panel.append(node("p", "filter-note", "Aucun intitulé détecté ; cela ne prouve pas l'absence d'articles."));
+      } else {
+        const headings = node("ol", "amendments-list");
+        payload.candidates.forEach((candidate) => {
+          headings.append(node("li", "amendment-row__meta",
+            `${candidate.heading} · ligne ${candidate.line_number} du texte extrait`));
+        });
+        panel.append(headings);
+      }
+      const link = node("a", "amendment-detail__source", "Ouvrir le texte officiel original");
+      link.href = payload.url;
+      link.target = "_blank";
+      link.rel = "noreferrer";
+      panel.append(link);
+      panel.dataset.loaded = "1";
+      button.textContent = "Masquer les intitulés";
+      button.setAttribute("aria-expanded", "true");
+    } catch (error) {
+      panel.replaceChildren(node("p", "source-warning", `Repérage indisponible : ${error.message}`));
+      button.textContent = "Réessayer le repérage";
+      button.setAttribute("aria-expanded", "true");
+    } finally {
+      button.disabled = false;
+    }
+  }
+
   function render(version) {
     const row = node("article", "amendment-row");
     const heading = node("h3", "amendment-row__number", version.title || version.uid);
@@ -160,6 +210,15 @@
       button.addEventListener("click", () => toggleText(button, panel, version));
       actions.append(button);
       row.append(actions, panel);
+      const articleButton = node("button", "amendment-detail-button", "Repérer les intitulés d'articles");
+      articleButton.type = "button";
+      articleButton.setAttribute("aria-expanded", "false");
+      const articlePanel = node("div", "amendment-detail");
+      articlePanel.hidden = true;
+      articleButton.addEventListener("click", () =>
+        toggleArticleCandidates(articleButton, articlePanel, version));
+      actions.append(articleButton);
+      row.append(articlePanel);
     }
     const link = node("a", "amendment-detail__source", "Retrouver le document depuis le dossier officiel");
     link.href = version.dossier_url;
