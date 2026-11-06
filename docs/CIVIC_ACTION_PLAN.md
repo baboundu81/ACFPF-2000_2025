@@ -96,16 +96,21 @@ Puis intégrer :
 - [x] Référencer les versions successives à partir des actes et notices officiels (identifiant, titre, provenance, date, étape) ;
 - [ ] Récupérer et vérifier le contenu intégral des versions avant toute comparaison d'articles ;
 - [x] Amendements Assemblée : index, auteur, article, sort et détail XML à la demande ;
-- [ ] scrutins publics et positions de vote ;
+- [x] Scrutins publics Assemblée rattachés par référence exacte et positions nominatives avec identités historiques vérifiées ;
+- [ ] Couverture des scrutins et positions du Sénat, et des scrutins sans référence explicite au dossier ;
 - [x] notices de rapports de commission liées aux dossiers et consultation HTML Assemblée lorsque disponible ;
 - [ ] couverture complète des rapports Sénat et des commissions hors notices Assemblée ;
-- [ ] débats en séance ;
-- [ ] texte définitivement adopté et, lorsqu'elle existe, décision du Conseil constitutionnel ;
-- [ ] loi promulguée sur Légifrance.
+- [x] Références aux étapes de lecture de l'Assemblée dans la chronologie, sans attribution de discours ;
+- [ ] Comptes rendus intégraux des débats : identification exacte des séances et interventions associées ;
+- [x] Jalons Sénat de contrôle constitutionnel et de promulgation avec références et dates officielles ;
+- [ ] Texte définitivement adopté et décision intégrale du Conseil constitutionnel, lorsque publiés ;
+- [ ] Texte de la loi promulguée et versions consolidées sur Légifrance (client PISTE préparé, validation réelle et habilitation manquantes).
 
 ## Phase 4 — analyse des transformations
 
-- [ ] Comparer article par article les versions successives.
+- [x] Diff textuel expérimental de deux transcriptions HTML officielles vérifiées (sans équivalence juridique) ;
+- [x] Repérage expérimental de lignes candidates d'intitulés d'articles (sans segmentation juridique certifiée) ;
+- [ ] Comparer article par article les versions successives après vérification de la structure normative.
 - [ ] Expliquer quelles dispositions ont été ajoutées, supprimées ou modifiées.
 - [ ] Relier chaque changement aux amendements et étapes correspondants lorsque la donnée le permet.
 - [ ] Afficher systématiquement la version et la date analysées.
@@ -492,3 +497,30 @@ affirmation de la réponse est supportée par le bon extrait, la bonne
 version ou le bon statut juridique. Il faudra un benchmark
 `claim → preuve` et une validation par assertion pour aller plus loin.
 Tests : `tests/test_civic_grounding_gate.py`.
+
+
+## Dépendances vérifiées restant bloquantes (état de novembre 2026)
+
+La phase 3 n'est **pas terminée** : les versions complètes et normatives,
+les transcriptions de débats, les rapports Sénat autonomes, les décisions
+constitutionnelles intégrales et la consultation Légifrance restent incomplets.
+Le client PISTE ne peut faire l'objet d'un test bout-en-bout authentifié sans
+identifiants habilités. Aucune case normative ne doit être cochée sur la base
+de notices, d'intitulés heuristiques ou d'un diff HTML.
+
+La phase 4 n'est **pas terminée** : les deux fonctionnalités expérimentales
+ci-dessus ne suffisent ni à aligner les articles, ni à attribuer des
+modifications à des amendements, ni à comparer le texte proposé avec le
+droit applicable. Il faut une structure d'articles validée par comparaison
+sur corpus officiel et un contrôle exact des versions/dates.
+
+La phase 5 reste **entièrement à intégrer** : relier une disposition applicable
+aux décrets d'application, aux autorisations et exécutions budgétaires puis
+aux indicateurs de résultat demande des identifiants et sources distincts,
+avec tests de non-confusion et provenance documentée.
+
+La CI actuelle vérifie Ruff, la syntaxe et les tests JavaScript,
+les tests Python déterministes ainsi que les tests d'intégration
+sur les archives publiques de l'Assemblée. Elle ne remplace pas
+des tests directs de l'API PISTE authentifiée ni un audit de fidélité
+`assertion → passage → version → date`.
