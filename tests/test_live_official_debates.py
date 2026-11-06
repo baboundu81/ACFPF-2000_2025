@@ -22,6 +22,26 @@ DEBATE_ARCHIVE = (
     os.environ.get("ACFPF_LIVE_SOURCES") != "1",
     reason="Live official source checks require explicit opt-in",
 )
+def test_official_syceron_transport_headers():
+    # Cheap transport smoke test; does not claim to have parsed the archive.
+    response = requests.head(DEBATE_ARCHIVE, timeout=(10, 30), allow_redirects=False)
+    assert response.status_code == 200
+    print("LIVE-DEBATES-CONTENT-LENGTH:", response.headers.get("Content-Length"))
+    print("LIVE-DEBATES-ACCEPT-RANGES:", response.headers.get("Accept-Ranges"))
+    with requests.get(
+        DEBATE_ARCHIVE, headers={"Range": "bytes=0-2047"},
+        timeout=(10, 30), stream=True, allow_redirects=False,
+    ) as sample:
+        assert sample.status_code in {200, 206}
+        signature = next(sample.iter_content(chunk_size=512), b"")
+        assert signature.startswith(b"PK")
+        print("LIVE-DEBATES-RANGE-STATUS:", sample.status_code)
+
+
+@pytest.mark.skipif(
+    os.environ.get("ACFPF_LIVE_DEBATES_FULL") != "1",
+    reason="Large XML archive verification is a separate network-intensive opt-in",
+)
 def test_live_syceron_xml_debate_archive_schema():
     response = requests.get(DEBATE_ARCHIVE, timeout=(20, 180))
     response.raise_for_status()
