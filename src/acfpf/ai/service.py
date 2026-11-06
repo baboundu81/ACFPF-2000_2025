@@ -486,8 +486,8 @@ class AnswerService:
                 ),
                 citations=(),
                 limitations=(
-                    "Des données statistiques ou des métadonnées de dossier ne suffisent "
-                    "pas à établir ce que prévoit ou applique un texte.",
+                    ("Des données statistiques ou des métadonnées de dossier ne suffisent "
+                     "pas à établir ce que prévoit ou applique un texte."),
                     *(item.strip() for item in raw_limitations if item.strip()),
                 ),
                 provider=self.provider.name,
