@@ -2,7 +2,7 @@
 
 # ACFPF — Roadmap V1 : recherche documentaire et analyse IA sourcée
 
-**Statut :** feuille de route cible, à confronter au code lors de l'étape 0.  
+**Statut :** périmètre V1 confronté au code lors de l’étape 0 ; livraison non validée.
 **Décision produit :** recentrage sur une première version utilisable et testable.  
 **Périmètre :** application locale Python/Flask, découverte des textes, recherche documentaire live, chat IA et sous-outil finances existant.
 
@@ -66,7 +66,10 @@ Ne pas supprimer du code uniquement pour simplifier l'interface. Ne pas engager 
 
 ### Étape 0 — Audit et recentrage
 
-**État :** [ ] Non validée
+**État :** [x] Validée le 6 novembre 2026 — audit uniquement, pas recette V1.
+
+Rapport : [V1_STEP0_AUDIT.md](V1_STEP0_AUDIT.md) (Git/CI, cartographie,
+tests simulés et live, boucle navigateur, limites et travaux restants).
 
 **Objectif :** établir ce qui existe réellement et figer le périmètre V1.
 
@@ -201,3 +204,6 @@ Travail attendu :
 Conserver en dehors des critères de livraison V1 les objectifs de `docs/CIVIC_ACTION_PLAN.md` liés à : couverture complète des débats, scrutins et rapports ; identification des interventions ; textes définitifs et consolidation juridique exhaustive ; comparaison certifiée article par article ; rattachement de chaque modification à son amendement ; textes d'application ; liens formels vers financement, exécution et évaluation des résultats.
 
 Ces améliorations pourront être reprises après une V1 réellement utilisable, sur la base de besoins constatés lors des tests.
+
+Le détail des composants à reléguer, des prérequis et du travail non fusionné
+`feature/debate-vote-session-bridge` est conservé dans l’[audit de l’étape 0](V1_STEP0_AUDIT.md).
