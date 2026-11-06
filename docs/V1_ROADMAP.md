@@ -85,7 +85,11 @@ Travail attendu :
 
 ### Étape 1 — Moteur documentaire de bout en bout
 
-**État :** [ ] Non validée
+**État :** [x] Validée le 6 novembre 2026 — moteur et parcours sans dossier testés.
+
+Rapport : [V1_STEP1_VALIDATION.md](V1_STEP1_VALIDATION.md). Tests complets sans réseau,
+lecture réelle officielle et contrôles navigateur distingués des échecs Gemini/Groq ;
+la validation des vrais fournisseurs reste ouverte à l’étape 2.
 
 **Objectif :** une question libre permet de rechercher, ouvrir et lire des documents officiels, avec preuves, sans imposer de dossier législatif.
 

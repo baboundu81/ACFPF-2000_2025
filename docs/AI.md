@@ -157,3 +157,48 @@ Le benchmark devra couvrir notamment :
 Mesures minimales : exactitude, taux de refus correct, qualité et fidélité des citations, hallucinations, couverture de recherche, latence, nombre d'étapes et consommation de tokens.
 
 Voir aussi [EVIDENCE.md](EVIDENCE.md).
+
+## Transport documentaire borné (V1, étape 1)
+
+`LiveOfficialResearch` utilise des réponses HTTP en flux, sans suivre automatiquement
+les redirections. Chaque destination officielle est revalidée avant requête ; l’index
+de découverte, distinct des preuves, refuse les redirections et les réponses non HTML.
+Une réponse HTTP 202/429 de l’index est une indisponibilité, pas une recherche réussie sans résultat.
+
+Les limites courantes sont centralisées dans `live_research.py` :
+
+- index de découverte : 1 000 000 octets ;
+- HTML officiel : 3 000 000 octets ; PDF : 12 000 000 octets ;
+- texte extrait : 1 000 000 caractères ; PDF : au plus 400 pages ;
+- blocs réseau : 32 768 octets ; délai réseau et de lecture du flux : 20 secondes par défaut ;
+- au plus cinq redirections officielles ; 14 actions d’agent comme auparavant.
+
+La taille annoncée et les octets décompressés reçus sont contrôlés. Le flux est fermé
+sur succès comme sur échec. Une limite dépassée, une réponse partielle, une erreur HTTP,
+un PDF invalide/chiffré ou sans texte, ou un contenu non HTML/PDF ne crée aucun document
+ni preuve. Le lecteur ne tronque pas le texte pour contourner une limite. Les PDF
+nécessitant un OCR et les pages exigeant une exécution JavaScript ne sont pas pris en charge.
+Les types MIME acceptés sont `text/html`, `application/xhtml+xml`, `application/pdf`.
+Un document mal étiqueté est refusé plutôt qu’interprété silencieusement comme du HTML.
+
+Lorsque plusieurs producteurs partagent un domaine autorisé, le lecteur utilise l’hôte
+et le chemin de leur `base_url` pour déterminer une provenance unique, ou refuse l’ambiguïté.
+Le périmètre réseau reste défini par `allowed_domains` ; aucune URL fournie par un moteur
+n’étend cette liste blanche.
+
+Les erreurs et recherches vides sont exposées par les événements `notice`, conservées
+dans la trace et fournies au prochain tour via `RESEARCH_NOTICES`. Ce sont des observations
+opérationnelles : elles ne rejoignent jamais `EVIDENCE_AVAILABLE`. Les unités effectivement
+transmises gardent leur identifiant `E…`, leur locator, URL finale, titre, source, date et SHA-256.
+La relecture d’une même unité réutilise son identifiant ; les documents restent isolés par question.
+
+Tests sans réseau : `tests/test_live_research.py` et `tests/test_documentary_pipeline.py`
+(le vrai lecteur et l’agent sont utilisés, seuls HTTP et le fournisseur sont simulés).
+Sonde séparée, sans LLM ni sélection de dossier :
+
+```bash
+ACFPF_LIVE_DOCUMENTARY=1 pytest -q -s tests/test_live_documentary_pipeline.py
+```
+
+Cette sonde dépend de l’index Web et reste exclue de la CI standard. Un succès ne constitue
+pas une recette de fournisseur IA ; voir [le rapport de l’étape 1](V1_STEP1_VALIDATION.md).

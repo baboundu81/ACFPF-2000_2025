@@ -162,6 +162,14 @@ class AnswerService:
         search_results: list[dict[str, Any]] = []
         documents: dict[str, dict[str, Any]] = {}
         research_trace: list[dict[str, Any]] = []
+        notices: list[dict[str, Any]] = []
+
+        def notice(payload: dict[str, Any]) -> AgentEvent:
+            # Source failures are operational observations, never documentary evidence.
+            notices.append(payload)
+            research_trace.append({"type": "notice", **payload})
+            return AgentEvent("notice", payload)
+
         read_units: dict[tuple[str, int], str] = {}
         evidence_counter = 0
 
@@ -180,6 +188,7 @@ class AnswerService:
                 "ALLOWED_SOURCES": research.source_catalog() if research else [],
                 "SEARCH_RESULTS": search_results[-24:],
                 "OPEN_DOCUMENTS": list(documents.values()),
+                "RESEARCH_NOTICES": notices[-MAX_RESEARCH_STEPS:],
                 "EVIDENCE_AVAILABLE": evidence,
                 "RESEARCH_STEP": step_number,
                 "RESEARCH_STEP_LIMIT": MAX_RESEARCH_STEPS,
@@ -194,9 +203,8 @@ class AnswerService:
 
             if action == "search":
                 if research is None:
-                    yield AgentEvent(
-                        "notice",
-                        {"message": "La recherche live n'est pas disponible ; réponse sur données seules."},
+                    yield notice(
+                        {"message": "La recherche live n'est pas disponible ; réponse sur données seules."}
                     )
                     continue
                 query = raw.get("query")
@@ -211,10 +219,7 @@ class AnswerService:
                 try:
                     results = research.search(query, source_ids=source_ids)
                 except LiveResearchError as exc:
-                    yield AgentEvent(
-                        "notice",
-                        {"message": str(exc), "action": "search", "query": query},
-                    )
+                    yield notice({"message": str(exc), "action": "search", "query": query})
                     continue
                 public_results = [item.as_dict() for item in results]
                 search_results.extend(public_results)
@@ -227,6 +232,11 @@ class AnswerService:
                 }
                 research_trace.append(trace_item)
                 yield AgentEvent("search", trace_item)
+                if not results:
+                    yield notice({
+                        "message": "Aucun document officiel trouvé pour cette recherche.",
+                        "action": "search", "query": query,
+                    })
                 continue
 
             if action == "open":
@@ -239,10 +249,7 @@ class AnswerService:
                 try:
                     document = research.open(url)
                 except LiveResearchError as exc:
-                    yield AgentEvent(
-                        "notice",
-                        {"message": str(exc), "action": "open", "url": url},
-                    )
+                    yield notice({"message": str(exc), "action": "open", "url": url})
                     continue
                 documents[document.document_id] = document.metadata()
                 first_unit = document.units[0]
@@ -296,10 +303,9 @@ class AnswerService:
                         unit = research.read(document_id, unit_index)
                         document = research.document(document_id)
                     except LiveResearchError as exc:
-                        yield AgentEvent(
-                            "notice",
-                            {"message": str(exc), "action": "read", "document_id": document_id},
-                        )
+                        yield notice({
+                            "message": str(exc), "action": "read", "document_id": document_id,
+                        })
                         continue
                     evidence_counter += 1
                     evidence_id = f"E{evidence_counter}"
