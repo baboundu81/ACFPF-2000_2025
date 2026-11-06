@@ -472,3 +472,23 @@ Test sur HTML officiel réel :
 `tests/test_live_official_fulltext.py` (article unique du texte
 PIONANR5L17B2562) ; tests déterministes :
 `tests/test_legislative_articles.py`.
+
+
+### Garde-fou déterministe des réponses aux dossiers législatifs
+
+Le backend marque les questions de chat rattachées à un dossier avec le
+contexte de confiance `Contexte de dossier législatif fourni par le backend ACFPF.`.
+Pour ces questions, le validateur final impose **au moins une citation**
+correspondant à une unité d'un document officiel effectivement ouvert et
+lu par le moteur live (`Citation.evidence_id`), et non une simple série
+statistique `S...` ou une notice de recherche. Si le modèle ne fournit
+que des citations statistiques, la réponse est convertie en
+`status=insufficient`, sans conserver son affirmation non étayée.
+
+Les questions financières indépendantes restent autorisées à utiliser
+les séries statistiques déterministes. Ce contrôle est une **condition
+nécessaire, pas suffisante** : il ne prouve pas à lui seul que chaque
+affirmation de la réponse est supportée par le bon extrait, la bonne
+version ou le bon statut juridique. Il faudra un benchmark
+`claim → preuve` et une validation par assertion pour aller plus loin.
+Tests : `tests/test_civic_grounding_gate.py`.

@@ -22,6 +22,7 @@ from acfpf.macro import MacroService
 
 MAX_RESEARCH_STEPS = 14
 MAX_QUESTION_CHARS = 1500
+SCOPED_LEGISLATION_MARKER = "Contexte de dossier législatif fourni par le backend ACFPF."
 
 SYSTEM_PROMPT = """Tu es l'agent de recherche ACFPF.
 
@@ -149,6 +150,7 @@ class AnswerService:
 
     def iter_ask(self, question: str) -> Iterator[AgentEvent]:
         question = question.strip()
+        requires_live_evidence = question.startswith(SCOPED_LEGISLATION_MARKER)
         if not question:
             raise ValueError("La question ne peut pas être vide.")
         if len(question) > MAX_QUESTION_CHARS:
@@ -329,7 +331,10 @@ class AnswerService:
                 continue
 
             if action == "answer":
-                answer = self._validate_answer(raw, citations, research_trace=research_trace)
+                answer = self._validate_answer(
+                    raw, citations, research_trace=research_trace,
+                    require_live_evidence=requires_live_evidence,
+                )
                 yield AgentEvent("answer", {}, answer=answer)
                 return
 
@@ -439,6 +444,7 @@ class AnswerService:
         citations: dict[str, Citation],
         *,
         research_trace: list[dict[str, Any]],
+        require_live_evidence: bool = False,
     ) -> GroundedAnswer:
         status = raw.get("status")
         answer = raw.get("answer")
@@ -467,6 +473,27 @@ class AnswerService:
             raise AIGroundingError("Une réponse factuelle sans citation a été refusée.")
 
         unique_ids = tuple(dict.fromkeys(raw_citations))
+        if (
+            status == "answered"
+            and require_live_evidence
+            and not any(citations[ref].evidence_id is not None for ref in unique_ids)
+        ):
+            return GroundedAnswer(
+                status="insufficient",
+                answer=(
+                    "Aucun passage de document officiel effectivement lu n'a été "
+                    "cité pour étayer cette réponse liée au dossier législatif."
+                ),
+                citations=(),
+                limitations=(
+                    ("Des données statistiques ou des métadonnées de dossier ne suffisent "
+                     "pas à établir ce que prévoit ou applique un texte."),
+                    *(item.strip() for item in raw_limitations if item.strip()),
+                ),
+                provider=self.provider.name,
+                model=self.provider.model,
+                research=tuple(research_trace),
+            )
         return GroundedAnswer(
             status=status,
             answer=answer.strip(),
