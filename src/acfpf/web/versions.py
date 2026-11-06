@@ -6,6 +6,7 @@
 from flask import Flask, jsonify, request
 
 from acfpf.legislation import LegislationError, LegislationService
+from acfpf.legislative_articles import ArticleDetectionError, detect_article_candidates
 from acfpf.legislative_fulltext import OfficialTextError, fetch_official_text
 from acfpf.legislative_text_diff import TextComparisonError, compare_official_texts
 from acfpf.legislative_versions import TextVersionsError, TextVersionService
@@ -112,3 +113,30 @@ def register_version_routes(
         diff["before"]["version"] = notice_by_uid[before_uid].as_dict()
         diff["after"]["version"] = notice_by_uid[after_uid].as_dict()
         return jsonify(diff)
+
+    @app.get("/api/legislation/<dossier_id>/versions/<document_uid>/article-candidates")
+    def legislative_article_candidates_api(dossier_id: str, document_uid: str):
+        try:
+            dossier = legislation_service.get(dossier_id)
+        except LegislationError as exc:
+            return jsonify({"error": "legislation_unavailable", "message": str(exc)}), 503
+        if dossier is None:
+            return jsonify({"error": "dossier_not_found"}), 404
+        try:
+            collection = version_service.for_dossier(dossier)
+        except TextVersionsError as exc:
+            return jsonify({"error": "versions_unavailable", "message": str(exc)}), 503
+        if not any(
+            version.uid == document_uid and version.notice_available
+            for version in collection.versions
+        ):
+            return jsonify({"error": "document_not_linked"}), 404
+        try:
+            official = fetch_official_text(document_uid)
+            result = detect_article_candidates(official)
+        except OfficialTextError as exc:
+            return jsonify({"error": "official_text_unavailable", "message": str(exc)}), 503
+        except ArticleDetectionError as exc:
+            return jsonify({"error": "article_detection_unavailable", "message": str(exc)}), 422
+        result["dossier_id"] = dossier.id
+        return jsonify(result)

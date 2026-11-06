@@ -446,3 +446,29 @@ Aucun test réseau PISTE n'a été réalisé faute d'identifiants.
 Sources techniques :
 https://www.legifrance.gouv.fr/contenu/pied-de-page/foire-aux-questions-api ;
 https://www.data.gouv.fr/dataservices/legifrance .
+
+
+### Repérage expérimental des intitulés d'articles
+
+`GET /api/legislation/<dossier>/versions/<uid>/article-candidates`
+contrôle d'abord que l'UID du document possède une notice officielle
+rattachée au dossier. Le HTML de l'Assemblée est téléchargé et vérifié
+par le lecteur officiel existant. La réponse signale seulement les lignes
+entières correspondant à un motif conservateur « Article 1er »,
+« Article 2 bis », « Article unique », etc. avec leur numéro de ligne
+dans la transcription textuelle et l'empreinte SHA-256 des octets source.
+Le nombre de lignes et de candidats est borné ; une entrée trop longue
+entraîne une erreur plutôt qu'une liste tronquée.
+
+Le bouton de la fiche dossier propose ces repères à la demande.
+`article_structure_verified=false` et
+`article_verified=false` restent explicites : une rubrique peut
+se trouver dans l'exposé des motifs ou une annexe, des articles peuvent
+être manqués, et une ressemblance d'intitulé n'établit pas l'identité
+juridique entre deux versions. Aucune comparaison article par article
+ne découle encore de ce repérage.
+
+Test sur HTML officiel réel :
+`tests/test_live_official_fulltext.py` (article unique du texte
+PIONANR5L17B2562) ; tests déterministes :
+`tests/test_legislative_articles.py`.

@@ -7,6 +7,7 @@ import os
 
 import pytest
 
+from acfpf.legislative_articles import detect_article_candidates
 from acfpf.legislative_fulltext import fetch_official_text
 
 
@@ -23,3 +24,6 @@ def test_live_official_document_html():
     assert "ASSEMBLÉE NATIONALE" in document.text.upper()
     assert "PROPOSITION DE LOI" in document.text.upper()
     assert len(document.sha256) == 64
+    candidates = detect_article_candidates(document)
+    assert any(item['heading'].lower() == 'article unique' for item in candidates['candidates'])
+    assert candidates['article_structure_verified'] is False
