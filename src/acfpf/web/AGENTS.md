@@ -11,7 +11,7 @@ Ce fichier complète le `AGENTS.md` racine et s'applique à tout `src/acfpf/web/
 
 ## Navigation produit
 
-- L'accueil `/` est l'expérience principale d'analyse citoyenne : découverte et recherche de textes/décisions.
+- La cible V1 de l’accueil `/` réunit la question libre avec recherche documentaire sourcée, sans dossier obligatoire, et la découverte de textes/décisions. Voir `docs/V1_ROADMAP.md` pour les étapes de livraison ; l’accueil actuel doit encore intégrer la question libre.
 - Un dossier législatif est ouvert sous `/textes/<id>` et possède son espace d'analyse et son chat contextualisé.
 - Les finances publiques sont un sous-outil spécialisé sous `/finances`.
 - Un seul élément de navigation principale doit être actif à la fois.

@@ -78,6 +78,8 @@ Une prévision, une décision et une exécution ne sont jamais interchangeables.
 
 Le backend peut exposer des événements de progression `started`, `search`, `open`, `read`, `notice`, `answer`.
 
+Les erreurs de sources et recherches vides sont transmises au tour suivant dans `RESEARCH_NOTICES` et conservées dans la trace publique. Ces notices sont des observations opérationnelles, jamais des preuves documentaires ni des citations.
+
 Ces événements doivent décrire les actions observables de l'agent, jamais son raisonnement privé. L'interface doit montrer les sources ouvertes et les locators lus sans afficher de chaîne de pensée.
 
 ## Tests

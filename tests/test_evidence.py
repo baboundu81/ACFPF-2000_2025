@@ -27,6 +27,13 @@ class FakeResponse:
             self.headers["Location"] = location
         self.content = text.encode("utf-8")
 
+    def iter_content(self, chunk_size):
+        for start in range(0, len(self.content), chunk_size):
+            yield self.content[start:start + chunk_size]
+
+    def close(self):
+        self.closed = True
+
     def raise_for_status(self) -> None:
         return None
 
@@ -36,8 +43,9 @@ class FakeSession:
         self.responses = responses
         self.calls: list[tuple[str, dict | None, bool | None]] = []
 
-    def get(self, url, *, params=None, headers=None, timeout=None, allow_redirects=None):
+    def get(self, url, *, params=None, headers=None, timeout=None, allow_redirects=None, stream=False):
         del headers, timeout
+        assert stream is True
         self.calls.append((url, params, allow_redirects))
         return self.responses[url]
 

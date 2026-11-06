@@ -12,7 +12,8 @@ Le projet ne doit jamais être conçu pour confirmer une opinion prédéfinie. U
 
 Le LLM n'est jamais une source de vérité. Il peut comprendre une demande, piloter une recherche et synthétiser des preuves ; l'existence d'un texte, son état, son contenu et les chiffres utilisés doivent être établis par des données ou documents officiels.
 
-Voir `docs/CIVIC_ACTION_PLAN.md` pour la trajectoire produit.
+La cible de livraison et l’ordre des travaux sont définis dans `docs/V1_ROADMAP.md`.
+`docs/CIVIC_ACTION_PLAN.md` conserve la trajectoire longue et l’historique technique ; ses phases ne sont pas des prérequis supplémentaires à la V1.
 
 ## 2. Données, documents et méthode
 
@@ -62,7 +63,7 @@ ACFPF possède son propre langage visuel. Ne pas copier le design d'un autre pro
 
 Le style courant est **journalistique** : lecture éditoriale, hiérarchie typographique forte, mise en avant des faits, des sources et du contexte. Il n'existe pas de sélecteur de thème dans l'interface.
 
-L'expérience principale est désormais la découverte et l'analyse de l'action publique. L'accueil doit permettre de chercher ou parcourir des textes et décisions sans exiger que l'utilisateur connaisse leur nom officiel. Le dashboard financier est un sous-outil accessible depuis cette navigation principale.
+La cible V1 est la recherche et l’analyse documentaire : l’accueil doit permettre de poser une question libre sans sélectionner de dossier, ainsi que de chercher ou parcourir des textes et décisions sans connaître leur nom officiel. Le dashboard financier est un sous-outil accessible depuis cette navigation principale.
 
 Principes :
 
