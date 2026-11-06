@@ -41,6 +41,11 @@ class FakeProvider:
 
     def complete_json(self, request: ProviderRequest) -> dict:
         self.requests.append(request)
+        if request.response_schema_name == "acfpf_grounding_review":
+            # Existing agent tests use a permissive review fixture. Dedicated grounding
+            # tests below use explicit rejecting/invalid reviews instead.
+            candidate = json.loads(request.user_prompt)["CANDIDATE_ANSWER"]
+            return {"supported": True, "citations": candidate["citations"], "issues": []}
         if not self.responses:
             raise AssertionError("FakeProvider has no response left")
         return self.responses.pop(0)
@@ -295,6 +300,9 @@ def test_groq_gpt_oss_uses_structured_actions_and_server_side_key() -> None:
     response_format = session.last_call["json"]["response_format"]
     assert response_format["type"] == "json_schema"
     assert response_format["json_schema"]["name"] == "acfpf_agent_action"
+    assert response_format["json_schema"]["strict"] is True
+    assert session.last_call["json"]["reasoning_effort"] == "low"
+    assert session.last_call["json"]["max_completion_tokens"] == 2048
     assert response_format["json_schema"]["schema"] == AGENT_ACTION_SCHEMA
     assert session.last_call["json"]["tool_choice"] == "none"
     assert session.last_call["json"]["model"] == "openai/gpt-oss-120b"

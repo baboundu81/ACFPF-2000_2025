@@ -72,4 +72,4 @@ Ce fichier complète le `AGENTS.md` racine et s'applique à tout `src/acfpf/web/
 - Éviter les bibliothèques graphiques lourdes tant que des SVG légers suffisent.
 - Le navigateur ne doit pas refaire des calculs métier.
 - Charger uniquement les assets nécessaires à la page.
-- Le flux NDJSON doit être consommé progressivement sans conserver des copies inutiles des documents consultés dans le navigateur.
+- Le flux NDJSON doit être consommé progressivement avec le lecteur commun local `research_stream.js`, sans conserver des copies inutiles des documents consultés dans le navigateur. Exiger un unique événement final, gérer les erreurs avec/sans saut de ligne et les interruptions, et réactiver le formulaire. Ne pas publier de candidat ni de résultat issu d’un flux incomplet.

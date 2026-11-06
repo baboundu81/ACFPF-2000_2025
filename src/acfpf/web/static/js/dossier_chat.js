@@ -102,34 +102,6 @@
     }
   };
 
-  const consumeStream = async (response) => {
-    if (!response.body) throw new Error("Réponse non diffusable.");
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-    let buffer = "";
-    let finalAnswer = null;
-
-    while (true) {
-      const { value, done } = await reader.read();
-      buffer += decoder.decode(value || new Uint8Array(), { stream: !done });
-      const lines = buffer.split("\n");
-      buffer = lines.pop() || "";
-      for (const line of lines) {
-        if (!line.trim()) continue;
-        const event = JSON.parse(line);
-        if (event.type === "answer") finalAnswer = event.answer;
-        else renderEvent(event);
-      }
-      if (done) break;
-    }
-    if (buffer.trim()) {
-      const event = JSON.parse(buffer);
-      if (event.type === "answer") finalAnswer = event.answer;
-      else renderEvent(event);
-    }
-    return finalAnswer;
-  };
-
   const ask = async (value) => {
     const recentHistory = history.slice(-2);
     history.push({ role: "user", content: value });
@@ -152,12 +124,13 @@
         const payload = await response.json();
         throw new Error(payload.message || "La réponse IA a échoué.");
       }
-      const answer = await consumeStream(response);
+      const answer = await window.ACFPFConsumeResearchStream(response, renderEvent);
       if (!answer) throw new Error("La recherche n'a produit aucune réponse finale.");
       progressStatus.textContent = "Enquête terminée";
       addMessage("assistant", answer.answer, answer);
       history.push({ role: "assistant", content: answer.answer });
     } catch (error) {
+      progressStatus.textContent = "Recherche interrompue";
       addMessage("assistant", error.message || "Impossible de mener la recherche.");
     } finally {
       button.disabled = false;

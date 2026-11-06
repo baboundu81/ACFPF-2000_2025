@@ -104,7 +104,11 @@ Travail attendu :
 
 ### Étape 2 — IA, citations et robustesse
 
-**État :** [ ] Non validée
+**État :** [x] Validée le 6 novembre 2026 — contrôles et parcours Groq réels vérifiés.
+
+Rapport : [V1_STEP2_VALIDATION.md](V1_STEP2_VALIDATION.md). Les échecs Gemini 503
+restent explicitement documentés ; aucune réussite Gemini n’est déclarée. Tests simulés,
+benchmark LLM et essais navigateur sont distingués. La recette V1 globale reste ouverte.
 
 **Objectif :** réponses utiles, vérifiables, résistantes aux erreurs de fournisseurs.
 

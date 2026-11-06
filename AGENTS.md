@@ -54,6 +54,7 @@ Voir `docs/EVIDENCE.md` pour la convention de preuve.
 - Un chat dédié à un dossier doit recevoir l'identité du dossier depuis le backend. Les champs envoyés par le navigateur ne doivent pas pouvoir substituer silencieusement le titre ou l'URL officiels.
 - Les séries structurées doivent rester traitées par des fonctions déterministes ; le LLM sert à piloter la recherche et à synthétiser les preuves.
 - La couche IA doit rester indépendante du fournisseur de modèle.
+- Une réponse factuelle candidate doit rester interne jusqu’aux contrôles des citations et à la passe distincte de vérification de ses appuis. Cette seconde passe LLM est un garde-fou faillible, jamais une preuve supplémentaire ; les limites et le benchmark de calibration doivent être documentés.
 - Le module finances doit rester utilisable indépendamment du module législatif et réciproquement autant que possible.
 - Éviter les dépendances réseau côté navigateur pour les fonctions essentielles : l'interface doit rester utilisable localement sans CDN.
 

@@ -77,11 +77,11 @@ def test_provider_exposes_safe_rate_limit_diagnostics_without_api_key() -> None:
     message = str(exc_info.value)
     assert "HTTP 429" in message
     assert "limite de débit ou quota atteint" in message
-    assert "réessayer dans 7 s" in message
-    assert "tokens restants: 0" in message
-    assert "reset tokens: 6.5s" in message
+    assert "Réessayer dans 7 s" in message
     assert "req-test-123" in message
-    assert "Rate limit reached for model" in message
+    assert exc_info.value.code == "rate_limited"
+    assert exc_info.value.retry_after == 7
+    assert "Rate limit reached for model" not in message
     assert "secret-must-never-appear" not in message
 
 
@@ -99,7 +99,8 @@ def test_provider_exposes_failed_generation_reason_without_attempted_payload() -
 
     message = str(exc_info.value)
     assert "HTTP 400" in message
-    assert "Failed to validate JSON" in message
-    assert "génération refusée: Generated content was not valid JSON" in message
+    assert "schéma refusé" in message
+    assert "Generated content" not in message
+    assert exc_info.value.code == "request_rejected"
     assert "{not valid json}" not in message
     assert "secret-must-never-appear" not in message

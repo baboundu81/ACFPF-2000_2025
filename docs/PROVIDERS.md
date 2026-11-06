@@ -59,7 +59,7 @@ Le choix du provider ne modifie pas les règles de grounding : aucun navigateur 
 
 ACFPF utilise le même schéma logique pour les quatre actions de l'agent : `search`, `open`, `read`, `answer`.
 
-- Gemini et Groq/GPT-OSS utilisent `response_format=json_schema` sur leur API compatible OpenAI.
+- Gemini et Groq/GPT-OSS utilisent `response_format=json_schema` sur leur API compatible OpenAI. Groq/GPT-OSS active explicitement `strict: true` et utilise `max_completion_tokens=2048` avec effort faible.
 - Claude utilise les Structured Outputs natifs Anthropic avec `output_config.format=json_schema`.
 - Les autres providers restent en mode `json_object` tant que leur prise en charge d'un schéma strict n'est pas explicitement activée et testée dans ACFPF.
 
@@ -67,14 +67,23 @@ Le schéma est centralisé dans `src/acfpf/ai/schema.py` afin que les différent
 
 ## Diagnostic des erreurs
 
-Les erreurs HTTP des providers doivent rester exploitables sans exposer les secrets. ACFPF remonte donc, lorsqu'ils existent :
+Les erreurs HTTP des providers doivent rester exploitables sans exposer les secrets. ACFPF remonte le code HTTP, une catégorie stable (`rate_limited`, `timeout`, `authentication`,
+`context_limit`, `invalid_response`, `output_limit`, `refusal`, `unavailable`, `request_rejected`),
+un `Retry-After` numérique et un identifiant de requête validé lorsqu’ils sont disponibles.
+Les corps bruts d’erreur, messages libres et `failed_generation` ne sont plus recopiés : ils peuvent
+répéter le prompt, un secret, une réponse non validée ou du raisonnement privé. Les logs applicatifs
+ne recopient pas non plus la chaîne d’exceptions HTTP.
 
-- le code HTTP ;
-- une catégorie lisible (`429` quota/rate limit, `401` authentification, `403` permission, etc.) ;
-- `retry-after` ;
-- les compteurs et délais de rate limit fournis par l'API ;
-- l'identifiant de requête du fournisseur ;
-- le message d'erreur structuré du fournisseur, tronqué à une taille raisonnable ;
-- lorsque Groq retourne `failed_generation`, la raison structurée si elle est disponible, sans recopier automatiquement la génération fautive complète.
+Groq/GPT-OSS : le mode strict utilisé est décrit dans la
+[documentation officielle](https://console.groq.com/docs/structured-outputs).
+Le budget et l’effort sont configurés selon le
+[contrat de l’API Groq](https://console.groq.com/docs/api-reference).
+
+Gemini : une clé acceptée ne garantit pas la disponibilité de la génération. Le 6 novembre 2026,
+la liste des modèles a répondu HTTP 200 avec la clé locale, tandis que Gemini 3.8 Flash a répondu
+HTTP 503 via l’API compatible et l’API native. Google décrit ce statut comme une
+[indisponibilité ou un manque temporaire de capacité](https://ai.google.dev/gemini-api/docs/generate-content/api-errors).
+Ce diagnostic ne justifie pas de demander une nouvelle clé ou d’activer la facturation.
+Les presets existants sont conservés ; les autres fournisseurs restent configurables.
 
 La clé API et les en-têtes d'authentification ne doivent jamais apparaître dans l'interface ni dans les logs.

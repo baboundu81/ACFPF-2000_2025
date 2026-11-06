@@ -37,7 +37,9 @@ Le modèle n'obtient pas un navigateur libre. Le backend exécute chaque action 
 - Une unité de document n'est citable que si elle a effectivement été fournie au modèle pendant la session.
 - Le backend attribue les identifiants `E…`; le modèle ne choisit pas lui-même des identifiants arbitraires.
 - Les séries déterministes utilisent des identifiants `S…`.
-- Une citation inconnue provoque un rejet de la réponse.
+- Une citation inconnue, une référence inline non déclarée ou une URL affichée non citée provoque un rejet.
+- Une réponse factuelle candidate reste interne jusqu’au contrôle distinct `acfpf_grounding_review`, sur les seuls passages lus et les séries déterministes. Un rejet ne doit jamais publier le candidat. Cette passe LLM ne constitue pas une nouvelle preuve ni une certification de fidélité ; maintenir le benchmark versionné `tests/fixtures/ai_grounding_benchmark.json`.
+- Les diagnostics n’exposent ni corps fournisseur brut, ni `failed_generation`, ni raisonnement privé. Le champ `reason` ne doit pas être recopié dans les événements publics.
 - Lorsque les preuves sont insuffisantes, le résultat attendu est `insufficient`, pas une extrapolation.
 - Ne jamais utiliser le savoir pré-entraîné du modèle pour compléter silencieusement une lacune.
 
@@ -96,5 +98,6 @@ Ces événements doivent décrire les actions observables de l'agent, jamais son
 
 - L'architecture doit rester utilisable avec au moins un provider disposant d'un free tier pour le développement.
 - Ne pas supposer qu'un provider gratuit aujourd'hui le restera : garder les alternatives fonctionnelles et centraliser les presets.
-- Plafonner le nombre d'étapes d'enquête et la taille des documents lus.
+- Plafonner les étapes, les documents, le contexte fournisseur et la sortie. Conserver une segmentation mécanique, sans sélection de pertinence pour tenir dans un contexte.
+- Les reprises sur quota sont limitées à deux par question, vérification comprise, uniquement avec une attente annoncée de 60 secondes au plus ; aucune bascule silencieuse de provider ou de modèle.
 - Avant un déploiement public, ajouter quotas, limitation de débit, suivi de consommation et budgets de tokens côté serveur.

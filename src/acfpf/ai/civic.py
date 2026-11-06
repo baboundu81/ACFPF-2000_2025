@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 
-from acfpf.ai.provider import LLMProvider, ProviderRequest
 from acfpf.ai.service import AnswerService, Citation, build_default_answer_service
 from acfpf.cofog import CofogService
 from acfpf.data.eurostat import EurostatError
@@ -52,27 +51,14 @@ Les `source_ids` de search doivent venir de ALLOWED_SOURCES. Une citation finale
 """
 
 
-class _PromptOverrideProvider:
-    def __init__(self, delegate: LLMProvider) -> None:
-        self.delegate = delegate
-        self.name = delegate.name
-        self.model = delegate.model
-
-    def complete_json(self, request: ProviderRequest) -> dict:
-        return self.delegate.complete_json(
-            ProviderRequest(
-                system_prompt=CIVIC_SYSTEM_PROMPT,
-                user_prompt=request.user_prompt,
-            )
-        )
-
-
 class CivicAnswerService(AnswerService):
     """AnswerService configured for public-action questions rather than finance-only questions."""
 
+    system_prompt = CIVIC_SYSTEM_PROMPT
+
     def __init__(self, base: AnswerService) -> None:
         super().__init__(
-            _PromptOverrideProvider(base.provider),
+            base.provider,
             base.macro_service,
             base.cofog_service,
             base.live_research,

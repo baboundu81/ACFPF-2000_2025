@@ -105,6 +105,7 @@ def test_free_question_search_open_read_answer_keeps_read_evidence(monkeypatch, 
             "open",
             "read",
             "read",
+            "notice",
             "answer",
         ]
         payload = events[-1]["answer"]
