@@ -524,3 +524,30 @@ les tests Python déterministes ainsi que les tests d'intégration
 sur les archives publiques de l'Assemblée. Elle ne remplace pas
 des tests directs de l'API PISTE authentifiée ni un audit de fidélité
 `assertion → passage → version → date`.
+
+
+### Socle `PublicActionDossier` : couverture sans liens supposés
+
+Le module `acfpf.public_action` fournit un modèle explicite des jalons
+du projet, de l'examen parlementaire, du contrôle constitutionnel et
+de la promulgation jusqu'au texte applicable, aux décrets, au financement,
+à l'exécution, aux indicateurs et aux évaluations. La nouvelle API
+`GET /api/legislation/<dossier_id>/public-action` et la fiche dossier
+montrent **quelles catégories possèdent des métadonnées officielles
+identifiables** et lesquelles restent non vérifiées.
+
+Seuls les événements dont `source_id` correspond à une référence
+Assemblée ou Sénat officielle du dossier contribuent à cette couverture.
+La date initiale fusionnée du dossier n'est pas attribuée à l'une des chambres
+sans événement explicite de dépôt : elle peut provenir de plusieurs sources.
+Les événements Sénat codés `PROMULGATION` ou
+`CONSTITUTIONAL_COUNCIL` sont conservés comme jalons, mais jamais
+comme texte normatif validé. Pour toutes les étapes,
+`normative_text_verified=false` ; les relations entre loi et
+budget/évaluation restent explicitement à `false`.
+Cette API ne reconstitue aucun lien de causalité ni aucun financement
+par rapprochement approximatif.
+
+Tests : `tests/test_public_action.py`. Il s'agit du **socle de données
+de phase 5**, non de l'intégration des textes réglementaires, du
+financement, de l'exécution ou des évaluations ; ces tâches restent ouvertes.

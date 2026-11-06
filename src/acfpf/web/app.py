@@ -27,6 +27,7 @@ from acfpf.legislation import (
 from acfpf.legislation_assisted import assisted_browse_legislation
 from acfpf.legislative_stages import classify_dossier_stage, enrich_dossier_payload
 from acfpf.macro import MacroService
+from acfpf.public_action import public_action_coverage
 from acfpf.source_registry import load_sources
 
 MAX_SCOPED_QUESTION_CHARS = 600
@@ -236,6 +237,7 @@ def create_app(
         return render_template(
             "dossier.html",
             dossier=enrich_dossier_payload(dossier),
+            public_action=public_action_coverage(dossier),
             error=None,
             legislation_warnings=_legislation_warnings(civic_service),
             research_sources=[source.as_dict() for source in live_sources],
