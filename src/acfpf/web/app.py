@@ -30,6 +30,7 @@ from acfpf.legislative_stages import classify_dossier_stage, enrich_dossier_payl
 from acfpf.macro import MacroService
 from acfpf.public_action import public_action_coverage
 from acfpf.source_registry import load_sources
+from acfpf.web.presentation import dossier_view
 
 MAX_SCOPED_QUESTION_CHARS = 600
 MAX_HISTORY_ITEMS = 2
@@ -142,6 +143,14 @@ def create_app(
     registered_sources = load_sources()
     live_sources = [source for source in registered_sources if source.live_research]
 
+    @app.context_processor
+    def research_context():
+        return {
+            "ai_enabled": ai_service is not None,
+            "research_sources": [source.as_dict() for source in live_sources],
+            "browse_requested": bool(request.args),
+        }
+
     @app.get("/")
     def home():
         query = request.args.get("q", "").strip()
@@ -149,6 +158,22 @@ def create_app(
         fallback_status = parse_legislative_search(query, status=status).status
         refresh = request.args.get("refresh") == "1"
         assist_enabled = _assist_enabled_from_request()
+        if not request.args:
+            # The free-question entry must not wait for a parliamentary inventory download.
+            return render_template(
+                "home.html",
+                query="",
+                selected_status="active",
+                selected_filters=_empty_selected_filters(),
+                facets=EMPTY_FACETS,
+                dossiers=[],
+                legislation_error=None,
+                legislation_warnings=[],
+                legislation_sources=LEGISLATION_SOURCE_PAGES,
+                search_interpretation=None,
+                planner_available=query_planner is not None,
+                assist_enabled=assist_enabled,
+            )
         try:
             selected_filters = _browse_filters_from_request()
             assisted = assisted_browse_legislation(
@@ -169,9 +194,7 @@ def create_app(
                 selected_status=assisted.effective_status,
                 selected_filters=assisted.effective_filters,
                 facets=browse.facets.as_dict(),
-                dossiers=[
-                    enrich_dossier_payload(item, include_events=False) for item in browse.results
-                ],
+                dossiers=[dossier_view(item, include_events=False) for item in browse.results],
                 legislation_error=None,
                 legislation_warnings=_legislation_warnings(civic_service),
                 legislation_sources=LEGISLATION_SOURCE_PAGES,
@@ -237,7 +260,7 @@ def create_app(
             ), 404
         return render_template(
             "dossier.html",
-            dossier=enrich_dossier_payload(dossier),
+            dossier=dossier_view(dossier),
             public_action=public_action_coverage(dossier),
             error=None,
             legislation_warnings=_legislation_warnings(civic_service),

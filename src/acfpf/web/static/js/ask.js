@@ -83,6 +83,7 @@
   const renderAnswer = (payload) => {
     result.replaceChildren();
     result.hidden = false;
+    result.setAttribute("role", "region");
     progressStatus.textContent = "Enquête terminée";
 
     const label = payload.status === "insufficient" ? "Preuves insuffisantes" : "Réponse ACFPF";
@@ -132,6 +133,7 @@
   const renderError = (message) => {
     result.replaceChildren();
     result.hidden = false;
+    result.setAttribute("role", "alert");
     result.appendChild(paragraph("Erreur", "eyebrow"));
     result.appendChild(paragraph(message, "ask-result__answer"));
   };
@@ -141,6 +143,7 @@
     const value = question.value.trim();
     if (!value) return;
 
+    form.setAttribute("aria-busy", "true");
     button.disabled = true;
     button.textContent = "Enquête en cours…";
     resetResearch();
@@ -160,6 +163,7 @@
       progressStatus.textContent = "Recherche interrompue";
       renderError(error.message || "Impossible de mener la recherche. Vérifiez la connexion et le serveur ACFPF.");
     } finally {
+      form.setAttribute("aria-busy", "false");
       button.disabled = false;
       button.textContent = "Rechercher et analyser";
     }

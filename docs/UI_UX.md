@@ -68,9 +68,11 @@ La navigation V1 suit [V1_ROADMAP.md](V1_ROADMAP.md) :
 - finances publiques : sous-outil sous `/finances` ;
 - méthode et sources : accessibles depuis ces parcours.
 
-La question libre sur l’accueil reste à intégrer (voir [l’audit de l’étape 0](V1_STEP0_AUDIT.md)).
-Les vues avancées des dossiers peuvent être repliées ou masquées de manière réversible,
-sans suppression des modules ni de leurs tests. Une seule entrée principale est active.
+La question libre et la découverte de textes sont réunies sur l’accueil. Sans recherche
+explicite, cette page ne télécharge pas l’inventaire parlementaire. Dans le dossier,
+le chat précède les vues avancées repliées, conservées avec leurs tests. Les notices
+de versions, scrutins, rapports et amendements se chargent à la première ouverture.
+Une seule entrée principale est active. Voir les [vérifications de l’étape 3](V1_STEP3_VALIDATION.md).
 
 L’ancienne proposition de rubriques thématiques (prélèvements, services publics,
 protection sociale, fraudes, aides aux entreprises) relève de la vision longue ;

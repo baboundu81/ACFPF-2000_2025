@@ -12,6 +12,7 @@
   <script defer src="{{ url_for('static', filename='js/ask.js') }}"></script>
 </head>
 <body>
+  <a class="skip-link" href="#main">Aller au contenu</a>
   <header class="masthead">
     <div class="shell masthead__inner">
       <div>
@@ -28,7 +29,7 @@
     </div>
   </header>
 
-  <main>
+  <main id="main">
     <section class="hero shell">
       <p class="eyebrow">Sous-outil finances · France · Administrations publiques · 2000–2025</p>
       <h1>Vingt-cinq ans de finances publiques, remis en perspective.</h1>
@@ -110,45 +111,8 @@
           Si les éléments disponibles ne suffisent pas, la réponse doit rester incomplète plutôt que spéculative.
         </p>
 
-        {% if ai_enabled %}
-          <form id="ask-form" class="ask-form">
-            <label for="ask-question">Votre question</label>
-            <div class="ask-form__row">
-              <textarea id="ask-question" name="question" rows="3" maxlength="1500" required
-                placeholder="Ex. Où observe-t-on des baisses de dépense depuis 2000, et quelles décisions ou réformes peuvent les expliquer ?"></textarea>
-              <button type="submit">Rechercher et analyser</button>
-            </div>
-            <p class="ask-form__hint">
-              L'index Web sert uniquement à découvrir des URL autorisées. Ses snippets ne sont jamais transmis au modèle ni utilisés comme preuve.
-            </p>
-          </form>
-          <div id="research-progress" class="research-progress" hidden aria-live="polite">
-            <div class="research-progress__header">
-              <p class="eyebrow">Enquête en cours</p>
-              <p id="research-progress-status">Préparation…</p>
-            </div>
-            <ol id="research-progress-steps" class="research-progress__steps"></ol>
-          </div>
-          <div id="ask-result" class="ask-result" hidden aria-live="polite"></div>
-        {% else %}
-          <div class="ai-disabled">
-            <p><strong>IA non configurée.</strong> Le tableau de bord reste entièrement utilisable sans IA.</p>
-            <p>
-              Configurez un provider et une clé côté serveur, par exemple :
-              <code>export ACFPF_LLM_PROVIDER="gemini"</code> puis
-              <code>export ACFPF_LLM_API_KEY="votre_clé"</code>, et relancez <code>acfpf</code>.
-            </p>
-          </div>
-        {% endif %}
-
-        <details class="research-sources">
-          <summary>{{ research_sources|length }} sources officielles actuellement autorisées pour la recherche live</summary>
-          <div class="research-sources__list">
-            {% for source in research_sources %}
-              <span>{{ source.name }}</span>
-            {% endfor %}
-          </div>
-        </details>
+        {% set question_placeholder = 'Ex. Où le poids de la dépense publique a-t-il changé depuis 2000 ?' %}
+        {% include '_question_form.html' %}
       </section>
 
       <section class="shell section-block">

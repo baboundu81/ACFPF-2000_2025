@@ -17,6 +17,7 @@
   <script defer src="{{ url_for('static', filename='js/dossier_chat.js') }}"></script>
 </head>
 <body>
+  <a class="skip-link" href="#main">Aller au contenu</a>
   <header class="masthead">
     <div class="shell masthead__inner">
       <div>
@@ -30,7 +31,7 @@
     </div>
   </header>
 
-  <main>
+  <main id="main">
     {% if error %}
       <section class="shell section-block">
         <div class="error-panel" role="alert">
@@ -48,7 +49,7 @@
           <span>{{ dossier.stage_label }}</span>
           {% if dossier.current_chamber %}<span>{{ dossier.current_chamber }}</span>{% endif %}
           {% if dossier.procedure_label %}<span>{{ dossier.procedure_label }}</span>{% endif %}
-          {% if dossier.last_activity %}<span>Dernière activité : {{ dossier.last_activity }}</span>{% endif %}
+          {% if dossier.last_activity %}<span>{{ dossier.activity_label }} : {{ dossier.last_activity }}</span>{% endif %}
           {% if dossier.law_number %}<span>Loi n° {{ dossier.law_number }}</span>{% endif %}
         </div>
         <h1>{{ dossier.title }}</h1>
@@ -58,6 +59,10 @@
             <a href="{{ source.official_url }}" target="_blank" rel="noreferrer">Ouvrir le dossier {{ source.label }}</a>
           {% endfor %}
         </div>
+        <p class="source-block__technical">Inventaire consulté : {{ dossier.freshness_label }}{% if dossier.from_cache %} · cache local{% endif %}.</p>
+        <p class="filter-note">Ces métadonnées orientent la recherche ; elles ne prouvent ni le contenu des articles,
+          ni leur entrée en vigueur. La couverture dépend des inventaires disponibles des deux chambres.</p>
+        <nav class="entry-links" aria-label="Dans ce dossier"><a href="#ask">Poser une question sur ce texte</a><a href="#dossier-tools">Consulter les détails du dossier</a></nav>
       </section>
 
       {% if legislation_warnings %}
@@ -67,7 +72,79 @@
         </section>
       {% endif %}
 
-      <section class="shell dossier-overview section-block">
+      <section id="ask" class="shell section-block ask-block dossier-chat-block">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Chat dédié à ce texte</p>
+            <h2>Posez vos questions sans répéter le nom du dossier.</h2>
+          </div>
+          <p class="section-heading__note">Recherche live · sources officielles uniquement</p>
+        </div>
+
+        <p class="ask-block__intro">Les réponses restent liées à ce dossier. Les sources sont ouvertes et lues avant citation ;
+          une version ou une disposition non vérifiée ne peut pas être présentée comme du droit applicable.</p>
+        {% if ai_enabled %}
+          <div class="question-presets" aria-label="Questions suggérées">
+            <button type="button" data-question="Résume-moi ce texte simplement et indique clairement la version analysée.">Résumer simplement</button>
+            <button type="button" data-question="Qu'est-ce que ce texte changerait concrètement par rapport au droit actuel ?">Ce qui change</button>
+            <button type="button" data-question="Quelles différences importantes apparaissent entre les étapes à l'Assemblée nationale et au Sénat ?">Assemblée vs Sénat</button>
+            <button type="button" data-question="Quels arguments ont été avancés pour et contre ce texte dans les sources parlementaires ?">Arguments pour / contre</button>
+          </div>
+
+          <div id="dossier-chat-thread" class="chat-thread" aria-live="polite">
+            <div class="chat-message chat-message--system">
+              <p>Vous analysez <strong>{{ dossier.title }}</strong>. Les réponses restent rattachées à ce dossier.</p>
+            </div>
+          </div>
+
+          <form id="dossier-chat-form" class="ask-form" data-dossier-id="{{ dossier.id }}">
+            <label for="dossier-chat-question">Votre question</label>
+            <div class="ask-form__row">
+              <textarea id="dossier-chat-question" name="question" rows="3" maxlength="600" required
+                placeholder="Ex. Est-ce que l'article qui concerne X est toujours présent dans la version actuelle ?"></textarea>
+              <button type="submit">Rechercher et répondre</button>
+            </div>
+            <p class="ask-form__hint">
+              Les deux derniers échanges peuvent être repris pour comprendre une question de suivi. Les sources restent vérifiées à chaque réponse.
+            </p>
+          </form>
+
+          <div id="research-progress" class="research-progress" hidden aria-live="polite">
+            <div class="research-progress__header">
+              <p class="eyebrow">Suivi de l’enquête</p>
+              <p id="research-progress-status">Préparation…</p>
+            </div>
+            <ol id="research-progress-steps" class="research-progress__steps"></ol>
+          </div>
+        {% else %}
+          <div class="ai-disabled">
+            <p><strong>IA non configurée.</strong> Les dossiers officiels restent consultables sans IA.</p>
+            <p>Configurez <code>ACFPF_LLM_API_KEY</code> côté serveur puis relancez ACFPF.</p>
+          </div>
+        {% endif %}
+
+        <details class="research-sources"><summary>Comment l’enquête vérifie les sources</summary>
+        <div class="research-trust" aria-label="Garanties de recherche">
+          <div><strong>Dossier verrouillé</strong><span>Le dossier et ses références sont associés à chaque question.</span></div>
+          <div><strong>Version à vérifier</strong><span>Le modèle doit ouvrir les documents avant d'affirmer ce que dit le texte.</span></div>
+          <div><strong>Étape distinguée</strong><span>La classification ACFPF n'efface jamais le libellé officiel utilisé pour l'établir.</span></div>
+          <div><strong>Preuves vérifiées</strong><span>Une source n'est citable qu'après lecture effective.</span></div>
+        </div>
+
+        </details>
+        <details class="research-sources">
+          <summary>{{ research_sources|length }} sources officielles autorisées pour l'enquête</summary>
+          <div class="research-sources__list">
+            {% for source in research_sources %}<span>{{ source.name }}</span>{% endfor %}
+          </div>
+        </details>
+      </section>
+      <div id="dossier-tools" class="shell advanced-heading">
+        <p class="eyebrow">Consultation avancée</p><h2>Explorer les détails du dossier.</h2>
+        <p>Ouvrez uniquement les rubriques utiles. Les notices et les limites de couverture restent distinctes des preuves du chat.</p>
+      </div>
+      <details class="shell dossier-details"><summary>Repères et chronologie</summary>
+      <section class="dossier-overview section-block">
         <div>
           <p class="eyebrow">Repères</p>
           <h2>Un dossier, deux chambres, plusieurs versions.</h2>
@@ -83,7 +160,7 @@
         <div class="timeline-mini" aria-label="Activité récente du dossier">
           {% for event in dossier.events[-10:] %}
             <div class="timeline-mini__item">
-              <time>{{ event.date or 'date non renseignée' }}</time>
+              <time>{{ event.date or 'date non renseignée' }}{% if event.date_is_future %} · prévu{% endif %}</time>
               <span>
                 {{ event.label }}
                 <small>{{ event.stage_label }}{% if event.chamber %} · {{ event.chamber }}{% endif %}</small>
@@ -92,8 +169,10 @@
           {% endfor %}
         </div>
       </section>
+      </details>
 
-      <section id="public-action" class="shell section-block versions-block">
+      <details class="shell dossier-details"><summary>Couverture de l’action publique et limites</summary>
+      <section id="public-action" class="section-block versions-block">
         <div class="section-heading">
           <div>
             <p class="eyebrow">De la loi à l'action publique</p>
@@ -125,8 +204,10 @@
           dans leurs modules respectifs.
         </p>
       </section>
+      </details>
 
-      <section id="outcomes" class="shell section-block versions-block">
+      <details class="shell dossier-details"><summary>Jalons constitutionnels et promulgation</summary>
+      <section id="outcomes" class="section-block versions-block">
         <div class="section-heading">
           <div>
             <p class="eyebrow">Décisions et entrée en vigueur</p>
@@ -156,8 +237,10 @@
           {% endif %}
         {% endfor %}
       </section>
+      </details>
 
-      <section id="versions" class="shell section-block versions-block"
+      <details class="shell dossier-details"><summary>Versions du texte et comparaison expérimentale</summary>
+      <section id="versions" class="section-block versions-block"
         data-versions-dossier-id="{{ dossier.id }}">
         <div class="section-heading">
           <div>
@@ -171,7 +254,7 @@
           Vous pouvez tenter de consulter le
           document HTML officiel individuellement, si l'Assemblée l'a publié. Ce chargement
           vérifie l'identifiant et la provenance, mais ne garantit ni la structure des articles,
-          ni la présence des annexes. Aucune comparaison automatique n'est encore proposée.
+          ni la présence des annexes. La comparaison proposée ci-dessous est expérimentale et ne certifie pas les articles juridiques.
         </p>
         <div class="amendments-toolbar" aria-label="Comparer deux transcriptions de versions">
           <label for="compare-before"><span>Version de départ</span>
@@ -195,8 +278,10 @@
           Afficher les versions suivantes
         </button>
       </section>
+      </details>
 
-      <section id="votes" class="shell section-block versions-block"
+      <details class="shell dossier-details"><summary>Scrutins et positions nominatives</summary>
+      <section id="votes" class="section-block versions-block"
         data-votes-dossier-id="{{ dossier.id }}">
         <div class="section-heading">
           <div>
@@ -221,8 +306,10 @@
         </button>
         <noscript><p class="filter-note">Activez JavaScript pour consulter les scrutins depuis cette page.</p></noscript>
       </section>
+      </details>
 
-      <section id="reports" class="shell section-block versions-block"
+      <details class="shell dossier-details"><summary>Rapports parlementaires</summary>
+      <section id="reports" class="section-block versions-block"
         data-reports-dossier-id="{{ dossier.id }}">
         <div class="section-heading">
           <div>
@@ -245,8 +332,10 @@
         </button>
         <noscript><p class="filter-note">Activez JavaScript pour consulter les rapports sur cette page.</p></noscript>
       </section>
+      </details>
 
-      <section id="debates" class="shell section-block versions-block">
+      <details class="shell dossier-details"><summary>Références de débats et séances</summary>
+      <section id="debates" class="section-block versions-block">
         <div class="section-heading">
           <div>
             <p class="eyebrow">Débats et séances</p>
@@ -272,8 +361,10 @@
           href="https://www.assemblee-nationale.fr/dyn/17/comptes-rendus/seance">Rechercher les comptes rendus officiels des séances</a></p>
         <p class="filter-note">L'absence d'étape affichée ne démontre pas l'absence de débat.</p>
       </section>
+      </details>
 
-      <section id="amendments" class="shell section-block amendments-block"
+      <details class="shell dossier-details"><summary>Amendements</summary>
+      <section id="amendments" class="section-block amendments-block"
         data-amendments-dossier-id="{{ dossier.id }}">
         <div class="section-heading">
           <div>
@@ -313,70 +404,8 @@
           <p class="source-warning">Activez JavaScript pour parcourir les amendements structurés depuis cette fiche.</p>
         </noscript>
       </section>
+      </details>
 
-      <section id="ask" class="shell section-block ask-block dossier-chat-block">
-        <div class="section-heading">
-          <div>
-            <p class="eyebrow">Chat dédié à ce texte</p>
-            <h2>Posez vos questions sans répéter le nom du dossier.</h2>
-          </div>
-          <p class="section-heading__note">Recherche live · sources officielles uniquement</p>
-        </div>
-
-        <div class="research-trust" aria-label="Garanties de recherche">
-          <div><strong>Dossier verrouillé</strong><span>Le backend ajoute automatiquement l'identité du texte et ses références officielles.</span></div>
-          <div><strong>Version à vérifier</strong><span>Le modèle doit ouvrir les documents avant d'affirmer ce que dit le texte.</span></div>
-          <div><strong>Étape distinguée</strong><span>La classification ACFPF n'efface jamais le libellé officiel utilisé pour l'établir.</span></div>
-          <div><strong>Preuves vérifiées</strong><span>Une source n'est citable qu'après lecture effective.</span></div>
-        </div>
-
-        {% if ai_enabled %}
-          <div class="question-presets" aria-label="Questions suggérées">
-            <button type="button" data-question="Résume-moi ce texte simplement et indique clairement la version analysée.">Résumer simplement</button>
-            <button type="button" data-question="Qu'est-ce que ce texte changerait concrètement par rapport au droit actuel ?">Ce qui change</button>
-            <button type="button" data-question="Quelles différences importantes apparaissent entre les étapes à l'Assemblée nationale et au Sénat ?">Assemblée vs Sénat</button>
-            <button type="button" data-question="Quels arguments ont été avancés pour et contre ce texte dans les sources parlementaires ?">Arguments pour / contre</button>
-          </div>
-
-          <div id="dossier-chat-thread" class="chat-thread" aria-live="polite">
-            <div class="chat-message chat-message--system">
-              <p>Vous analysez <strong>{{ dossier.title }}</strong>. Les réponses restent rattachées à ce dossier.</p>
-            </div>
-          </div>
-
-          <form id="dossier-chat-form" class="ask-form" data-dossier-id="{{ dossier.id }}">
-            <label for="dossier-chat-question">Votre question</label>
-            <div class="ask-form__row">
-              <textarea id="dossier-chat-question" name="question" rows="3" maxlength="600" required
-                placeholder="Ex. Est-ce que l'article qui concerne X est toujours présent dans la version actuelle ?"></textarea>
-              <button type="submit">Rechercher et répondre</button>
-            </div>
-            <p class="ask-form__hint">
-              Les deux derniers échanges peuvent être repris pour comprendre une question de suivi. Les sources restent vérifiées à chaque réponse.
-            </p>
-          </form>
-
-          <div id="research-progress" class="research-progress" hidden aria-live="polite">
-            <div class="research-progress__header">
-              <p class="eyebrow">Enquête en cours</p>
-              <p id="research-progress-status">Préparation…</p>
-            </div>
-            <ol id="research-progress-steps" class="research-progress__steps"></ol>
-          </div>
-        {% else %}
-          <div class="ai-disabled">
-            <p><strong>IA non configurée.</strong> Les dossiers officiels restent consultables sans IA.</p>
-            <p>Configurez <code>ACFPF_LLM_API_KEY</code> côté serveur puis relancez ACFPF.</p>
-          </div>
-        {% endif %}
-
-        <details class="research-sources">
-          <summary>{{ research_sources|length }} sources officielles autorisées pour l'enquête</summary>
-          <div class="research-sources__list">
-            {% for source in research_sources %}<span>{{ source.name }}</span>{% endfor %}
-          </div>
-        </details>
-      </section>
     {% endif %}
   </main>
 

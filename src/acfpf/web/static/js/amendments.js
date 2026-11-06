@@ -181,5 +181,13 @@
 
   fateSelect.addEventListener("change", () => loadPage({ reset: true }));
   moreButton.addEventListener("click", () => loadPage());
-  loadPage({ reset: true });
+  const panel = root.closest?.("details");
+  if (panel && !panel.open) {
+    const start = () => {
+      if (!panel.open) return;
+      panel.removeEventListener("toggle", start);
+      loadPage({ reset: true });
+    };
+    panel.addEventListener("toggle", start);
+  } else loadPage({ reset: true });
 })();

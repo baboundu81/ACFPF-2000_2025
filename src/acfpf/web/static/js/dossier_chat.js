@@ -25,6 +25,10 @@
   const addMessage = (role, text, payload = null) => {
     const message = document.createElement("article");
     message.className = `chat-message chat-message--${role}`;
+    if (payload) {
+      message.dataset.status = payload.status;
+      if (payload.status === "insufficient") addParagraph(message, "Preuves insuffisantes", "eyebrow");
+    }
     addParagraph(message, text, role === "assistant" ? "chat-message__answer" : "");
 
     if (payload && Array.isArray(payload.citations) && payload.citations.length > 0) {
@@ -55,7 +59,7 @@
     }
 
     thread.appendChild(message);
-    message.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    message.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "nearest" });
   };
 
   const resetProgress = () => {
@@ -107,6 +111,7 @@
     history.push({ role: "user", content: value });
     addMessage("user", value);
     resetProgress();
+    form.setAttribute("aria-busy", "true");
     button.disabled = true;
     button.textContent = "Recherche en cours…";
 
@@ -133,6 +138,7 @@
       progressStatus.textContent = "Recherche interrompue";
       addMessage("assistant", error.message || "Impossible de mener la recherche.");
     } finally {
+      form.setAttribute("aria-busy", "false");
       button.disabled = false;
       button.textContent = "Rechercher et répondre";
       question.focus();

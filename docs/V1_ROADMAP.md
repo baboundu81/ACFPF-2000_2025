@@ -123,7 +123,11 @@ Travail attendu :
 
 ### Étape 3 — Interface et parcours V1
 
-**État :** [ ] Non validée
+**État :** [x] Validée le 6 novembre 2026 — parcours et interface vérifiés.
+
+Rapport : [V1_STEP3_VALIDATION.md](V1_STEP3_VALIDATION.md). Tests sans réseau,
+contrôles navigateur et essais Groq réels distingués ; quotas et échec de la première
+question libre documentés. La recette globale et Gemini restent à vérifier.
 
 **Objectif :** navigation compréhensible sans connaissance préalable de l'architecture ACFPF.
 

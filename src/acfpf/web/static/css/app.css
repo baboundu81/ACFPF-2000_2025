@@ -455,3 +455,49 @@ tbody th {
     scroll-behavior: auto;
   }
 }
+
+/* Shared accessible navigation and containment for narrow viewports. */
+.primary-nav {
+  flex-wrap: wrap;
+}
+
+.primary-nav,
+.masthead__inner > *,
+.editorial-grid > *,
+.table-wrap {
+  min-width: 0;
+  max-width: 100%;
+}
+
+:where(p, li, a, code, h1, h2, h3) {
+  overflow-wrap: anywhere;
+}
+
+:where(input, select, textarea, summary):focus-visible {
+  outline: var(--size-focus-outline) solid var(--color-focus);
+  outline-offset: var(--space-1);
+}
+
+.skip-link {
+  position: absolute;
+  inset-inline-start: var(--space-4);
+  top: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  border: var(--size-border-thin) solid var(--color-border-strong);
+  transform: translateY(-200%);
+  z-index: 1;
+}
+
+.skip-link:focus {
+  transform: none;
+}
+
+.entry-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3) var(--space-5);
+  margin-block: var(--space-5);
+  font-weight: var(--weight-strong);
+}

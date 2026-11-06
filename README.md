@@ -23,8 +23,9 @@ Le LLM n'est jamais utilisé comme source de vérité : il peut piloter une rech
 
 La V1 vise deux parcours : **question libre → recherche officielle → lecture → réponse sourcée**,
 et **recherche de texte → dossier → chat sourcé**. Les finances restent un sous-outil.
-La question libre est déjà acceptée par les API IA, mais n’est pas encore proposée
-sur l’accueil ; sa recette complète avec un vrai fournisseur reste à faire.
+L’accueil propose la question libre et la recherche de dossiers. Le chat contextualisé
+précède les outils avancés repliés. La recette V1 complète reste à faire ; voir les
+[contrôles de l’étape 3](docs/V1_STEP3_VALIDATION.md) et leurs limites fournisseur.
 
 La [roadmap V1](docs/V1_ROADMAP.md) fixe les priorités.
 L’[audit du 6 novembre 2026](docs/V1_STEP0_AUDIT.md) détaille les fonctions réellement
