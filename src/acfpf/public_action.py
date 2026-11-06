@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from acfpf.legislation import LegislativeDossier
+from acfpf.legislative_stages import classify_assembly_stage
 
 STAGES: tuple[tuple[str, str], ...] = (
     ("proposal", "Proposition ou projet"),
@@ -64,13 +65,6 @@ def public_action_coverage(dossier: LegislativeDossier) -> dict[str, Any]:
         urls[dossier.source_id] = dossier.official_url
 
     evidence: list[PublicActionEvidence] = []
-    if dossier.initial_date and dossier.source_id in urls:
-        evidence.append(PublicActionEvidence(
-            category="proposal", kind="dossier_date",
-            date=dossier.initial_date, label="Début ou dépôt du dossier",
-            source_id=dossier.source_id, source_url=urls[dossier.source_id],
-        ))
-
     for event in dossier.events:
         if event.source_id not in urls:
             continue
@@ -78,6 +72,11 @@ def public_action_coverage(dossier: LegislativeDossier) -> dict[str, Any]:
             category = "promulgation"
         elif event.source_id == "senat_open_data" and event.code == "CONSTITUTIONAL_COUNCIL":
             category = "constitutional_review"
+        elif (
+            event.source_id == "assemblee_nationale_open_data"
+            and classify_assembly_stage(event.label, event.code).code == "deposit"
+        ):
+            category = "proposal"
         else:
             category = "parliamentary_process"
         evidence.append(PublicActionEvidence(
