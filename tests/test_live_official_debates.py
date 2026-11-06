@@ -65,6 +65,16 @@ def test_live_syceron_xml_debate_archive_schema(tmp_path):
                 elements.append((tag, sorted(element.attrib)))
         print("LIVE-DEBATES-SAMPLE-PATH:", first.filename)
         print("LIVE-DEBATES-ELEMENTS:", elements[:30])
+        print("LIVE-DEBATES-ELEMENT-NAMES:", sorted({name for name, _attrs in elements}))
+        metadata = {}
+        collector = ET.XMLPullParser(events=("end",))
+        collector.feed(prefix)
+        for _kind, element in collector.read_events():
+            name = element.tag.split("}")[-1]
+            if name in {"uid", "seanceRef", "sessionRef", "dateSeance"} and name not in metadata:
+                metadata[name] = (element.text or "").strip()
+        print("LIVE-DEBATES-METADATA:", metadata)
+        assert metadata.get("uid") and metadata.get("seanceRef")
         print("LIVE-DEBATES-LINK-TOKENS:", {
             token: prefix.lower().count(token.lower())
             for token in (b"dossierRef", b"texteRef", b"texteAssocie", b"uid", b"seance", b"intervention")
