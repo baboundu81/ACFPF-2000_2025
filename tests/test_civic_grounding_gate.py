@@ -4,9 +4,8 @@
 """A dossier answer must cite a passage of an opened official document."""
 
 from acfpf.ai.civic import CivicAnswerService
-from acfpf.ai.service import AnswerService, SCOPED_LEGISLATION_MARKER
+from acfpf.ai.service import SCOPED_LEGISLATION_MARKER, AnswerService
 from tests.test_ai import FakeLiveResearch, FakeMacroService, FakeProvider
-
 
 SCOPED = (
     SCOPED_LEGISLATION_MARKER
