@@ -54,7 +54,7 @@ def test_only_documented_senate_milestones_get_promulgation_or_review_status():
     assert stages["promulgation"]["evidence_count"] == 1
     assert stages["applicable_law"]["coverage"] == "unverified"
     assert stages["budget_authorization"]["coverage"] == "unverified"
-    assert len(result["evidence"]) == 3  # plus date initiale du dossier
+    assert len(result["evidence"]) == 2  # deux événements Sénat vérifiés
     assert "untrusted_party" not in {item["source_id"] for item in result["evidence"]}
 
 
