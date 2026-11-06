@@ -536,8 +536,10 @@ de la promulgation jusqu'au texte applicable, aux décrets, au financement,
 montrent **quelles catégories possèdent des métadonnées officielles
 identifiables** et lesquelles restent non vérifiées.
 
-Seuls les événements et dates dont `source_id` correspond à une référence
+Seuls les événements dont `source_id` correspond à une référence
 Assemblée ou Sénat officielle du dossier contribuent à cette couverture.
+La date initiale fusionnée du dossier n'est pas attribuée à l'une des chambres
+sans événement explicite de dépôt : elle peut provenir de plusieurs sources.
 Les événements Sénat codés `PROMULGATION` ou
 `CONSTITUTIONAL_COUNCIL` sont conservés comme jalons, mais jamais
 comme texte normatif validé. Pour toutes les étapes,
