@@ -551,3 +551,22 @@ par rapprochement approximatif.
 Tests : `tests/test_public_action.py`. Il s'agit du **socle de données
 de phase 5**, non de l'intégration des textes réglementaires, du
 financement, de l'exécution ou des évaluations ; ces tâches restent ouvertes.
+
+
+### Audit de transport des débats Syceron (XVIIe législature)
+
+La page officielle
+https://data.assemblee-nationale.fr/travaux-parlementaires/debats
+référence l'archive XML `syseron.xml.zip`. Son URI publiée avec le
+segment `/17/VP/` renvoie actuellement HTTP 404 ; la variante
+`/17/vp/` a répondu HTTP 200, mais le transfert complet de l'archive
+annoncée à environ 61 Mo a été interrompu en CI avant vérification du ZIP.
+
+La CI n'exécute donc qu'un **test léger de transport** sur l'adresse
+en minuscules, avec inspection de la signature ZIP et des en-têtes.
+L'audit réel du schéma XML est conservé derrière
+`ACFPF_LIVE_DEBATES_FULL=1`, volontairement exclu de la CI standard
+jusqu'à l'établissement d'une stratégie de téléchargement intègre
+et reproductible. Aucun identifiant d'intervention, de séance ou de
+dossier n'a pu être validé à partir de cet essai : les comptes rendus
+intégraux restent non intégrés, sans rattachement inventé.
