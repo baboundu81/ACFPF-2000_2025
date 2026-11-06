@@ -25,6 +25,10 @@
   const addMessage = (role, text, payload = null) => {
     const message = document.createElement("article");
     message.className = `chat-message chat-message--${role}`;
+    if (payload) {
+      message.dataset.status = payload.status;
+      if (payload.status === "insufficient") addParagraph(message, "Preuves insuffisantes", "eyebrow");
+    }
     addParagraph(message, text, role === "assistant" ? "chat-message__answer" : "");
 
     if (payload && Array.isArray(payload.citations) && payload.citations.length > 0) {
@@ -55,7 +59,7 @@
     }
 
     thread.appendChild(message);
-    message.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    message.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "nearest" });
   };
 
   const resetProgress = () => {
@@ -102,39 +106,12 @@
     }
   };
 
-  const consumeStream = async (response) => {
-    if (!response.body) throw new Error("Réponse non diffusable.");
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-    let buffer = "";
-    let finalAnswer = null;
-
-    while (true) {
-      const { value, done } = await reader.read();
-      buffer += decoder.decode(value || new Uint8Array(), { stream: !done });
-      const lines = buffer.split("\n");
-      buffer = lines.pop() || "";
-      for (const line of lines) {
-        if (!line.trim()) continue;
-        const event = JSON.parse(line);
-        if (event.type === "answer") finalAnswer = event.answer;
-        else renderEvent(event);
-      }
-      if (done) break;
-    }
-    if (buffer.trim()) {
-      const event = JSON.parse(buffer);
-      if (event.type === "answer") finalAnswer = event.answer;
-      else renderEvent(event);
-    }
-    return finalAnswer;
-  };
-
   const ask = async (value) => {
     const recentHistory = history.slice(-2);
     history.push({ role: "user", content: value });
     addMessage("user", value);
     resetProgress();
+    form.setAttribute("aria-busy", "true");
     button.disabled = true;
     button.textContent = "Recherche en cours…";
 
@@ -152,14 +129,16 @@
         const payload = await response.json();
         throw new Error(payload.message || "La réponse IA a échoué.");
       }
-      const answer = await consumeStream(response);
+      const answer = await window.ACFPFConsumeResearchStream(response, renderEvent);
       if (!answer) throw new Error("La recherche n'a produit aucune réponse finale.");
       progressStatus.textContent = "Enquête terminée";
       addMessage("assistant", answer.answer, answer);
       history.push({ role: "assistant", content: answer.answer });
     } catch (error) {
+      progressStatus.textContent = "Recherche interrompue";
       addMessage("assistant", error.message || "Impossible de mener la recherche.");
     } finally {
+      form.setAttribute("aria-busy", "false");
       button.disabled = false;
       button.textContent = "Rechercher et répondre";
       question.focus();

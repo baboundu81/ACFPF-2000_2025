@@ -8,10 +8,15 @@ from typing import Any
 
 import requests
 
+from acfpf.ai.diagnostics import (
+    MAX_COMPLETION_TOKENS,
+    MAX_PROVIDER_OUTPUT_CHARS,
+    check_request_size,
+    http_failure,
+    transport_failure,
+)
 from acfpf.ai.provider import AIProviderError, AIProviderNotConfigured, ProviderRequest
 from acfpf.ai.schema import AGENT_ACTION_SCHEMA
-
-MAX_PROVIDER_ERROR_MESSAGE_CHARS = 500
 
 
 class OpenAICompatibleProvider:
@@ -39,6 +44,7 @@ class OpenAICompatibleProvider:
         self.extra_headers = extra_headers or {}
 
     def complete_json(self, request: ProviderRequest) -> dict[str, Any]:
+        check_request_size(request)
         payload: dict[str, Any] = {
             "model": self.model,
             "messages": [
@@ -48,10 +54,15 @@ class OpenAICompatibleProvider:
             "response_format": self._response_format(request),
             "tool_choice": "none",
             "temperature": 0.1,
-            "max_tokens": 900,
+            "max_tokens": MAX_COMPLETION_TOKENS,
         }
         if self.name == "gemini" and self.model.startswith("gemini-3"):
             payload["reasoning_effort"] = "low"
+
+        if self.name == "groq" and self.model.startswith("openai/gpt-oss-"):
+            payload["reasoning_effort"] = "low"
+            payload.pop("max_tokens")
+            payload["max_completion_tokens"] = 2048
 
         headers = {
             "Authorization": f"Bearer {self.api_key}",
@@ -68,22 +79,33 @@ class OpenAICompatibleProvider:
             )
             response.raise_for_status()
             body = response.json()
-            content = body["choices"][0]["message"]["content"]
+            choice = body["choices"][0]
+            if choice.get("finish_reason") not in {None, "stop"}:
+                raise AIProviderError(
+                    f"{self.name} : réponse interrompue ou refusée, aucune analyse publiée.",
+                    code="output_limit" if choice.get("finish_reason") == "length" else "refusal",
+                )
+            if choice["message"].get("refusal"):
+                raise AIProviderError(
+                    f"{self.name} : réponse refusée par le fournisseur.", code="refusal"
+                )
+            content = choice["message"]["content"]
             if not isinstance(content, str):
                 raise AIProviderError(f"{self.name} returned a non-text JSON completion")
+            if len(content) > MAX_PROVIDER_OUTPUT_CHARS:
+                raise AIProviderError(
+                    "La réponse du fournisseur dépasse la limite ACFPF.", code="output_limit"
+                )
             result = json.loads(content)
             if not isinstance(result, dict):
                 raise AIProviderError(f"{self.name} returned JSON that is not an object")
             return result
         except requests.HTTPError as exc:
-            response = exc.response
-            raise AIProviderError(self._http_error_message(response)) from exc
+            raise http_failure(self.name, exc.response, self.api_key) from None
         except requests.RequestException as exc:
-            raise AIProviderError(
-                f"{self.name} API request failed ({exc.__class__.__name__}: {exc})"
-            ) from exc
-        except (KeyError, IndexError, TypeError, ValueError) as exc:
-            raise AIProviderError(f"{self.name} API returned an unexpected response") from exc
+            raise transport_failure(self.name, exc) from None
+        except (AttributeError, KeyError, IndexError, TypeError, ValueError):
+            raise AIProviderError(f"{self.name} : réponse JSON invalide ou inattendue.") from None
 
     def _response_format(self, request: ProviderRequest) -> dict[str, Any]:
         structured = self.name == "gemini" or (
@@ -95,103 +117,7 @@ class OpenAICompatibleProvider:
                 "json_schema": {
                     "name": request.response_schema_name or "acfpf_agent_action",
                     "schema": request.response_schema or AGENT_ACTION_SCHEMA,
+                    **({"strict": True} if self.name == "groq" else {}),
                 },
             }
         return {"type": "json_object"}
-
-    def _http_error_message(self, response: requests.Response | None) -> str:
-        if response is None:
-            return f"{self.name} API request failed (HTTP error without response)"
-
-        status = response.status_code
-        labels = {
-            400: "requête refusée",
-            401: "clé API absente ou invalide",
-            403: "accès refusé au modèle ou au projet",
-            404: "modèle ou endpoint introuvable",
-            413: "requête trop volumineuse",
-            422: "requête non traitable",
-            429: "limite de débit ou quota atteint",
-            498: "capacité fournisseur temporairement saturée",
-            500: "erreur interne du fournisseur",
-            502: "passerelle fournisseur indisponible",
-            503: "service fournisseur indisponible",
-        }
-        label = labels.get(status, "erreur HTTP")
-        parts = [f"{self.name} API request failed (HTTP {status}: {label})"]
-
-        retry_after = response.headers.get("retry-after")
-        remaining_tokens = response.headers.get("x-ratelimit-remaining-tokens")
-        reset_tokens = response.headers.get("x-ratelimit-reset-tokens")
-        remaining_requests = response.headers.get("x-ratelimit-remaining-requests")
-        request_id = response.headers.get("x-request-id") or response.headers.get("request-id")
-
-        if retry_after:
-            parts.append(f"réessayer dans {retry_after} s")
-        if remaining_tokens:
-            parts.append(f"tokens restants: {remaining_tokens}")
-        if reset_tokens:
-            parts.append(f"reset tokens: {reset_tokens}")
-        if remaining_requests:
-            parts.append(f"requêtes restantes: {remaining_requests}")
-        if request_id:
-            parts.append(f"request id: {request_id}")
-
-        provider_message = self._provider_error_message(response)
-        if provider_message:
-            parts.append(f"détail fournisseur: {provider_message}")
-
-        failed_generation = self._failed_generation_detail(response)
-        if failed_generation:
-            parts.append(f"génération refusée: {failed_generation}")
-
-        return "; ".join(parts)
-
-    @staticmethod
-    def _provider_error_message(response: requests.Response) -> str | None:
-        message: str | None = None
-        try:
-            payload = response.json()
-            error = payload.get("error") if isinstance(payload, dict) else None
-            if isinstance(error, dict):
-                raw_message = error.get("message")
-                if isinstance(raw_message, str):
-                    message = raw_message
-            elif isinstance(error, str):
-                message = error
-        except (ValueError, TypeError):
-            message = None
-
-        if message is None:
-            raw_text = getattr(response, "text", "")
-            if isinstance(raw_text, str) and raw_text.strip():
-                message = raw_text.strip()
-
-        if not message:
-            return None
-        compact = " ".join(message.split())
-        return compact[:MAX_PROVIDER_ERROR_MESSAGE_CHARS]
-
-    @staticmethod
-    def _failed_generation_detail(response: requests.Response) -> str | None:
-        try:
-            payload = response.json()
-        except (ValueError, TypeError):
-            return None
-        if not isinstance(payload, dict):
-            return None
-        error = payload.get("error")
-        if not isinstance(error, dict):
-            return None
-        failed = error.get("failed_generation")
-        if failed is None:
-            return None
-        if isinstance(failed, dict):
-            reason = failed.get("reason")
-            if isinstance(reason, str) and reason.strip():
-                return " ".join(reason.split())[:MAX_PROVIDER_ERROR_MESSAGE_CHARS]
-            failed = json.dumps(failed, ensure_ascii=False)
-        elif not isinstance(failed, str):
-            failed = str(failed)
-        compact = " ".join(failed.split())
-        return compact[:MAX_PROVIDER_ERROR_MESSAGE_CHARS] or None

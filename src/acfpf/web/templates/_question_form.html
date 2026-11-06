@@ -1,0 +1,39 @@
+        {% if ai_enabled %}
+          <form id="ask-form" class="ask-form" aria-describedby="ask-hint">
+            <label for="ask-question">Votre question</label>
+            <div class="ask-form__row">
+              <textarea id="ask-question" name="question" rows="3" maxlength="1500" required
+                placeholder="{{ question_placeholder|default('Ex. Quelles décisions publiques concernent le logement ?') }}"></textarea>
+              <button type="submit">Rechercher et analyser</button>
+            </div>
+            <p id="ask-hint" class="ask-form__hint">
+              L'index Web sert uniquement à découvrir des URL autorisées. Ses snippets ne sont jamais transmis au modèle ni utilisés comme preuve.
+            </p>
+          </form>
+          <div id="research-progress" class="research-progress" hidden aria-live="polite">
+            <div class="research-progress__header">
+              <p class="eyebrow">Suivi de l’enquête</p>
+              <p id="research-progress-status">Préparation…</p>
+            </div>
+            <ol id="research-progress-steps" class="research-progress__steps"></ol>
+          </div>
+          <div id="ask-result" class="ask-result" hidden aria-live="polite" tabindex="-1" role="region" aria-label="Réponse à votre question"></div>
+        {% else %}
+          <div class="ai-disabled">
+            <p><strong>IA non configurée.</strong> La recherche de textes et les sources officielles restent accessibles.</p>
+            <details class="setup-help"><summary>Configurer l’analyse sur cet ordinateur</summary><p>
+              Configurez un provider et une clé côté serveur, par exemple :
+              <code>export ACFPF_LLM_PROVIDER="gemini"</code> puis
+              <code>export ACFPF_LLM_API_KEY="votre_clé"</code>, et relancez <code>acfpf</code>.
+            </p></details>
+          </div>
+        {% endif %}
+
+        <details class="research-sources">
+          <summary>{{ research_sources|length }} sources officielles actuellement autorisées pour la recherche live</summary>
+          <div class="research-sources__list">
+            {% for source in research_sources %}
+              <span>{{ source.name }}</span>
+            {% endfor %}
+          </div>
+        </details>

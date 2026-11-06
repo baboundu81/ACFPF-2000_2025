@@ -236,3 +236,33 @@
     margin-bottom: var(--space-2);
   }
 }
+
+.ask-form,
+.ask-form__row > *,
+.ask-result,
+.research-progress {
+  min-width: 0;
+}
+
+.ask-form textarea {
+  max-width: 100%;
+}
+
+.ask-form[aria-busy="true"] {
+  border-top-color: var(--color-accent);
+}
+
+.setup-help {
+  margin-top: var(--space-3);
+}
+
+.setup-help summary {
+  cursor: pointer;
+}
+
+@media (max-width: 720px) {
+  .ask-form button {
+    width: 100%;
+    justify-self: stretch;
+  }
+}

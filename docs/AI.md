@@ -157,3 +157,102 @@ Le benchmark devra couvrir notamment :
 Mesures minimales : exactitude, taux de refus correct, qualité et fidélité des citations, hallucinations, couverture de recherche, latence, nombre d'étapes et consommation de tokens.
 
 Voir aussi [EVIDENCE.md](EVIDENCE.md).
+
+## Transport documentaire borné (V1, étape 1)
+
+`LiveOfficialResearch` utilise des réponses HTTP en flux, sans suivre automatiquement
+les redirections. Chaque destination officielle est revalidée avant requête ; l’index
+de découverte, distinct des preuves, refuse les redirections et les réponses non HTML.
+Une réponse HTTP 202/429 de l’index est une indisponibilité, pas une recherche réussie sans résultat.
+
+Les limites courantes sont centralisées dans `live_research.py` :
+
+- index de découverte : 1 000 000 octets ;
+- HTML officiel : 3 000 000 octets ; PDF : 12 000 000 octets ;
+- texte extrait : 1 000 000 caractères ; PDF : au plus 400 pages ;
+- blocs réseau : 32 768 octets ; délai réseau et de lecture du flux : 20 secondes par défaut ;
+- au plus cinq redirections officielles ; 14 actions d’agent comme auparavant.
+
+La taille annoncée et les octets décompressés reçus sont contrôlés. Le flux est fermé
+sur succès comme sur échec. Une limite dépassée, une réponse partielle, une erreur HTTP,
+un PDF invalide/chiffré ou sans texte, ou un contenu non HTML/PDF ne crée aucun document
+ni preuve. Le lecteur ne tronque pas le texte pour contourner une limite. Les PDF
+nécessitant un OCR et les pages exigeant une exécution JavaScript ne sont pas pris en charge.
+Les types MIME acceptés sont `text/html`, `application/xhtml+xml`, `application/pdf`.
+Un document mal étiqueté est refusé plutôt qu’interprété silencieusement comme du HTML.
+
+Lorsque plusieurs producteurs partagent un domaine autorisé, le lecteur utilise l’hôte
+et le chemin de leur `base_url` pour déterminer une provenance unique, ou refuse l’ambiguïté.
+Le périmètre réseau reste défini par `allowed_domains` ; aucune URL fournie par un moteur
+n’étend cette liste blanche.
+
+Les erreurs et recherches vides sont exposées par les événements `notice`, conservées
+dans la trace et fournies au prochain tour via `RESEARCH_NOTICES`. Ce sont des observations
+opérationnelles : elles ne rejoignent jamais `EVIDENCE_AVAILABLE`. Les unités effectivement
+transmises gardent leur identifiant `E…`, leur locator, URL finale, titre, source, date et SHA-256.
+La relecture d’une même unité réutilise son identifiant ; les documents restent isolés par question.
+
+Tests sans réseau : `tests/test_live_research.py` et `tests/test_documentary_pipeline.py`
+(le vrai lecteur et l’agent sont utilisés, seuls HTTP et le fournisseur sont simulés).
+Sonde séparée, sans LLM ni sélection de dossier :
+
+```bash
+ACFPF_LIVE_DOCUMENTARY=1 pytest -q -s tests/test_live_documentary_pipeline.py
+```
+
+Cette sonde dépend de l’index Web et reste exclue de la CI standard. Un succès ne constitue
+pas une recette de fournisseur IA ; voir [le rapport de l’étape 1](V1_STEP1_VALIDATION.md).
+
+## Validation des réponses et robustesse IA (V1, étape 2)
+
+Une réponse candidate `answered` reste interne jusqu’à deux contrôles :
+
+1. Contrôles déterministes : citations connues, segment effectivement lu, référence inline
+   présente dans la liste validée, URL affichée appartenant aux sources citées ; une question
+   de dossier nécessite une preuve documentaire E…, même si des séries S… sont disponibles.
+2. Une seconde requête au même fournisseur, avec un prompt et un schéma de vérification
+   distincts (`acfpf_grounding_review`), reçoit la question, les passages déjà lus, les séries
+   déterministes et la réponse candidate. Elle vérifie les appuis, les dates/versions,
+   les confusions de stade et les inférences causales. Les snippets ne lui sont pas fournis.
+
+Le contrôle doit retourner un booléen, exactement les références utilisées et aucun code
+d’anomalie pour accepter. Un rejet devient `insufficient` sans publier la réponse candidate.
+Une panne ou un résultat de contrôle invalide produit une erreur explicite, sans publier le candidat.
+Une réponse `insufficient` du modèle est remplacée par un message backend prudent : ses éventuelles
+assertions et limites non vérifiées ne sont pas recopiées. Le champ libre `reason` de l’action
+n’est plus exposé dans la progression ; les étapes affichées décrivent les opérations exécutées.
+
+**Cette seconde passe est un garde-fou probabiliste, pas une preuve supplémentaire ni une
+certification juridique.** Le LLM reste faillible ; les sources et les contrôles déterministes
+restent nécessaires. Le benchmark de calibration est versionné dans
+`tests/fixtures/ai_grounding_benchmark.json` : huit cas synthétiques, deux positifs et six négatifs
+(proposition/droit applicable, prévision/exécution, version, passage sans rapport, causalité,
+instruction malveillante dans une source). Il ne mesure pas la fidélité sur tout le corpus officiel.
+
+Le contexte total est limité à 128 000 caractères par requête, sans tronquer ni sélectionner
+les paragraphes ; un dépassement du contexte d’enquête aboutit à une réponse insuffisante.
+Une réponse fournisseur dépassement/troncature/JSON invalide est refusée. Les sorties sont
+plafonnées à 4 096 tokens, ou 2 048 pour Groq/GPT-OSS, avec effort faible pour Gemini 3 et Groq/GPT-OSS.
+Les questions libres restent limitées à 1 500 caractères, et les questions de dossier à 600
+côté route ; le contexte officiel assemblé peut atteindre 6 000 caractères.
+
+Un quota HTTP 429 avec `Retry-After` numérique peut être repris au même point : **deux reprises
+au maximum pour toute la question**, vérification comprise, et au plus 60 secondes par attente.
+La progression annonce l’attente ; les sources lues restent conservées dans cette question.
+Un délai plus long, un quota persistant, un timeout ou une indisponibilité 503 produit une erreur
+explicite. Aucun changement silencieux de fournisseur/modèle ni augmentation de quota/facturation.
+
+Les deux chats partagent un lecteur NDJSON local (`research_stream.js`) qui gère les caractères
+UTF-8 et lignes découpés entre chunks, exige un unique événement final et refuse un flux incomplet
+ou incohérent. Le résultat final est affiché après fermeture correcte du flux ; les erreurs finales,
+y compris sans saut de ligne, réactivent le formulaire. Les en-têtes Flask empêchent le cache et
+l’accumulation du flux par un reverse proxy qui respecte `X-Accel-Buffering`.
+
+Évaluation LLM distincte, opt-in (clé uniquement dans l’environnement serveur) :
+
+```bash
+ACFPF_LIVE_AI=1 pytest -q tests/test_live_ai_grounding.py
+```
+
+Voir [le rapport de validation de l’étape 2](V1_STEP2_VALIDATION.md) pour distinguer tests simulés,
+benchmark avec vrai fournisseur, essais navigateur et indisponibilité Gemini constatée.

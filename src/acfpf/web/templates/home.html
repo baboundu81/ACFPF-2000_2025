@@ -7,8 +7,13 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/tokens.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/legislation.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/ai.css') }}">
+  <script defer src="{{ url_for('static', filename='js/research_stream.js') }}"></script>
+  <script defer src="{{ url_for('static', filename='js/ask.js') }}"></script>
+  <script defer src="{{ url_for('static', filename='js/discovery.js') }}"></script>
 </head>
 <body>
+  <a class="skip-link" href="#main">Aller au contenu</a>
   <header class="masthead">
     <div class="shell masthead__inner">
       <div>
@@ -23,17 +28,35 @@
     </div>
   </header>
 
-  <main>
+  <main id="main">
     <section class="hero shell civic-hero">
+      <div class="civic-intro">
       <p class="eyebrow">Sources primaires · Assemblée nationale · Sénat · Légifrance</p>
       <h1>Comprendre ce que décide réellement la puissance publique.</h1>
       <p class="hero__deck">
-        Recherchez un texte par son nom, son sujet ou simplement avec vos mots. ACFPF croise les inventaires
-        officiels des deux chambres, puis vous permet d'analyser le dossier dans un espace dédié.
+        Posez une question sur une décision ou une politique publique. ACFPF cherche des documents officiels,
+        les lit et présente une réponse accompagnée de ses sources et de ses limites.
       </p>
 
-      <form class="legislation-search" method="get" action="/">
-        <label for="legislation-query">Que voulez-vous retrouver ?</label>
+      <nav class="entry-links" aria-label="Choisir un parcours">
+        <a href="#ask">Poser une question libre</a>
+        <a href="#textes">Retrouver un texte</a>
+      </nav>
+      </div>
+      <div id="ask" class="home-inquiry">
+        <h2>Votre question, des sources pour y répondre.</h2>
+        <p class="ask-block__intro">Aucun dossier à sélectionner. Recherche sur les sources autorisées,
+          citations après lecture et refus de conclure si les preuves manquent.</p>
+        {% include '_question_form.html' %}
+      </div>
+    </section>
+
+    <section id="textes" class="shell section-block legislation-results" aria-labelledby="textes-title">
+      <p class="eyebrow">Autre parcours · retrouver un texte</p>
+      <h2 id="textes-title">Chercher dans les dossiers parlementaires.</h2>
+      <p>Utilisez un nom ou un sujet, puis ouvrez le dossier pour poursuivre l’enquête dans son chat dédié.</p>
+      <form class="legislation-search" method="get" action="/#textes">
+        <label for="legislation-query">Quel texte ou sujet recherchez-vous ?</label>
         <div class="legislation-search__row">
           <input id="legislation-query" name="q" type="search" value="{{ query }}"
             placeholder="Ex. J'ai entendu parler d'un texte sur les jours de carence…" autocomplete="off">
@@ -61,9 +84,8 @@
           <a href="{{ url_for('home', q='Quels textes ont été adoptés récemment ?', assist='1' if planner_available else '0') }}">Adoptés récemment</a>
         </div>
       </form>
-    </section>
 
-    <section class="shell section-block legislation-results">
+      {% if browse_requested %}
       <div class="section-heading">
         <div>
           <p class="eyebrow">Dossiers législatifs</p>
@@ -116,7 +138,7 @@
       </nav>
 
       {% if not legislation_error %}
-        <form class="legislation-filters" method="get" action="/" aria-label="Filtres avancés">
+        <form class="legislation-filters" method="get" action="/#textes" aria-label="Filtres avancés">
           {% if query %}<input type="hidden" name="q" value="{{ query }}">{% endif %}
           <input type="hidden" name="status" value="{{ selected_status }}">
           <input type="hidden" name="assist" value="{{ '1' if assist_enabled else '0' }}">
@@ -200,10 +222,11 @@
                 {% if dossier.current_chamber %}<span>{{ dossier.current_chamber }}</span>{% endif %}
                 {% if dossier.procedure_label %}<span>{{ dossier.procedure_label }}</span>{% endif %}
                 {% if dossier.initial_date %}<span>Dépôt : {{ dossier.initial_date }}</span>{% endif %}
-                {% if dossier.last_activity %}<span>Activité : {{ dossier.last_activity }}</span>{% endif %}
+                {% if dossier.last_activity %}<span>{{ dossier.activity_label }} : {{ dossier.last_activity }}</span>{% endif %}
               </div>
               <h3><a href="/textes/{{ dossier.id }}">{{ dossier.title }}</a></h3>
               {% if dossier.current_stage %}<p>Libellé source : {{ dossier.current_stage }}</p>{% endif %}
+              <p class="source-block__technical">Inventaire consulté : {{ dossier.freshness_label }}{% if dossier.from_cache %} · cache local{% endif %}</p>
               <div class="dossier-row__actions">
                 <a class="action-link" href="/textes/{{ dossier.id }}">Analyser ce texte</a>
                 {% for source in dossier.sources %}
@@ -218,6 +241,11 @@
           <h3>Aucun dossier correspondant.</h3>
           <p>Essayez un sujet plus large, retirez un filtre ou affichez tous les textes. ACFPF ne complète pas artificiellement les résultats.</p>
         </div>
+      {% endif %}
+      {% else %}
+        <p class="browse-entry"><a class="action-link" href="{{ url_for('home', status='active', assist='0') }}#textes">Parcourir les textes en cours</a></p>
+        <p class="filter-note">Les dossiers proviennent des inventaires de l’Assemblée nationale et du Sénat.
+          La recherche de textes fonctionne aussi sans IA.</p>
       {% endif %}
     </section>
 
