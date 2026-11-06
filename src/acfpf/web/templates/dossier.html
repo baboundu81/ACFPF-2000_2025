@@ -92,6 +92,39 @@
         </div>
       </section>
 
+      <section id="public-action" class="shell section-block versions-block">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">De la loi à l'action publique</p>
+            <h2>Ce qui est documenté, et ce qui reste à vérifier.</h2>
+          </div>
+        </div>
+        <p class="filter-note">
+          Une étape connue dans l'inventaire parlementaire n'est pas une preuve
+          que la mesure est applicable, financée ou efficace. Les jalons absents
+          ne sont pas inventés et ne signifient pas qu'aucune action n'a eu lieu.
+        </p>
+        <div class="amendments-list">
+          {% for item in public_action.stages %}
+            <article class="amendment-row">
+              <h3 class="amendment-row__number">{{ item.label }}</h3>
+              <p class="amendment-row__meta">
+                {% if item.coverage == 'metadata_only' %}
+                  {{ item.evidence_count }} référence(s) de métadonnées officielles — contenu normatif non vérifié
+                {% else %}
+                  Aucune preuve structurée directement reliée dans ACFPF
+                {% endif %}
+              </p>
+            </article>
+          {% endfor %}
+        </div>
+        <p class="filter-note">
+          Aucun lien loi → budget exécuté ou loi → évaluation n'est actuellement établi
+          par cet outil. Consultez les sources parlementaires et les données financières
+          dans leurs modules respectifs.
+        </p>
+      </section>
+
       <section id="outcomes" class="shell section-block versions-block">
         <div class="section-heading">
           <div>
