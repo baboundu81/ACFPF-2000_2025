@@ -24,6 +24,7 @@ def _scrutin(uid, ref, number):
     return {
         "uid": uid,
         "numero": number,
+        "seanceRef": "RUANR5L17S2027IDS30918",
         "dateScrutin": "2026-10-15",
         "titre": "Vote de contrôle",
         "objet": {"dossierLegislatif": {"dossierRef": ref}},
@@ -42,6 +43,8 @@ def test_exact_reference_required_not_merely_text_occurrence():
     assert len(votes) == 1
     assert votes[0].uid == "VT1"
     assert votes[0].pour == 12
+    assert votes[0].seance_ref == "RUANR5L17S2027IDS30918"
+    assert votes[0].as_dict()["seance_ref"] == votes[0].seance_ref
     assert votes[0].as_dict()["linked_by"] == "objet.dossierLegislatif.dossierRef"
 
 
