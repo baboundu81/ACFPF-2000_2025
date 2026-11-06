@@ -16,7 +16,28 @@ class AIProviderNotConfigured(AIError):
 
 
 class AIProviderError(AIError):
-    """Raised when a provider request fails or returns an invalid payload."""
+    """A safe provider error, suitable for the API and the observable progress stream."""
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        code: str = "invalid_response",
+        http_status: int | None = None,
+        retry_after: float | None = None,
+    ) -> None:
+        super().__init__(message)
+        self.code = code
+        self.http_status = http_status
+        self.retry_after = retry_after
+
+    def as_dict(self) -> dict[str, Any]:
+        return {
+            "code": self.code,
+            "message": str(self),
+            "provider_status": self.http_status,
+            "retry_after": self.retry_after,
+        }
 
 
 class AIGroundingError(AIError):

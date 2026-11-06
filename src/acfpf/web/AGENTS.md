@@ -11,7 +11,7 @@ Ce fichier complète le `AGENTS.md` racine et s'applique à tout `src/acfpf/web/
 
 ## Navigation produit
 
-- L'accueil `/` est l'expérience principale d'analyse citoyenne : découverte et recherche de textes/décisions.
+- La cible V1 de l’accueil `/` réunit la question libre avec recherche documentaire sourcée, sans dossier obligatoire, et la découverte de textes/décisions. Voir `docs/V1_ROADMAP.md` pour les étapes de livraison ; l’accueil actuel doit encore intégrer la question libre.
 - Un dossier législatif est ouvert sous `/textes/<id>` et possède son espace d'analyse et son chat contextualisé.
 - Les finances publiques sont un sous-outil spécialisé sous `/finances`.
 - Un seul élément de navigation principale doit être actif à la fois.
@@ -72,4 +72,4 @@ Ce fichier complète le `AGENTS.md` racine et s'applique à tout `src/acfpf/web/
 - Éviter les bibliothèques graphiques lourdes tant que des SVG légers suffisent.
 - Le navigateur ne doit pas refaire des calculs métier.
 - Charger uniquement les assets nécessaires à la page.
-- Le flux NDJSON doit être consommé progressivement sans conserver des copies inutiles des documents consultés dans le navigateur.
+- Le flux NDJSON doit être consommé progressivement avec le lecteur commun local `research_stream.js`, sans conserver des copies inutiles des documents consultés dans le navigateur. Exiger un unique événement final, gérer les erreurs avec/sans saut de ligne et les interruptions, et réactiver le formulaire. Ne pas publier de candidat ni de résultat issu d’un flux incomplet.

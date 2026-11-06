@@ -19,7 +19,18 @@ Le projet ne cherche pas à confirmer une conclusion politique prédéfinie. Il 
 
 Le LLM n'est jamais utilisé comme source de vérité : il peut piloter une recherche et expliquer des preuves, mais les faits doivent provenir de données ou documents officiels.
 
-## Expérience principale : textes et décisions
+## Cible V1 et état actuel
+
+La V1 vise deux parcours : **question libre → recherche officielle → lecture → réponse sourcée**,
+et **recherche de texte → dossier → chat sourcé**. Les finances restent un sous-outil.
+La question libre est déjà acceptée par les API IA, mais n’est pas encore proposée
+sur l’accueil ; sa recette complète avec un vrai fournisseur reste à faire.
+
+La [roadmap V1](docs/V1_ROADMAP.md) fixe les priorités.
+L’[audit du 6 novembre 2026](docs/V1_STEP0_AUDIT.md) détaille les fonctions réellement
+observées, les tests simulés et les limites réseau. Le projet n’est pas encore une V1 validée.
+
+## Parcours actuel : textes et décisions
 
 La page d'accueil permet de découvrir ou retrouver des dossiers législatifs sans connaître leur nom officiel.
 
@@ -41,7 +52,7 @@ Lorsqu'un dossier est sélectionné, `/textes/<id>` ouvre un espace dédié avec
 
 Le contexte du dossier est reconstruit côté serveur à partir de son identifiant. Les métadonnées servent uniquement à orienter l'enquête : elles ne sont pas traitées comme preuve du contenu juridique. Le moteur doit ouvrir et lire les documents officiels avant d'affirmer ce que prévoit un texte.
 
-Cette première verticale n'est pas encore une couverture exhaustive de tout le Parlement : le connecteur Sénat et la fusion des identifiants des deux chambres font partie des prochaines étapes.
+Le connecteur Sénat DOSLEG et le regroupement conservateur des dossiers des deux chambres sont intégrés. Le regroupement repose sur l’égalité exacte des titres normalisés et conserve les identifiants d’origine ; il ne garantit pas une couverture exhaustive du Parlement. Les notices, amendements, votes, rapports et vues expérimentales existants sont conservés, avec leurs limites.
 
 Voir [docs/CIVIC_ACTION_PLAN.md](docs/CIVIC_ACTION_PLAN.md).
 
@@ -212,14 +223,18 @@ Le registre est dans [config/sources.yml](config/sources.yml). Il comprend notam
 
 ## Prochaines étapes
 
-La trajectoire est détaillée dans [docs/CIVIC_ACTION_PLAN.md](docs/CIVIC_ACTION_PLAN.md). Les prochaines briques prioritaires sont :
+L’ordre de livraison est défini par [docs/V1_ROADMAP.md](docs/V1_ROADMAP.md) :
 
-- consolider les contenus complets de toutes les versions et leur structure juridique ;
-- documenter et consulter les rapports, débats et décisions constitutionnelles ;
-- comparer article par article les versions vérifiées sans imputation approximative ;
-- relier la promulgation, les textes d'application et les publications Légifrance ;
-- établir les liens vérifiables entre décisions, budgets et évaluations ;
-- compléter le sous-outil finances : prélèvements obligatoires, euros constants/par habitant et exécution détaillée.
+1. fiabiliser le moteur documentaire sans dossier obligatoire ;
+2. vérifier les fournisseurs IA, citations et erreurs ;
+3. rendre les deux parcours V1 visibles et utilisables dans l’interface ;
+4. réaliser la recette réseau, IA et navigateur ;
+5. vérifier l’installation et préparer une livraison testable.
+
+Les raccordements parlementaires avancés, la comparaison juridique article par article,
+l’application réglementaire et les liens vers les budgets et résultats restent au
+[backlog post-V1](docs/V1_ROADMAP.md#7-backlog-post-v1).
+[docs/CIVIC_ACTION_PLAN.md](docs/CIVIC_ACTION_PLAN.md) conserve l’historique et la vision longue.
 
 ## Licences
 

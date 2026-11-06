@@ -13,7 +13,8 @@ from acfpf.ai.legislation_query import (
     LegislativeQueryPlanner,
     build_default_legislative_query_planner,
 )
-from acfpf.ai.provider import AIError
+from acfpf.ai.provider import AIError, AIProviderError
+from acfpf.ai.service import MAX_QUESTION_CHARS
 from acfpf.cofog import CofogService
 from acfpf.data.assemblee_legislation import ASSEMBLY_SOURCE_PAGE
 from acfpf.data.eurostat import EurostatError, get_source_catalog
@@ -365,11 +366,21 @@ def create_app(
         )
 
     def _question_from_request() -> tuple[str | None, tuple[dict[str, str], int] | None]:
-        payload = request.get_json(silent=True) or {}
+        payload = request.get_json(silent=True)
+        if not isinstance(payload, dict):
+            return None, ({"error": "invalid_request", "message": "Un objet JSON est requis."}, 400)
         question = payload.get("question", "")
         if not isinstance(question, str):
             return None, ({"error": "invalid_question"}, 400)
         question = question.strip()
+        if len(question) > MAX_QUESTION_CHARS:
+            return None, (
+                {
+                    "error": "invalid_question",
+                    "message": "La question est limitée à 1500 caractères.",
+                },
+                400,
+            )
         if not question:
             return None, (
                 {"error": "invalid_question", "message": "La question ne peut pas être vide."},
@@ -438,8 +449,13 @@ def create_app(
         except EurostatError as exc:
             return jsonify({"error": "data_unavailable", "message": str(exc)}), 503
         except AIError as exc:
-            app.logger.exception("AI request failed")
-            return jsonify({"error": "ai_failure", "message": str(exc)}), 502
+            app.logger.warning("AI request failed (%s)", type(exc).__name__)
+            details = (
+                exc.as_dict()
+                if isinstance(exc, AIProviderError)
+                else {"code": "grounding_rejected", "message": str(exc)}
+            )
+            return jsonify({"error": "ai_failure", **details}), 502
 
     @app.post("/api/ask/stream")
     def ask_stream_api():
@@ -462,21 +478,24 @@ def create_app(
                 for event in ai_service.iter_ask(question or ""):
                     yield json.dumps(event.as_dict(), ensure_ascii=False) + "\n"
             except ValueError as exc:
-                yield json.dumps(
-                    {"type": "error", "message": str(exc)}, ensure_ascii=False
-                ) + "\n"
+                yield json.dumps({"type": "error", "message": str(exc)}, ensure_ascii=False) + "\n"
             except EurostatError as exc:
                 app.logger.exception("Data failure during streamed AI request")
-                yield json.dumps(
-                    {"type": "error", "message": str(exc)}, ensure_ascii=False
-                ) + "\n"
+                yield json.dumps({"type": "error", "message": str(exc)}, ensure_ascii=False) + "\n"
             except AIError as exc:
-                app.logger.exception("AI streaming request failed")
-                yield json.dumps(
-                    {"type": "error", "message": str(exc)}, ensure_ascii=False
-                ) + "\n"
+                app.logger.warning("AI streaming request failed (%s)", type(exc).__name__)
+                details = (
+                    exc.as_dict()
+                    if isinstance(exc, AIProviderError)
+                    else {"code": "grounding_rejected", "message": str(exc)}
+                )
+                yield json.dumps({"type": "error", **details}, ensure_ascii=False) + "\n"
 
-        return Response(generate(), mimetype="application/x-ndjson")
+        return Response(
+            generate(),
+            mimetype="application/x-ndjson",
+            headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+        )
 
     @app.get("/healthz")
     def health():

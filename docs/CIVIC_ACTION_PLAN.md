@@ -2,11 +2,24 @@
 
 # Plan de développement — analyse citoyenne de l'action publique
 
+## Priorité de livraison V1 — audit du 6 novembre 2026
+
+[La roadmap V1](V1_ROADMAP.md) fixe désormais le périmètre et l’ordre des travaux.
+Le parcours prioritaire est **question libre → recherche officielle → lecture → réponse sourcée**,
+sans dossier obligatoire. La découverte d’un dossier puis son chat constitue le second parcours ;
+les finances restent sous `/finances`. L’[audit de l’étape 0](V1_STEP0_AUDIT.md)
+distingue code intégré, tests simulés et validations réelles.
+
+Les phases ci-dessous conservent l’historique technique et la vision longue.
+Leurs cases cochées signalent des tranches réalisées avec leurs limites, pas une recette V1.
+Les raccordements avancés incomplets des phases 3 à 5 sont au backlog post-V1 ;
+ils ne doivent pas retarder les étapes 1 à 5 de la roadmap V1.
+
 ## Vision
 
 ACFPF devient en priorité un outil citoyen permettant de comprendre l'action publique française à partir de sources primaires et vérifiables. Les finances publiques restent un sous-outil spécialisé, réutilisable lorsqu'une décision ou une politique possède une dimension budgétaire.
 
-Le parcours principal visé est :
+Le parcours législatif de la vision longue est :
 
 1. retrouver ou découvrir un texte avec des mots courants ;
 2. sélectionner le dossier législatif correspondant ;
@@ -272,8 +285,8 @@ contradictoires entraînent un refus de restitution.
 
 Validation structure réelle : test live utilisant un scrutin lié à un dossier
 et la ventilation nominative publiée par l'Assemblée (XVIIe législature).
-La résolution des noms depuis le référentiel des acteurs, la couverture
-historique et la consultation des positions dans l'UI restent à traiter.
+La résolution historique des noms et la consultation des positions dans l'UI
+ont été ajoutées ensuite, avec les limites décrites ci-dessous.
 
 
 ### Consultation des positions nominatives depuis la fiche dossier
@@ -285,9 +298,9 @@ position déclarée et l'éventuelle délégation. Le navigateur valide les
 UID de dossier et de scrutin renvoyés par l'API avant de présenter les
 résultats ; aucune interprétation politique n'est déduite.
 
-La résolution du nom de chaque acteur depuis l'annuaire **historique**
-de l'Assemblée reste une tâche distincte. Jusqu'à sa validation, les
-identifiants sont préférés à des identités ou affiliations supposées.
+La résolution facultative des noms depuis l'annuaire **historique** de
+l'Assemblée est décrite ci-dessous ; les identifiants restent conservés
+lorsqu'une identité ne peut pas être vérifiée.
 
 
 ### Résolution exacte des députés — annuaire historique officiel
@@ -343,10 +356,10 @@ https://data.assemblee-nationale.fr/foire-aux-questions .
 Validation : `tests/test_legislative_reports.py` et
 `ACFPF_LIVE_SOURCES=1 pytest -q -s tests/test_live_official_reports.py`.
 
-La couverture de tous les rapports de commission, leur interface dédiée
-et les publications du Sénat indépendantes de l'archive Assemblée
-restent à compléter : la case générale « rapports de commission » n'est
-pas cochée sur cette seule tranche.
+La couverture de tous les rapports de commission et les publications du
+Sénat indépendantes de l'archive Assemblée restent à compléter ;
+l'interface de cette première tranche est décrite ci-dessous. La case générale
+« rapports de commission » n'est pas cochée sur cette seule tranche.
 
 
 ### Interface de consultation des rapports

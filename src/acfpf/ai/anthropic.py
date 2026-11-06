@@ -8,10 +8,15 @@ from typing import Any
 
 import requests
 
+from acfpf.ai.diagnostics import (
+    MAX_COMPLETION_TOKENS,
+    MAX_PROVIDER_OUTPUT_CHARS,
+    check_request_size,
+    http_failure,
+    transport_failure,
+)
 from acfpf.ai.provider import AIProviderError, AIProviderNotConfigured, ProviderRequest
 from acfpf.ai.schema import AGENT_ACTION_SCHEMA
-
-MAX_PROVIDER_ERROR_MESSAGE_CHARS = 500
 
 
 class AnthropicProvider:
@@ -37,9 +42,10 @@ class AnthropicProvider:
         self.session = session or requests.Session()
 
     def complete_json(self, request: ProviderRequest) -> dict[str, Any]:
+        check_request_size(request)
         payload = {
             "model": self.model,
-            "max_tokens": 900,
+            "max_tokens": MAX_COMPLETION_TOKENS,
             "system": request.system_prompt,
             "messages": [{"role": "user", "content": request.user_prompt}],
             "output_config": {
@@ -65,6 +71,10 @@ class AnthropicProvider:
             )
             response.raise_for_status()
             body = response.json()
+            if body.get("stop_reason") not in {None, "end_turn"}:
+                raise AIProviderError(
+                    "claude : réponse interrompue ou refusée.", code="output_limit"
+                )
             blocks = body["content"]
             content = next(
                 block["text"]
@@ -73,69 +83,15 @@ class AnthropicProvider:
             )
             if not isinstance(content, str):
                 raise AIProviderError("claude returned a non-text JSON completion")
+            if len(content) > MAX_PROVIDER_OUTPUT_CHARS:
+                raise AIProviderError("claude : réponse trop volumineuse.", code="output_limit")
             result = json.loads(content)
             if not isinstance(result, dict):
                 raise AIProviderError("claude returned JSON that is not an object")
             return result
         except requests.HTTPError as exc:
-            raise AIProviderError(self._http_error_message(exc.response)) from exc
+            raise http_failure(self.name, exc.response, self.api_key) from None
         except requests.RequestException as exc:
-            raise AIProviderError(
-                f"claude API request failed ({exc.__class__.__name__}: {exc})"
-            ) from exc
-        except (KeyError, StopIteration, TypeError, ValueError) as exc:
-            raise AIProviderError("claude API returned an unexpected response") from exc
-
-    def _http_error_message(self, response: requests.Response | None) -> str:
-        if response is None:
-            return "claude API request failed (HTTP error without response)"
-
-        status = response.status_code
-        labels = {
-            400: "requête refusée",
-            401: "clé API absente ou invalide",
-            403: "accès refusé au modèle ou au projet",
-            404: "modèle ou endpoint introuvable",
-            413: "requête trop volumineuse",
-            429: "limite de débit ou quota atteint",
-            500: "erreur interne du fournisseur",
-            529: "service fournisseur surchargé",
-        }
-        parts = [f"claude API request failed (HTTP {status}: {labels.get(status, 'erreur HTTP')})"]
-
-        for header, label in (
-            ("retry-after", "réessayer dans"),
-            ("x-ratelimit-remaining-tokens", "tokens restants"),
-            ("x-ratelimit-reset-tokens", "reset tokens"),
-            ("x-ratelimit-remaining-requests", "requêtes restantes"),
-            ("request-id", "request id"),
-        ):
-            value = response.headers.get(header)
-            if value:
-                suffix = " s" if header == "retry-after" else ""
-                parts.append(f"{label}: {value}{suffix}")
-
-        message = self._provider_error_message(response)
-        if message:
-            parts.append(f"détail fournisseur: {message}")
-        return "; ".join(parts)
-
-    @staticmethod
-    def _provider_error_message(response: requests.Response) -> str | None:
-        message: str | None = None
-        try:
-            payload = response.json()
-            error = payload.get("error") if isinstance(payload, dict) else None
-            if isinstance(error, dict):
-                raw_message = error.get("message")
-                if isinstance(raw_message, str):
-                    message = raw_message
-        except (ValueError, TypeError):
-            pass
-        if not message:
-            raw_text = getattr(response, "text", "")
-            if isinstance(raw_text, str):
-                message = raw_text.strip() or None
-        if not message:
-            return None
-        return " ".join(message.split())[:MAX_PROVIDER_ERROR_MESSAGE_CHARS]
+            raise transport_failure(self.name, exc) from None
+        except (AttributeError, KeyError, StopIteration, IndexError, TypeError, ValueError):
+            raise AIProviderError("claude : réponse JSON invalide ou inattendue.") from None
