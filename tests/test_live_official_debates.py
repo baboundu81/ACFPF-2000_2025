@@ -7,15 +7,13 @@ from __future__ import annotations
 import os
 import xml.etree.ElementTree as ET
 import zipfile
-from io import BytesIO
 
 import pytest
 import requests
 
-DEBATE_ARCHIVE = (
-    "https://data.assemblee-nationale.fr/static/openData/repository/"
-    "17/vp/syceronbrut/syseron.xml.zip"
-)
+from acfpf.data.assemblee_debates import DEBATES_ARCHIVE_URL, download_debate_archive
+
+DEBATE_ARCHIVE = DEBATES_ARCHIVE_URL
 
 
 @pytest.mark.skipif(
@@ -42,15 +40,15 @@ def test_official_syceron_transport_headers():
     os.environ.get("ACFPF_LIVE_DEBATES_FULL") != "1",
     reason="Large XML archive verification is a separate network-intensive opt-in",
 )
-def test_live_syceron_xml_debate_archive_schema():
-    response = requests.get(DEBATE_ARCHIVE, timeout=(20, 180))
-    response.raise_for_status()
-    assert response.content[:2] == b"PK"
-    assert len(response.content) < 120 * 1024 * 1024
-    with zipfile.ZipFile(BytesIO(response.content)) as archive:
+def test_live_syceron_xml_debate_archive_schema(tmp_path):
+    downloaded = download_debate_archive(
+        cache_path=tmp_path / "official_debates.zip", refresh=True,
+    )
+    assert downloaded.bytes_downloaded < 120 * 1024 * 1024
+    with zipfile.ZipFile(downloaded.path) as archive:
         members = [info for info in archive.infolist() if info.filename.endswith(".xml")]
         assert members, "No XML debate records from official Assembly ZIP"
-        print("LIVE-DEBATES-ARCHIVE-BYTES:", len(response.content))
+        print("LIVE-DEBATES-ARCHIVE-BYTES:", downloaded.bytes_downloaded)
         print("LIVE-DEBATES-XML-MEMBERS:", len(members))
         print("LIVE-DEBATES-SAMPLE-MEMBERS:", [
             (info.filename, info.file_size) for info in members[:5]
@@ -67,6 +65,16 @@ def test_live_syceron_xml_debate_archive_schema():
                 elements.append((tag, sorted(element.attrib)))
         print("LIVE-DEBATES-SAMPLE-PATH:", first.filename)
         print("LIVE-DEBATES-ELEMENTS:", elements[:30])
+        print("LIVE-DEBATES-ELEMENT-NAMES:", sorted({name for name, _attrs in elements}))
+        metadata = {}
+        collector = ET.XMLPullParser(events=("end",))
+        collector.feed(prefix)
+        for _kind, element in collector.read_events():
+            name = element.tag.split("}")[-1]
+            if name in {"uid", "seanceRef", "sessionRef", "dateSeance"} and name not in metadata:
+                metadata[name] = (element.text or "").strip()
+        print("LIVE-DEBATES-METADATA:", metadata)
+        assert metadata.get("uid") and metadata.get("seanceRef")
         print("LIVE-DEBATES-LINK-TOKENS:", {
             token: prefix.lower().count(token.lower())
             for token in (b"dossierRef", b"texteRef", b"texteAssocie", b"uid", b"seance", b"intervention")

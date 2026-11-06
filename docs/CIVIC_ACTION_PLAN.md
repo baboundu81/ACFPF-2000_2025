@@ -570,3 +570,30 @@ jusqu'à l'établissement d'une stratégie de téléchargement intègre
 et reproductible. Aucun identifiant d'intervention, de séance ou de
 dossier n'a pu être validé à partir de cet essai : les comptes rendus
 intégraux restent non intégrés, sans rattachement inventé.
+
+
+### Acquisition résiliente de l'archive Syceron
+
+`acfpf.data.assemblee_debates.download_debate_archive` utilise les
+plages d'octets HTTP 206 effectivement annoncées par le serveur
+officiel (ZIP de 61 335 085 octets lors du contrôle de novembre 2026).
+Chaque bloc est demandé par `Range`, et les bornes, le total ainsi que
+le nombre d'octets sont contrôlés avant assemblage. Les blocs
+incomplets sont retentés et un ZIP entier n'est adopté en cache
+qu'après vérification des membres, de la taille décompressée maximale
+et des CRC. L'ancien cache intègre peut être conservé en cas d'échec
+réseau, avec `from_cache=true`.
+
+Les tests déterministes de transport sont dans
+`tests/test_assemblee_debates.py`. Un premier audit live complet a
+**réussi** : archive de 61 335 085 octets, 656 comptes rendus XML et
+contrôle CRC intégral. Le fichier `compteRendu` possède des métadonnées
+`uid`, `seanceRef`, `sessionRef` et `dateSeance`, ainsi que des balises
+`orateur`, `paragraphe` et `texte`. Exemple réellement contrôlé :
+`CRSANR5L17S2027O1N001` → `RUANR5L17S2027IDS30918`.
+Le début de ce compte rendu ne porte pas de `dossierRef` explicite.
+L'audit approfondi reste opt-in via
+`ACFPF_LIVE_DEBATES_FULL=1`, car cette acquisition réseau coûteuse
+ne doit pas ralentir toutes les PR. La présence de `seanceRef` ne suffit
+pas à elle seule à relier une séance à un dossier ni à attribuer des
+propos à un texte ; cette jointure doit être vérifiée séparément.
