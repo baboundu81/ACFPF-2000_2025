@@ -91,6 +91,13 @@ HTML officiel, acteurs historiques, rapports et transport léger Syceron. Le tes
 ignoré est l’audit complet de la grosse archive, soumis à `ACFPF_LIVE_DEBATES_FULL=1`.
 Le succès CI antérieur ne fait pas disparaître cet échec réseau local.
 
+La [CI de la PR #58 sur le commit efd3ed0](https://github.com/baboundu81/ACFPF-2000_2025/actions/runs/42263647545)
+a ensuite reproduit l’échec du même test live des amendements : **6 passed, 1 failed,
+1 skipped**, 8,17 s. Installation, lint, syntaxe/comportement JavaScript et tests Python
+déterministes ont réussi en CI. **La PR ne doit pas être fusionnée avec cette CI rouge.**
+Le statut validé de l’étape 0 qualifie l’audit documenté, pas une livraison ni une
+autorisation de fusion ; la panne observée reste à traiter dans le périmètre approprié.
+
 Sondes directes de `LiveOfficialResearch(timeout=15)` :
 
 - `search('logement', source_ids=['assemblee_nationale_open_data'], limit=2)` : deux
