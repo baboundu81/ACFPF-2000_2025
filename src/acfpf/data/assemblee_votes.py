@@ -36,6 +36,7 @@ class Vote:
     contre: int | None
     abstentions: int | None
     dossier_id: str
+    seance_ref: str | None = None
 
     def as_dict(self):
         return {
@@ -43,6 +44,7 @@ class Vote:
             "title": self.title, "result": self.result,
             "pour": self.pour, "contre": self.contre, "abstentions": self.abstentions,
             "dossier_id": self.dossier_id, "linked_by": "objet.dossierLegislatif.dossierRef",
+            "seance_ref": self.seance_ref,
             "official_url": f"https://www.assemblee-nationale.fr/dyn/17/scrutins/{self.number}",
             "source_id": "assemblee_nationale_open_data",
         }
@@ -84,6 +86,11 @@ def parse_votes_archive(blob: bytes, *, dossier_uid: str) -> tuple[Vote, ...]:
                 summary = scrutin.get("syntheseVote") or {}
                 counts = summary.get("decompte") or {} if isinstance(summary, dict) else {}
                 outcome = scrutin.get("sort") or {}
+                raw_session = scrutin.get("seanceRef")
+                session_ref = (
+                    raw_session if isinstance(raw_session, str)
+                    and re.fullmatch(r"RUANR5L17S[A-Z0-9]+", raw_session) else None
+                )
                 vote = Vote(
                     uid=uid, number=str(number), date=scrutin.get("dateScrutin"),
                     title=scrutin.get("titre") or obj.get("libelle") or "Scrutin public",
@@ -91,7 +98,7 @@ def parse_votes_archive(blob: bytes, *, dossier_uid: str) -> tuple[Vote, ...]:
                     pour=_count(counts.get("pour")),
                     contre=_count(counts.get("contre")),
                     abstentions=_count(counts.get("abstentions")),
-                    dossier_id=dossier_uid,
+                    dossier_id=dossier_uid, seance_ref=session_ref,
                 )
                 found[uid] = vote
     except (OSError, zipfile.BadZipFile) as exc:
