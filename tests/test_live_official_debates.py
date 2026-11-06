@@ -14,7 +14,7 @@ import requests
 
 DEBATE_ARCHIVE = (
     "https://data.assemblee-nationale.fr/static/openData/repository/"
-    "17/VP/syceronbrut/syseron.xml.zip"
+    "17/vp/syceronbrut/syseron.xml.zip"
 )
 
 
