@@ -89,7 +89,7 @@ def public_action_coverage(dossier: LegislativeDossier) -> dict[str, Any]:
     for item in evidence:
         key = (item.category, item.kind, item.date, item.label, item.source_id)
         unique[key] = item
-    supported = set(item.category for item in unique.values())
+    supported = {item.category for item in unique.values()}
 
     stages = [
         {
@@ -111,9 +111,9 @@ def public_action_coverage(dossier: LegislativeDossier) -> dict[str, Any]:
         "evaluation_links_verified": False,
         "applicable_law_verified": False,
         "limitations": [
-            "La présence d'une notice ou d'un événement parlementaire ne prouve pas "
-            "le contenu du droit applicable.",
-            "Aucun financement, budget exécuté ou résultat n'est imputé à cette mesure "
-            "sans lien documentaire explicite et vérifié.",
+            ("La présence d'une notice ou d'un événement parlementaire ne prouve pas "
+             "le contenu du droit applicable."),
+            ("Aucun financement, budget exécuté ou résultat n'est imputé à cette mesure "
+             "sans lien documentaire explicite et vérifié."),
         ],
     }
