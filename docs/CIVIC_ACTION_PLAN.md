@@ -588,7 +588,10 @@ Les tests déterministes de transport sont dans
 `tests/test_assemblee_debates.py`. Un premier audit live complet a
 **réussi** : archive de 61 335 085 octets, 656 comptes rendus XML et
 contrôle CRC intégral. Le fichier `compteRendu` possède des métadonnées
-`uid`, `seanceRef`, `sessionRef` et `dateSeance`.
+`uid`, `seanceRef`, `sessionRef` et `dateSeance`, ainsi que des balises
+`orateur`, `paragraphe` et `texte`. Exemple réellement contrôlé :
+`CRSANR5L17S2027O1N001` → `RUANR5L17S2027IDS30918`.
+Le début de ce compte rendu ne porte pas de `dossierRef` explicite.
 L'audit approfondi reste opt-in via
 `ACFPF_LIVE_DEBATES_FULL=1`, car cette acquisition réseau coûteuse
 ne doit pas ralentir toutes les PR. La présence de `seanceRef` ne suffit
