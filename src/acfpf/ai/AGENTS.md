@@ -16,6 +16,7 @@ Le LLM n'est **jamais** la source de vérité d'ACFPF. Il choisit les recherches
 - Les providers capables de Structured Outputs doivent utiliser le schéma commun `AGENT_ACTION_SCHEMA` plutôt qu'un JSON libre.
 - Claude utilise l'API native Anthropic pour conserver la garantie de schéma ; ne pas basculer silencieusement sur sa couche OpenAI-compatible tant que `response_format` y est ignoré.
 - Les clés API restent côté serveur. Elles ne doivent jamais être envoyées au navigateur, commitées dans Git ou loggées.
+- L’import par l’interface locale remplace le fournisseur et son modèle par défaut uniquement en mémoire pour ce lancement. Il configure ensemble le chat et le planificateur, sans muter les variables d’environnement ni effectuer d’appel réseau à l’import.
 
 ## Agent de recherche live
 
@@ -37,7 +38,9 @@ Le modèle n'obtient pas un navigateur libre. Le backend exécute chaque action 
 - Une unité de document n'est citable que si elle a effectivement été fournie au modèle pendant la session.
 - Le backend attribue les identifiants `E…`; le modèle ne choisit pas lui-même des identifiants arbitraires.
 - Les séries déterministes utilisent des identifiants `S…`.
-- Une citation inconnue provoque un rejet de la réponse.
+- Une citation inconnue, une référence inline non déclarée ou une URL affichée non citée provoque le rejet du candidat. Une seule correction peut être demandée par question, dans la limite globale des étapes ; aucun texte refusé n’est publié. Une seconde erreur de validation arrête l’enquête, sans contournement des contrôles ni du vérificateur distinct.
+- Une réponse factuelle candidate reste interne jusqu’au contrôle distinct `acfpf_grounding_review`, sur les seuls passages lus et les séries déterministes. Un rejet ne doit jamais publier le candidat. Cette passe LLM ne constitue pas une nouvelle preuve ni une certification de fidélité ; maintenir le benchmark versionné `tests/fixtures/ai_grounding_benchmark.json`.
+- Les diagnostics n’exposent ni corps fournisseur brut, ni `failed_generation`, ni raisonnement privé. Le champ `reason` ne doit pas être recopié dans les événements publics.
 - Lorsque les preuves sont insuffisantes, le résultat attendu est `insufficient`, pas une extrapolation.
 - Ne jamais utiliser le savoir pré-entraîné du modèle pour compléter silencieusement une lacune.
 
@@ -45,7 +48,7 @@ Le modèle n'obtient pas un navigateur libre. Le backend exécute chaque action 
 
 - Ne pas classer ou supprimer des paragraphes par pertinence avant lecture du modèle.
 - Le texte visible doit être conservé dans son ordre source.
-- La segmentation HTML doit être mécanique et contiguë.
+- La segmentation HTML doit être mécanique et contiguë. Les unités de 4 000 caractères limitent le volume initial envoyé ; toutes les unités suivantes restent accessibles sans classement ni suppression. Cela ne garantit pas de tenir dans les quotas de chaque fournisseur.
 - Les PDF peuvent être regroupés en blocs de pages contiguës.
 - Le modèle peut demander les unités suivantes ; le nombre total d'étapes reste plafonné.
 - Les documents sont éphémères par question. Ne pas recréer un corpus local persistant par défaut.
@@ -78,6 +81,8 @@ Une prévision, une décision et une exécution ne sont jamais interchangeables.
 
 Le backend peut exposer des événements de progression `started`, `search`, `open`, `read`, `notice`, `answer`.
 
+Les erreurs de sources et recherches vides sont transmises au tour suivant dans `RESEARCH_NOTICES` et conservées dans la trace publique. Ces notices sont des observations opérationnelles, jamais des preuves documentaires ni des citations.
+
 Ces événements doivent décrire les actions observables de l'agent, jamais son raisonnement privé. L'interface doit montrer les sources ouvertes et les locators lus sans afficher de chaîne de pensée.
 
 ## Tests
@@ -94,5 +99,6 @@ Ces événements doivent décrire les actions observables de l'agent, jamais son
 
 - L'architecture doit rester utilisable avec au moins un provider disposant d'un free tier pour le développement.
 - Ne pas supposer qu'un provider gratuit aujourd'hui le restera : garder les alternatives fonctionnelles et centraliser les presets.
-- Plafonner le nombre d'étapes d'enquête et la taille des documents lus.
+- Plafonner les étapes, les documents, le contexte fournisseur et la sortie. Conserver une segmentation mécanique, sans sélection de pertinence pour tenir dans un contexte.
+- Les reprises sur quota sont limitées à deux par question, vérification comprise, uniquement avec une attente annoncée de 60 secondes au plus ; aucune bascule silencieuse de provider ou de modèle.
 - Avant un déploiement public, ajouter quotas, limitation de débit, suivi de consommation et budgets de tokens côté serveur.

@@ -2,7 +2,7 @@
 
 # ACFPF — Roadmap V1 : recherche documentaire et analyse IA sourcée
 
-**Statut :** feuille de route cible, à confronter au code lors de l'étape 0.  
+**Statut :** candidate installable `1.0.0rc1` préparée ; recette IA globale non validée.
 **Décision produit :** recentrage sur une première version utilisable et testable.  
 **Périmètre :** application locale Python/Flask, découverte des textes, recherche documentaire live, chat IA et sous-outil finances existant.
 
@@ -62,11 +62,14 @@ Ne pas supprimer du code uniquement pour simplifier l'interface. Ne pas engager 
 
 ## 4. Étapes Codex
 
-**Règle fondamentale : une seule étape par session Codex.** Une fois cette étape traitée, documenter, produire le bilan et **s'arrêter**, même si la suivante semble facile.
+**Règle par défaut : une seule étape par session Codex.** Documenter puis s’arrêter avant la suivante, sauf demande explicite d’enchaînement. Le 7 novembre 2026, l’utilisateur a autorisé les étapes 4 et 5 ensemble, avec maintien de leurs validations distinctes.
 
 ### Étape 0 — Audit et recentrage
 
-**État :** [ ] Non validée
+**État :** [x] Validée le 6 novembre 2026 — audit uniquement, pas recette V1.
+
+Rapport : [V1_STEP0_AUDIT.md](V1_STEP0_AUDIT.md) (Git/CI, cartographie,
+tests simulés et live, boucle navigateur, limites et travaux restants).
 
 **Objectif :** établir ce qui existe réellement et figer le périmètre V1.
 
@@ -82,7 +85,11 @@ Travail attendu :
 
 ### Étape 1 — Moteur documentaire de bout en bout
 
-**État :** [ ] Non validée
+**État :** [x] Validée le 6 novembre 2026 — moteur et parcours sans dossier testés.
+
+Rapport : [V1_STEP1_VALIDATION.md](V1_STEP1_VALIDATION.md). Tests complets sans réseau,
+lecture réelle officielle et contrôles navigateur distingués des échecs Gemini/Groq ;
+la validation des vrais fournisseurs reste ouverte à l’étape 2.
 
 **Objectif :** une question libre permet de rechercher, ouvrir et lire des documents officiels, avec preuves, sans imposer de dossier législatif.
 
@@ -97,7 +104,11 @@ Travail attendu :
 
 ### Étape 2 — IA, citations et robustesse
 
-**État :** [ ] Non validée
+**État :** [x] Validée le 6 novembre 2026 — contrôles et parcours Groq réels vérifiés.
+
+Rapport : [V1_STEP2_VALIDATION.md](V1_STEP2_VALIDATION.md). Les échecs Gemini 503
+restent explicitement documentés ; aucune réussite Gemini n’est déclarée. Tests simulés,
+benchmark LLM et essais navigateur sont distingués. La recette V1 globale reste ouverte.
 
 **Objectif :** réponses utiles, vérifiables, résistantes aux erreurs de fournisseurs.
 
@@ -112,7 +123,11 @@ Travail attendu :
 
 ### Étape 3 — Interface et parcours V1
 
-**État :** [ ] Non validée
+**État :** [x] Validée le 6 novembre 2026 — parcours et interface vérifiés.
+
+Rapport : [V1_STEP3_VALIDATION.md](V1_STEP3_VALIDATION.md). Tests sans réseau,
+contrôles navigateur et essais Groq réels distingués ; quotas et échec de la première
+question libre documentés. La recette globale et Gemini restent à vérifier.
 
 **Objectif :** navigation compréhensible sans connaissance préalable de l'architecture ACFPF.
 
@@ -129,7 +144,11 @@ Travail attendu :
 
 ### Étape 4 — Recette fonctionnelle et validation réelle
 
-**État :** [ ] Non validée
+**État :** [ ] Recette exécutée le 7 novembre 2026 ; clôture non validée.
+
+Rapport : [V1_STEP4_ACCEPTANCE.md](V1_STEP4_ACCEPTANCE.md). Les essais réels ont
+révélé des blocages Gemini et Groq, notamment sur le multi-documents. Les garde-fous
+passent mais ne remplacent pas une réponse utile ; ne pas annoncer la V1 entièrement validée.
 
 **Objectif :** vérifier les parcours V1 en conditions représentatives, sans confondre mocks et vrai réseau.
 
@@ -153,7 +172,11 @@ Consigner dans un rapport les commandes, résultats, limites, dates et environne
 
 ### Étape 5 — Livraison V1 testable
 
-**État :** [ ] Non validée
+**État :** [x] Candidate installable préparée le 7 novembre 2026 ; publication stable suspendue à l’étape 4.
+
+Rapport : [V1_STEP5_DELIVERY.md](V1_STEP5_DELIVERY.md), [prise en main](QUICKSTART.md).
+Installation wheel hors checkout, distribution source et ressources vérifiées. Aucun
+tag ni release : la disponibilité et la fiabilité de tous les parcours IA restent ouvertes.
 
 **Objectif :** permettre une installation et une prise en main autonomes.
 
@@ -179,7 +202,7 @@ Travail attendu :
 7. Mettre à jour le statut de l'étape uniquement si ses critères sont **effectivement** vérifiés.
 8. Travailler sur une branche dédiée et préparer une PR vers `main` pour une modification significative. Ne pas fusionner une PR rouge.
 9. **Ne pas merger automatiquement sans autorisation explicite.**
-10. Émettre un compte rendu court et **s'arrêter obligatoirement avant l'étape suivante**.
+10. Émettre un compte rendu court et s’arrêter avant l’étape suivante, sauf enchaînement explicitement demandé par l’utilisateur.
 
 ### Compte rendu obligatoire
 
@@ -201,3 +224,6 @@ Travail attendu :
 Conserver en dehors des critères de livraison V1 les objectifs de `docs/CIVIC_ACTION_PLAN.md` liés à : couverture complète des débats, scrutins et rapports ; identification des interventions ; textes définitifs et consolidation juridique exhaustive ; comparaison certifiée article par article ; rattachement de chaque modification à son amendement ; textes d'application ; liens formels vers financement, exécution et évaluation des résultats.
 
 Ces améliorations pourront être reprises après une V1 réellement utilisable, sur la base de besoins constatés lors des tests.
+
+Le détail des composants à reléguer, des prérequis et du travail non fusionné
+`feature/debate-vote-session-bridge` est conservé dans l’[audit de l’étape 0](V1_STEP0_AUDIT.md).

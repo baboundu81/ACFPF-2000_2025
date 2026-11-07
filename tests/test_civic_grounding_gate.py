@@ -72,4 +72,5 @@ def test_insufficient_without_live_citations_is_preserved():
     service = CivicAnswerService(AnswerService(provider, FakeMacroService()))
     answer = service.ask(SCOPED)
     assert answer.status == "insufficient"
-    assert answer.limitations == ("Aucun texte officiel lu.",)
+    assert answer.answer == "Les preuves disponibles ne suffisent pas à établir une réponse fiable."
+    assert "non vérifiée" in answer.limitations[0]

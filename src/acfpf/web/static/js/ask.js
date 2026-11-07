@@ -83,6 +83,7 @@
   const renderAnswer = (payload) => {
     result.replaceChildren();
     result.hidden = false;
+    result.setAttribute("role", "region");
     progressStatus.textContent = "Enquête terminée";
 
     const label = payload.status === "insufficient" ? "Preuves insuffisantes" : "Réponse ACFPF";
@@ -132,38 +133,9 @@
   const renderError = (message) => {
     result.replaceChildren();
     result.hidden = false;
+    result.setAttribute("role", "alert");
     result.appendChild(paragraph("Erreur", "eyebrow"));
     result.appendChild(paragraph(message, "ask-result__answer"));
-  };
-
-  const consumeStream = async (response) => {
-    if (!response.body) throw new Error("Réponse de recherche non diffusable.");
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-    let buffer = "";
-
-    while (true) {
-      const { value, done } = await reader.read();
-      buffer += decoder.decode(value || new Uint8Array(), { stream: !done });
-      const lines = buffer.split("\n");
-      buffer = lines.pop() || "";
-      for (const line of lines) {
-        if (!line.trim()) continue;
-        const event = JSON.parse(line);
-        if (event.type === "answer") renderAnswer(event.answer);
-        else if (event.type === "error") {
-          renderResearchEvent(event);
-          renderError(event.message || "La recherche a échoué.");
-        } else renderResearchEvent(event);
-      }
-      if (done) break;
-    }
-
-    if (buffer.trim()) {
-      const event = JSON.parse(buffer);
-      if (event.type === "answer") renderAnswer(event.answer);
-      else renderResearchEvent(event);
-    }
   };
 
   form.addEventListener("submit", async (event) => {
@@ -171,6 +143,7 @@
     const value = question.value.trim();
     if (!value) return;
 
+    form.setAttribute("aria-busy", "true");
     button.disabled = true;
     button.textContent = "Enquête en cours…";
     resetResearch();
@@ -183,13 +156,14 @@
       });
       if (!response.ok) {
         const payload = await response.json();
-        renderError(payload.message || "La réponse IA a échoué.");
-        return;
+        throw new Error(payload.message || "La réponse IA a échoué.");
       }
-      await consumeStream(response);
-    } catch (_error) {
-      renderError("Impossible de mener la recherche. Vérifiez la connexion et le serveur ACFPF.");
+      renderAnswer(await window.ACFPFConsumeResearchStream(response, renderResearchEvent));
+    } catch (error) {
+      progressStatus.textContent = "Recherche interrompue";
+      renderError(error.message || "Impossible de mener la recherche. Vérifiez la connexion et le serveur ACFPF.");
     } finally {
+      form.setAttribute("aria-busy", "false");
       button.disabled = false;
       button.textContent = "Rechercher et analyser";
     }

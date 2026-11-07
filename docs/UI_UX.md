@@ -61,18 +61,23 @@ Les composants ne doivent pas utiliser des variables liées à une couleur préc
 
 ## Navigation
 
-Architecture cible :
+La navigation V1 suit [V1_ROADMAP.md](V1_ROADMAP.md) :
 
-- Tableau de bord ;
-- Finances publiques ;
-- Prélèvements ;
-- Services publics ;
-- Protection sociale ;
-- Fraudes ;
-- Aides aux entreprises ;
-- Sources & méthodologie.
+- accueil : question libre avec enquête sourcée et découverte de textes ;
+- dossier sélectionné : identité, statut, sources essentielles et chat contextualisé ;
+- finances publiques : sous-outil sous `/finances` ;
+- méthode et sources : accessibles depuis ces parcours.
 
-Au démarrage du projet, seules les sections réellement disponibles sont actives. Les fonctionnalités futures ne doivent pas être présentées comme fonctionnelles.
+La question libre et la découverte de textes sont réunies sur l’accueil. Sans recherche
+explicite, cette page ne télécharge pas l’inventaire parlementaire. Dans le dossier,
+le chat précède les vues avancées repliées, conservées avec leurs tests. Les notices
+de versions, scrutins, rapports et amendements se chargent à la première ouverture.
+Une seule entrée principale est active. Voir les [vérifications de l’étape 3](V1_STEP3_VALIDATION.md).
+
+L’ancienne proposition de rubriques thématiques (prélèvements, services publics,
+protection sociale, fraudes, aides aux entreprises) relève de la vision longue ;
+elle n’impose pas de nouvelles pages pour la livraison V1. Seules les fonctions
+réellement disponibles sont présentées comme utilisables.
 
 ## Dashboard
 

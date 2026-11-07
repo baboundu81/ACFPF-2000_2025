@@ -85,7 +85,15 @@ def build_provider_from_env() -> LLMProvider:
             f"{preset.legacy_key_env}."
         )
 
-    model = os.getenv("ACFPF_LLM_MODEL", preset.default_model).strip() or preset.default_model
+    return build_provider(provider_name, api_key, os.getenv("ACFPF_LLM_MODEL"))
+
+
+def build_provider(name: str, api_key: str, model: str | None = None) -> LLMProvider:
+    """Build a provider from an explicit key without mutating process environment."""
+    preset = PROVIDER_PRESETS.get(name)
+    if preset is None:
+        raise AIProviderNotConfigured("Fournisseur IA non pris en charge.")
+    model = (model or "").strip() or preset.default_model
     if preset.driver == "anthropic":
         return AnthropicProvider(
             api_key=api_key,

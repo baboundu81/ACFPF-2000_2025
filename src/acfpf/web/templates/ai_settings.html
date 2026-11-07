@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ACFPF — Configuration IA</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/tokens.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/ai_settings.css') }}">
+  <script defer src="{{ url_for('static', filename='js/ai_settings.js') }}"></script>
+</head>
+<body>
+  {% set names = {"gemini": "Gemini", "groq": "Groq", "claude": "Claude",
+                  "mistral": "Mistral", "openai": "OpenAI", "openrouter": "OpenRouter"} %}
+  <a class="skip-link" href="#main">Aller au contenu</a>
+  <header class="masthead">
+    <div class="shell masthead__inner">
+      <div>
+        <a class="brand" href="{{ url_for('home') }}">ACFPF</a>
+        <p class="brand__subtitle">Analyse citoyenne de l'action publique française</p>
+      </div>
+      <nav class="primary-nav" aria-label="Navigation principale">
+        <a class="primary-nav__link" href="{{ url_for('home') }}">Textes & décisions</a>
+        <a class="primary-nav__link" href="{{ url_for('dashboard') }}">Finances publiques</a>
+        <a class="primary-nav__link is-active" href="{{ url_for('ai_settings') }}"
+          aria-current="page">Configuration IA</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main" class="shell settings-page">
+    <p class="eyebrow">Réglages locaux</p>
+    <h1>Configuration IA</h1>
+    <p class="hero__deck">Choisissez un fournisseur et importez votre clé pour activer l’enquête.</p>
+
+    <div class="settings-layout">
+      <section aria-labelledby="settings-form-title">
+        <h2 id="settings-form-title">Importer une clé</h2>
+        {% if error %}<p class="error-panel" role="alert">{{ error }}</p>{% endif %}
+        <form id="ai-settings-form" method="post" action="{{ url_for('ai_settings') }}"
+          enctype="multipart/form-data" class="settings-form">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <input type="hidden" name="operation" value="activate">
+          <div>
+            <label for="ai-provider">Fournisseur</label>
+            <select id="ai-provider" name="provider" aria-describedby="ai-model">
+              {% for preset in presets %}
+                <option value="{{ preset.name }}" data-model="{{ preset.default_model }}"
+                  {% if preset.name == selected %}selected{% endif %}>{{ names[preset.name] }}</option>
+              {% endfor %}
+            </select>
+            <p id="ai-model" class="settings-note">Modèle par défaut :
+              <strong id="ai-model-name">{{ default_model }}</strong>
+            </p>
+          </div>
+          <div id="key-drop-zone" class="key-drop-zone">
+            <label for="ai-key-file">Fichier de clé</label>
+            <p id="key-file-help" class="settings-note">Parcourez vos fichiers ou déposez un fichier
+              texte ici. Il doit contenir uniquement la clé, sur une ligne (4 Kio maximum).</p>
+            <input type="file" id="ai-key-file" name="key_file" accept=".txt,.key,text/plain"
+              aria-describedby="key-file-help" required>
+            <p id="key-file-status" class="settings-note" role="status" hidden></p>
+          </div>
+          <button type="submit" class="settings-button">Activer l’IA</button>
+        </form>
+      </section>
+      <aside class="settings-current" aria-labelledby="settings-current-title">
+        <p class="eyebrow">État actuel</p>
+        <h2 id="settings-current-title">
+          {% if imported %}Clé chargée{% elif configured %}IA configurée{% else %}IA non configurée{% endif %}
+        </h2>
+        {% if configured and provider_name %}
+          <p><strong>{{ names.get(provider_name, provider_name) }}</strong>{% if model %} · {{ model }}{% endif %}</p>
+        {% endif %}
+        {% if imported %}
+          <p>Le réglage est actif. L’import ne vérifie pas la disponibilité du fournisseur.</p>
+          <p><a href="{{ url_for('home') }}#ask">Poser une question</a></p>
+          <form method="post" action="{{ url_for('ai_settings') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <button type="submit" name="operation" value="reset" class="settings-button settings-button--secondary">
+              Rétablir le réglage de démarrage
+            </button>
+          </form>
+        {% elif configured %}
+          <p>Le réglage de démarrage est actif. Vous pouvez le remplacer pour ce lancement.</p>
+        {% else %}
+          <p>La recherche de textes et les finances restent accessibles.</p>
+        {% endif %}
+        <p class="settings-note">La clé importée reste en mémoire côté serveur jusqu’à l’arrêt
+          d’ACFPF. Le fichier n’est pas enregistré par l’application.</p>
+      </aside>
+    </div>
+  </main>
+</body>
+</html>

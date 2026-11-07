@@ -41,6 +41,11 @@ class FakeProvider:
 
     def complete_json(self, request: ProviderRequest) -> dict:
         self.requests.append(request)
+        if request.response_schema_name == "acfpf_grounding_review":
+            # Existing agent tests use a permissive review fixture. Dedicated grounding
+            # tests below use explicit rejecting/invalid reviews instead.
+            candidate = json.loads(request.user_prompt)["CANDIDATE_ANSWER"]
+            return {"supported": True, "citations": candidate["citations"], "issues": []}
         if not self.responses:
             raise AssertionError("FakeProvider has no response left")
         return self.responses.pop(0)
@@ -216,6 +221,7 @@ def test_answer_service_rejects_citation_that_was_never_read() -> None:
             "limitations": [],
         }
     )
+    provider.responses *= 2  # The same invalid candidate also fails the single correction.
     service = AnswerService(provider, FakeMacroService())
 
     with pytest.raises(AIGroundingError, match="n'ont pas été lues"):
@@ -232,6 +238,7 @@ def test_answer_service_rejects_fact_answer_without_citation() -> None:
             "limitations": [],
         }
     )
+    provider.responses *= 2  # The same invalid candidate also fails the single correction.
     service = AnswerService(provider, FakeMacroService())
 
     with pytest.raises(AIGroundingError):
@@ -295,6 +302,9 @@ def test_groq_gpt_oss_uses_structured_actions_and_server_side_key() -> None:
     response_format = session.last_call["json"]["response_format"]
     assert response_format["type"] == "json_schema"
     assert response_format["json_schema"]["name"] == "acfpf_agent_action"
+    assert response_format["json_schema"]["strict"] is True
+    assert session.last_call["json"]["reasoning_effort"] == "low"
+    assert session.last_call["json"]["max_completion_tokens"] == 2048
     assert response_format["json_schema"]["schema"] == AGENT_ACTION_SCHEMA
     assert session.last_call["json"]["tool_choice"] == "none"
     assert session.last_call["json"]["model"] == "openai/gpt-oss-120b"
@@ -303,9 +313,7 @@ def test_groq_gpt_oss_uses_structured_actions_and_server_side_key() -> None:
 
 def test_gemini_uses_structured_actions_and_low_reasoning() -> None:
     generated = {"action": "answer"}
-    session = FakeSession(
-        {"choices": [{"message": {"content": json.dumps(generated)}}]}
-    )
+    session = FakeSession({"choices": [{"message": {"content": json.dumps(generated)}}]})
     provider = OpenAICompatibleProvider(
         name="gemini",
         api_key="secret-test-key",
@@ -329,9 +337,7 @@ def test_gemini_uses_request_specific_json_schema() -> None:
         "required": ["query"],
         "additionalProperties": False,
     }
-    session = FakeSession(
-        {"choices": [{"message": {"content": json.dumps({"query": "santé"})}}]}
-    )
+    session = FakeSession({"choices": [{"message": {"content": json.dumps({"query": "santé"})}}]})
     provider = OpenAICompatibleProvider(
         name="gemini",
         api_key="secret-test-key",
@@ -356,9 +362,7 @@ def test_gemini_uses_request_specific_json_schema() -> None:
 
 def test_other_compatible_provider_keeps_json_object_mode() -> None:
     generated = {"action": "answer"}
-    session = FakeSession(
-        {"choices": [{"message": {"content": json.dumps(generated)}}]}
-    )
+    session = FakeSession({"choices": [{"message": {"content": json.dumps(generated)}}]})
     provider = OpenAICompatibleProvider(
         name="openrouter",
         api_key="secret-test-key",

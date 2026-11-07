@@ -12,7 +12,8 @@ Le projet ne doit jamais être conçu pour confirmer une opinion prédéfinie. U
 
 Le LLM n'est jamais une source de vérité. Il peut comprendre une demande, piloter une recherche et synthétiser des preuves ; l'existence d'un texte, son état, son contenu et les chiffres utilisés doivent être établis par des données ou documents officiels.
 
-Voir `docs/CIVIC_ACTION_PLAN.md` pour la trajectoire produit.
+La cible de livraison et l’ordre des travaux sont définis dans `docs/V1_ROADMAP.md`.
+`docs/CIVIC_ACTION_PLAN.md` conserve la trajectoire longue et l’historique technique ; ses phases ne sont pas des prérequis supplémentaires à la V1.
 
 ## 2. Données, documents et méthode
 
@@ -32,7 +33,7 @@ Voir `docs/CIVIC_ACTION_PLAN.md` pour la trajectoire produit.
 - Une série de référence versionnée est acceptable pour permettre un fonctionnement local déterministe, à condition que sa source, sa date et sa méthode de construction soient documentées.
 - Les métadonnées législatives structurées peuvent être mises en cache localement pour la découverte, mais leur source et leur fraîcheur doivent rester visibles. Elles servent à identifier et orienter un dossier ; elles ne remplacent pas la lecture du texte comme preuve de son contenu.
 - Pour les documents textuels, la stratégie par défaut est **live-first** : consulter la source officielle au moment de la question plutôt que maintenir un corpus local exhaustif.
-- La recherche live est limitée aux domaines explicitement autorisés dans `config/sources.yml`. Toute URL et toute redirection doivent être revalidées par le backend avant lecture.
+- La recherche live est limitée aux domaines explicitement autorisés dans `config/sources.yml`. Le paquet embarque une copie identique versionnée dans `src/acfpf/resources/sources.yml`, dont la synchronisation est testée ; ne jamais charger implicitement un registre trouvé dans le dossier courant. Toute URL et toute redirection doivent être revalidées par le backend avant lecture.
 - Un moteur ou index Web peut servir uniquement à découvrir des URL officielles ; ses snippets et résumés ne constituent jamais des preuves et ne doivent pas être fournis au LLM comme faits.
 - Une URL n'est citable qu'après ouverture et lecture effective par ACFPF. Conserver autant que possible l'URL, le titre, le locator (page/segment), la date de consultation et l'empreinte du document.
 - Ne pas présélectionner des paragraphes par score lexical/vectoriel avant lecture par le modèle. Toute segmentation doit être mécanique, contiguë et conserver l'ordre de la source.
@@ -53,6 +54,7 @@ Voir `docs/EVIDENCE.md` pour la convention de preuve.
 - Un chat dédié à un dossier doit recevoir l'identité du dossier depuis le backend. Les champs envoyés par le navigateur ne doivent pas pouvoir substituer silencieusement le titre ou l'URL officiels.
 - Les séries structurées doivent rester traitées par des fonctions déterministes ; le LLM sert à piloter la recherche et à synthétiser les preuves.
 - La couche IA doit rester indépendante du fournisseur de modèle.
+- Une réponse factuelle candidate doit rester interne jusqu’aux contrôles des citations et à la passe distincte de vérification de ses appuis. Cette seconde passe LLM est un garde-fou faillible, jamais une preuve supplémentaire ; les limites et le benchmark de calibration doivent être documentés.
 - Le module finances doit rester utilisable indépendamment du module législatif et réciproquement autant que possible.
 - Éviter les dépendances réseau côté navigateur pour les fonctions essentielles : l'interface doit rester utilisable localement sans CDN.
 
@@ -62,7 +64,7 @@ ACFPF possède son propre langage visuel. Ne pas copier le design d'un autre pro
 
 Le style courant est **journalistique** : lecture éditoriale, hiérarchie typographique forte, mise en avant des faits, des sources et du contexte. Il n'existe pas de sélecteur de thème dans l'interface.
 
-L'expérience principale est désormais la découverte et l'analyse de l'action publique. L'accueil doit permettre de chercher ou parcourir des textes et décisions sans exiger que l'utilisateur connaisse leur nom officiel. Le dashboard financier est un sous-outil accessible depuis cette navigation principale.
+La cible V1 est la recherche et l’analyse documentaire : l’accueil doit permettre de poser une question libre sans sélectionner de dossier, ainsi que de chercher ou parcourir des textes et décisions sans connaître leur nom officiel. Le dashboard financier est un sous-outil accessible depuis cette navigation principale.
 
 Principes :
 
@@ -148,6 +150,11 @@ Les tests ne doivent pas dépendre d'un serveur externe disponible en temps rée
 - Respecter le CLA et la politique décrits dans `CONTRIBUTING.md` et `LICENSES/README.md`.
 
 ## 9. Workflow Git
+
+Le découpage par défaut est une étape de roadmap par session. Une demande explicite
+de l’utilisateur peut autoriser l’enchaînement de plusieurs étapes, avec maintien
+des validations et d’un bilan distinct pour chacune. L’autorisation du 7 novembre
+2026 porte sur les étapes 4 et 5 ; elle n’autorise ni fusion automatique ni release.
 
 - Développer les évolutions significatives sur une branche dédiée.
 - Faire une PR vers `main`.

@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 
-from acfpf.ai.provider import LLMProvider, ProviderRequest
 from acfpf.ai.service import AnswerService, Citation, build_default_answer_service
 from acfpf.cofog import CofogService
 from acfpf.data.eurostat import EurostatError
@@ -18,6 +17,8 @@ Règles impératives :
 - N'utilise jamais ta connaissance pré-entraînée comme preuve factuelle.
 - Les métadonnées fournies dans la question, notamment l'identité d'un dossier législatif, servent uniquement à orienter la recherche : elles ne prouvent pas le contenu du texte.
 - Les titres et URL issus d'une recherche ne sont PAS des preuves : il faut ouvrir puis lire le document.
+- Si la question fournit une URL officielle, commence par une action `open` sur cette URL. Pour plusieurs URL, ouvre chacune avant de tenter une synthèse ; une URL fournie ne constitue jamais une preuve à elle seule.
+- Après une recherche ayant trouvé des URL pertinentes, ouvre un résultat avant de relancer une recherche. Utilise les résultats déjà disponibles si l’index devient indisponible ; ne fabrique ni URL ni identifiant de citation.
 - Seuls les éléments présents dans EVIDENCE_AVAILABLE ou les séries S… fournies par ACFPF peuvent être cités dans la réponse finale.
 - Pour dire ce que prévoit un texte, vérifie la version ou l'étape pertinente dans une source officielle effectivement lue.
 - Distingue toujours projet ou proposition, amendement, vote, adoption définitive, promulgation et mise en œuvre.
@@ -52,27 +53,14 @@ Les `source_ids` de search doivent venir de ALLOWED_SOURCES. Une citation finale
 """
 
 
-class _PromptOverrideProvider:
-    def __init__(self, delegate: LLMProvider) -> None:
-        self.delegate = delegate
-        self.name = delegate.name
-        self.model = delegate.model
-
-    def complete_json(self, request: ProviderRequest) -> dict:
-        return self.delegate.complete_json(
-            ProviderRequest(
-                system_prompt=CIVIC_SYSTEM_PROMPT,
-                user_prompt=request.user_prompt,
-            )
-        )
-
-
 class CivicAnswerService(AnswerService):
     """AnswerService configured for public-action questions rather than finance-only questions."""
 
+    system_prompt = CIVIC_SYSTEM_PROMPT
+
     def __init__(self, base: AnswerService) -> None:
         super().__init__(
-            _PromptOverrideProvider(base.provider),
+            base.provider,
             base.macro_service,
             base.cofog_service,
             base.live_research,

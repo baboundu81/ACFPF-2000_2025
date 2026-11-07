@@ -11,7 +11,7 @@ Ce fichier complète le `AGENTS.md` racine et s'applique à tout `src/acfpf/web/
 
 ## Navigation produit
 
-- L'accueil `/` est l'expérience principale d'analyse citoyenne : découverte et recherche de textes/décisions.
+- L’accueil `/` réunit la question libre avec recherche documentaire sourcée, sans dossier obligatoire, et la découverte de textes/décisions. Sans critères de recherche, ne pas bloquer cet accueil sur le chargement des inventaires parlementaires. Voir `docs/V1_ROADMAP.md` pour les étapes de livraison.
 - Un dossier législatif est ouvert sous `/textes/<id>` et possède son espace d'analyse et son chat contextualisé.
 - Les finances publiques sont un sous-outil spécialisé sous `/finances`.
 - Un seul élément de navigation principale doit être actif à la fois.
@@ -56,6 +56,7 @@ Ce fichier complète le `AGENTS.md` racine et s'applique à tout `src/acfpf/web/
 ## IA et enquête dans l'interface
 
 - La clé API d'un fournisseur LLM reste exclusivement côté serveur et ne doit jamais apparaître dans le HTML, le JavaScript ou une réponse API.
+- Le menu Configuration IA reçoit un fichier texte borné par formulaire multipart protégé contre les requêtes tierces. Restreindre l’import à l’écoute locale et aux requêtes de boucle locale avec hôte local. Ne jamais réafficher, journaliser ni sauvegarder le contenu ou le nom du fichier. Le JavaScript de glisser-déposer ne lit pas son contenu.
 - `/api/ask` fournit la réponse finale JSON ; `/api/ask/stream` expose la progression de l'enquête en NDJSON.
 - Un chat de dossier peut envoyer l'identifiant du dossier et un historique court, mais le backend reste responsable de reconstruire le contexte de confiance.
 - La progression peut afficher uniquement des actions observables : préparation, recherche, ouverture d'une source, lecture d'une unité, avertissement, réponse.
@@ -72,4 +73,7 @@ Ce fichier complète le `AGENTS.md` racine et s'applique à tout `src/acfpf/web/
 - Éviter les bibliothèques graphiques lourdes tant que des SVG légers suffisent.
 - Le navigateur ne doit pas refaire des calculs métier.
 - Charger uniquement les assets nécessaires à la page.
-- Le flux NDJSON doit être consommé progressivement sans conserver des copies inutiles des documents consultés dans le navigateur.
+- Le flux NDJSON doit être consommé progressivement avec le lecteur commun local `research_stream.js`, sans conserver des copies inutiles des documents consultés dans le navigateur. Exiger un unique événement final, gérer les erreurs avec/sans saut de ligne et les interruptions, et réactiver le formulaire. Ne pas publier de candidat ni de résultat issu d’un flux incomplet.
+
+- Dans le dossier, placer le chat avant les outils avancés repliés. Charger les notices de versions, scrutins, rapports et amendements à la première ouverture de leur rubrique.
+- Présenter la fraîcheur de l’inventaire et distinguer une date future prévue dans la source d’une activité passée, sans modifier les données ni les critères de tri.
