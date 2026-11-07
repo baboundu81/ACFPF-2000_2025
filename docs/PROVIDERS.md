@@ -23,9 +23,13 @@ Le provider par défaut est `gemini`.
 
 Les offres gratuites, modèles disponibles et quotas changent dans le temps. La présence d'un provider dans ce tableau signifie que l'intégration est supportée par ACFPF, pas qu'un quota gratuit est garanti indéfiniment.
 
-## Gemini : choix recommandé pour commencer
+## Gemini : fournisseur par défaut
 
-Gemini est le provider par défaut car Google propose actuellement un Free Tier de la Gemini Developer API, et `gemini-3.8-flash` prend en charge les sorties structurées et les workflows agentiques. La clé se crée dans [Google AI Studio](https://aistudio.google.com/app/apikey).
+Le preset par défaut utilise `gemini-3.8-flash`. La clé se crée dans
+[Google AI Studio](https://aistudio.google.com/api-keys). La présence de ce preset ne
+garantit pas la disponibilité du modèle : la génération a encore répondu HTTP 503
+pendant la [recette du 7 novembre 2026](V1_STEP4_ACCEPTANCE.md). La candidate V1
+ne présente donc pas cette configuration comme validée en conditions réelles.
 
 Configuration minimale :
 

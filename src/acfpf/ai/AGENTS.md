@@ -37,7 +37,7 @@ Le modèle n'obtient pas un navigateur libre. Le backend exécute chaque action 
 - Une unité de document n'est citable que si elle a effectivement été fournie au modèle pendant la session.
 - Le backend attribue les identifiants `E…`; le modèle ne choisit pas lui-même des identifiants arbitraires.
 - Les séries déterministes utilisent des identifiants `S…`.
-- Une citation inconnue, une référence inline non déclarée ou une URL affichée non citée provoque un rejet.
+- Une citation inconnue, une référence inline non déclarée ou une URL affichée non citée provoque le rejet du candidat. Une seule correction peut être demandée par question, dans la limite globale des étapes ; aucun texte refusé n’est publié. Une seconde erreur de validation arrête l’enquête, sans contournement des contrôles ni du vérificateur distinct.
 - Une réponse factuelle candidate reste interne jusqu’au contrôle distinct `acfpf_grounding_review`, sur les seuls passages lus et les séries déterministes. Un rejet ne doit jamais publier le candidat. Cette passe LLM ne constitue pas une nouvelle preuve ni une certification de fidélité ; maintenir le benchmark versionné `tests/fixtures/ai_grounding_benchmark.json`.
 - Les diagnostics n’exposent ni corps fournisseur brut, ni `failed_generation`, ni raisonnement privé. Le champ `reason` ne doit pas être recopié dans les événements publics.
 - Lorsque les preuves sont insuffisantes, le résultat attendu est `insufficient`, pas une extrapolation.
@@ -47,7 +47,7 @@ Le modèle n'obtient pas un navigateur libre. Le backend exécute chaque action 
 
 - Ne pas classer ou supprimer des paragraphes par pertinence avant lecture du modèle.
 - Le texte visible doit être conservé dans son ordre source.
-- La segmentation HTML doit être mécanique et contiguë.
+- La segmentation HTML doit être mécanique et contiguë. Les unités de 4 000 caractères limitent le volume initial envoyé ; toutes les unités suivantes restent accessibles sans classement ni suppression. Cela ne garantit pas de tenir dans les quotas de chaque fournisseur.
 - Les PDF peuvent être regroupés en blocs de pages contiguës.
 - Le modèle peut demander les unités suivantes ; le nombre total d'étapes reste plafonné.
 - Les documents sont éphémères par question. Ne pas recréer un corpus local persistant par défaut.

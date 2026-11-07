@@ -27,6 +27,7 @@ from acfpf.macro import MacroService
 
 MAX_RESEARCH_STEPS = 14
 MAX_QUOTA_RETRIES = 2
+MAX_ANSWER_REPAIRS = 1
 MAX_QUOTA_WAIT_SECONDS = 60
 MAX_QUESTION_CHARS = 1500
 MAX_CONTEXTUAL_QUESTION_CHARS = 6000
@@ -196,6 +197,7 @@ class AnswerService:
         read_units: dict[tuple[str, int], str] = {}
         evidence_counter = 0
         quota_budget = [MAX_QUOTA_RETRIES]
+        answer_repairs = MAX_ANSWER_REPAIRS
 
         for step_number in range(1, MAX_RESEARCH_STEPS + 1):
             state = {
@@ -378,12 +380,30 @@ class AnswerService:
                 continue
 
             if action == "answer":
-                answer = self._validate_answer(
-                    raw,
-                    citations,
-                    research_trace=research_trace,
-                    require_live_evidence=requires_live_evidence,
-                )
+                try:
+                    answer = self._validate_answer(
+                        raw,
+                        citations,
+                        research_trace=research_trace,
+                        require_live_evidence=requires_live_evidence,
+                    )
+                except AIGroundingError as exc:
+                    if answer_repairs <= 0:
+                        raise
+                    answer_repairs -= 1
+                    # No rejected answer text or private reasoning enters the public trace.
+                    # The next action must still pass every citation and grounding check.
+                    yield notice(
+                        {
+                            "action": "answer",
+                            "message": (
+                                f"Réponse candidate refusée : {exc} "
+                                "Une correction est autorisée : ouvrir ou lire les preuves manquantes, "
+                                "puis citer uniquement leurs identifiants, ou déclarer insufficient."
+                            ),
+                        }
+                    )
+                    continue
                 if answer.status == "answered":
                     yield AgentEvent(
                         "notice", {"message": "Vérification des appuis et des citations…"}

@@ -178,7 +178,7 @@ def test_unread_next_segment_cannot_be_cited_after_open(monkeypatch):
         "citations": ["E2"],
         "limitations": [],
     }
-    client, _, _ = pipeline(monkeypatch, {URL: StreamResponse()}, [OPEN, answer])
+    client, _, _ = pipeline(monkeypatch, {URL: StreamResponse()}, [OPEN, answer, answer])
     response = client.post("/api/ask", json={"question": QUESTION})
     assert response.status_code == 502
     assert response.json["error"] == "ai_failure"
@@ -198,3 +198,79 @@ def test_question_cannot_reuse_previous_questions_document(monkeypatch):
     assert state["EVIDENCE_AVAILABLE"] == {}
     assert state["RESEARCH_NOTICES"][0]["action"] == "read"
     assert sessions[-1].calls == []
+
+
+def test_two_distinct_documents_keep_their_own_citations_and_fingerprints(monkeypatch):
+    second_url = "https://official.test/second-report"
+    first = b"<html><title>Document A</title><p>Premiere disposition proposee.</p></html>"
+    second = b"<html><title>Document B</title><p>Evaluation distincte.</p></html>"
+    answer = {
+        "action": "answer",
+        "status": "answered",
+        "answer": "Deux documents distincts sont consultes [E1][E2].",
+        "citations": ["E1", "E2"],
+        "limitations": ["Fixtures sans portee juridique."],
+    }
+    client, provider, _ = pipeline(
+        monkeypatch,
+        {URL: StreamResponse(first), second_url: StreamResponse(second)},
+        [OPEN, {"action": "open", "url": second_url}, answer],
+    )
+    events = [
+        json.loads(line)
+        for line in client.post(
+            "/api/ask/stream", json={"question": "Compare ces deux documents."}
+        ).data.splitlines()
+    ]
+    payload = events[-1]["answer"]
+    assert payload["status"] == "answered"
+    assert [c["source_url"] for c in payload["citations"]] == [URL, second_url]
+    assert [c["sha256"] for c in payload["citations"]] == [
+        hashlib.sha256(first).hexdigest(),
+        hashlib.sha256(second).hexdigest(),
+    ]
+    states = [json.loads(request.user_prompt) for request in provider.requests]
+    assert states[2]["EVIDENCE_AVAILABLE"]["E1"]["document_id"] == "D1"
+    assert states[2]["EVIDENCE_AVAILABLE"]["E2"]["document_id"] == "D2"
+
+
+def test_rejected_candidate_can_open_missing_document_once_without_publishing_it(monkeypatch):
+    other = "https://official.test/second"
+    rejected = {
+        "action": "answer",
+        "status": "answered",
+        "answer": "NEVER_PUBLISH_REJECTED_CANDIDATE",
+        "citations": ["E1", "E2"],
+        "limitations": [],
+    }
+    accepted = {**rejected, "answer": "Les deux documents ont ete consultes [E1][E2]."}
+    client, provider, _ = pipeline(
+        monkeypatch,
+        {URL: StreamResponse(), other: StreamResponse()},
+        [OPEN, rejected, {"action": "open", "url": other}, accepted],
+    )
+    response = client.post("/api/ask/stream", json={"question": "Consulte deux documents."})
+    events = [json.loads(line) for line in response.data.splitlines()]
+    assert [e["type"] for e in events] == ["started", "open", "notice", "open", "notice", "answer"]
+    assert "NEVER_PUBLISH_REJECTED_CANDIDATE" not in response.get_data(as_text=True)
+    assert [c["id"] for c in events[-1]["answer"]["citations"]] == ["E1", "E2"]
+    state = json.loads(provider.requests[2].user_prompt)
+    assert list(state["EVIDENCE_AVAILABLE"]) == ["E1"]
+    assert state["RESEARCH_NOTICES"][-1]["action"] == "answer"
+
+
+def test_second_invalid_candidate_ends_in_error_without_publishing_either(monkeypatch):
+    rejected = {
+        "action": "answer",
+        "status": "answered",
+        "answer": "NEVER_PUBLISH",
+        "citations": ["E999"],
+        "limitations": [],
+    }
+    client, provider, _ = pipeline(monkeypatch, {URL: StreamResponse()}, [OPEN, rejected, rejected])
+    response = client.post("/api/ask/stream", json={"question": "Une citation absente."})
+    events = [json.loads(line) for line in response.data.splitlines()]
+    assert [e["type"] for e in events] == ["started", "open", "notice", "error"]
+    assert events[-1]["code"] == "grounding_rejected"
+    assert "NEVER_PUBLISH" not in response.get_data(as_text=True)
+    assert len(provider.requests) == 3  # no second correction, no reviewer call

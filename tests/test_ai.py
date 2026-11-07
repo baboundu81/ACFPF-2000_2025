@@ -221,6 +221,7 @@ def test_answer_service_rejects_citation_that_was_never_read() -> None:
             "limitations": [],
         }
     )
+    provider.responses *= 2  # The same invalid candidate also fails the single correction.
     service = AnswerService(provider, FakeMacroService())
 
     with pytest.raises(AIGroundingError, match="n'ont pas été lues"):
@@ -237,6 +238,7 @@ def test_answer_service_rejects_fact_answer_without_citation() -> None:
             "limitations": [],
         }
     )
+    provider.responses *= 2  # The same invalid candidate also fails the single correction.
     service = AnswerService(provider, FakeMacroService())
 
     with pytest.raises(AIGroundingError):
@@ -311,9 +313,7 @@ def test_groq_gpt_oss_uses_structured_actions_and_server_side_key() -> None:
 
 def test_gemini_uses_structured_actions_and_low_reasoning() -> None:
     generated = {"action": "answer"}
-    session = FakeSession(
-        {"choices": [{"message": {"content": json.dumps(generated)}}]}
-    )
+    session = FakeSession({"choices": [{"message": {"content": json.dumps(generated)}}]})
     provider = OpenAICompatibleProvider(
         name="gemini",
         api_key="secret-test-key",
@@ -337,9 +337,7 @@ def test_gemini_uses_request_specific_json_schema() -> None:
         "required": ["query"],
         "additionalProperties": False,
     }
-    session = FakeSession(
-        {"choices": [{"message": {"content": json.dumps({"query": "santé"})}}]}
-    )
+    session = FakeSession({"choices": [{"message": {"content": json.dumps({"query": "santé"})}}]})
     provider = OpenAICompatibleProvider(
         name="gemini",
         api_key="secret-test-key",
@@ -364,9 +362,7 @@ def test_gemini_uses_request_specific_json_schema() -> None:
 
 def test_other_compatible_provider_keeps_json_object_mode() -> None:
     generated = {"action": "answer"}
-    session = FakeSession(
-        {"choices": [{"message": {"content": json.dumps(generated)}}]}
-    )
+    session = FakeSession({"choices": [{"message": {"content": json.dumps(generated)}}]})
     provider = OpenAICompatibleProvider(
         name="openrouter",
         api_key="secret-test-key",

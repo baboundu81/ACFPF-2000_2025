@@ -19,13 +19,18 @@ Le projet ne cherche pas à confirmer une conclusion politique prédéfinie. Il 
 
 Le LLM n'est jamais utilisé comme source de vérité : il peut piloter une recherche et expliquer des preuves, mais les faits doivent provenir de données ou documents officiels.
 
-## Cible V1 et état actuel
+## Candidate V1 et état actuel
 
 La V1 vise deux parcours : **question libre → recherche officielle → lecture → réponse sourcée**,
 et **recherche de texte → dossier → chat sourcé**. Les finances restent un sous-outil.
 L’accueil propose la question libre et la recherche de dossiers. Le chat contextualisé
-précède les outils avancés repliés. La recette V1 complète reste à faire ; voir les
-[contrôles de l’étape 3](docs/V1_STEP3_VALIDATION.md) et leurs limites fournisseur.
+précède les outils avancés repliés. La candidate **1.0.0rc1** est installable, mais la
+[recette réelle](docs/V1_STEP4_ACCEPTANCE.md) reste ouverte : Gemini 503, quotas/refus
+Groq et scénario multi-documents non validé. Elle n’est pas une V1 stable publiée.
+
+Pour installer, configurer une clé et essayer les parcours, suivre le
+[guide de prise en main](docs/QUICKSTART.md). Le [rapport de livraison](docs/V1_STEP5_DELIVERY.md)
+distingue l’installation propre, les tests et les limites restantes.
 
 La [roadmap V1](docs/V1_ROADMAP.md) fixe les priorités.
 L’[audit du 6 novembre 2026](docs/V1_STEP0_AUDIT.md) détaille les fonctions réellement
@@ -105,12 +110,13 @@ Les documents consultés sont éphémères et isolés par question. La trace de 
 
 ## Installation
 
-Python 3.11 ou supérieur.
+Python 3.11 ou supérieur. Depuis les sources :
 
 ```bash
 python -m venv .venv
 source .venv/bin/activate
-pip install -e ".[dev]"
+python -m pip install .
+# Pour contribuer et exécuter les tests : python -m pip install -e ".[dev]"
 ```
 
 Sous Windows :
@@ -126,6 +132,8 @@ acfpf
 ```
 
 Le serveur local démarre sur `http://127.0.0.1:5000` et le navigateur s'ouvre automatiquement.
+La commande fonctionne depuis tout dossier après installation ; le registre réseau et
+les assets sont embarqués dans le paquet.
 
 Options utiles :
 
@@ -224,13 +232,10 @@ Le registre est dans [config/sources.yml](config/sources.yml). Il comprend notam
 
 ## Prochaines étapes
 
-L’ordre de livraison est défini par [docs/V1_ROADMAP.md](docs/V1_ROADMAP.md) :
-
-1. fiabiliser le moteur documentaire sans dossier obligatoire ;
-2. vérifier les fournisseurs IA, citations et erreurs ;
-3. rendre les deux parcours V1 visibles et utilisables dans l’interface ;
-4. réaliser la recette réseau, IA et navigateur ;
-5. vérifier l’installation et préparer une livraison testable.
+Les développements des étapes 0 à 3 et la préparation de livraison sont réalisés.
+L’étape 4 a été exécutée mais reste ouverte sur les parcours IA réels. Les statuts et
+critères détaillés figurent dans [docs/V1_ROADMAP.md](docs/V1_ROADMAP.md).
+Aucune release stable n’est publiée tant que ces réserves ne sont pas levées.
 
 Les raccordements parlementaires avancés, la comparaison juridique article par article,
 l’application réglementaire et les liens vers les budgets et résultats restent au

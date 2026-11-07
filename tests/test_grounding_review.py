@@ -137,7 +137,7 @@ def test_insufficient_payload_does_not_echo_unverified_assertions():
 def test_inline_unread_references_are_refused_even_with_a_known_citation(text):
     candidate = {**CANDIDATE, "answer": text}
     provider = ReviewProvider(
-        {"supported": True, "citations": ["E1"], "issues": []}, OPEN, candidate
+        {"supported": True, "citations": ["E1"], "issues": []}, OPEN, candidate, candidate
     )
     with pytest.raises(AIGroundingError):
         service(provider).ask("Texte ?")

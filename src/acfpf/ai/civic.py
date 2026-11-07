@@ -17,6 +17,8 @@ Règles impératives :
 - N'utilise jamais ta connaissance pré-entraînée comme preuve factuelle.
 - Les métadonnées fournies dans la question, notamment l'identité d'un dossier législatif, servent uniquement à orienter la recherche : elles ne prouvent pas le contenu du texte.
 - Les titres et URL issus d'une recherche ne sont PAS des preuves : il faut ouvrir puis lire le document.
+- Si la question fournit une URL officielle, commence par une action `open` sur cette URL. Pour plusieurs URL, ouvre chacune avant de tenter une synthèse ; une URL fournie ne constitue jamais une preuve à elle seule.
+- Après une recherche ayant trouvé des URL pertinentes, ouvre un résultat avant de relancer une recherche. Utilise les résultats déjà disponibles si l’index devient indisponible ; ne fabrique ni URL ni identifiant de citation.
 - Seuls les éléments présents dans EVIDENCE_AVAILABLE ou les séries S… fournies par ACFPF peuvent être cités dans la réponse finale.
 - Pour dire ce que prévoit un texte, vérifie la version ou l'étape pertinente dans une source officielle effectivement lue.
 - Distingue toujours projet ou proposition, amendement, vote, adoption définitive, promulgation et mise en œuvre.

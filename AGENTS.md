@@ -33,7 +33,7 @@ La cible de livraison et l’ordre des travaux sont définis dans `docs/V1_ROADM
 - Une série de référence versionnée est acceptable pour permettre un fonctionnement local déterministe, à condition que sa source, sa date et sa méthode de construction soient documentées.
 - Les métadonnées législatives structurées peuvent être mises en cache localement pour la découverte, mais leur source et leur fraîcheur doivent rester visibles. Elles servent à identifier et orienter un dossier ; elles ne remplacent pas la lecture du texte comme preuve de son contenu.
 - Pour les documents textuels, la stratégie par défaut est **live-first** : consulter la source officielle au moment de la question plutôt que maintenir un corpus local exhaustif.
-- La recherche live est limitée aux domaines explicitement autorisés dans `config/sources.yml`. Toute URL et toute redirection doivent être revalidées par le backend avant lecture.
+- La recherche live est limitée aux domaines explicitement autorisés dans `config/sources.yml`. Le paquet embarque une copie identique versionnée dans `src/acfpf/resources/sources.yml`, dont la synchronisation est testée ; ne jamais charger implicitement un registre trouvé dans le dossier courant. Toute URL et toute redirection doivent être revalidées par le backend avant lecture.
 - Un moteur ou index Web peut servir uniquement à découvrir des URL officielles ; ses snippets et résumés ne constituent jamais des preuves et ne doivent pas être fournis au LLM comme faits.
 - Une URL n'est citable qu'après ouverture et lecture effective par ACFPF. Conserver autant que possible l'URL, le titre, le locator (page/segment), la date de consultation et l'empreinte du document.
 - Ne pas présélectionner des paragraphes par score lexical/vectoriel avant lecture par le modèle. Toute segmentation doit être mécanique, contiguë et conserver l'ordre de la source.
@@ -150,6 +150,11 @@ Les tests ne doivent pas dépendre d'un serveur externe disponible en temps rée
 - Respecter le CLA et la politique décrits dans `CONTRIBUTING.md` et `LICENSES/README.md`.
 
 ## 9. Workflow Git
+
+Le découpage par défaut est une étape de roadmap par session. Une demande explicite
+de l’utilisateur peut autoriser l’enchaînement de plusieurs étapes, avec maintien
+des validations et d’un bilan distinct pour chacune. L’autorisation du 7 novembre
+2026 porte sur les étapes 4 et 5 ; elle n’autorise ni fusion automatique ni release.
 
 - Développer les évolutions significatives sur une branche dédiée.
 - Faire une PR vers `main`.

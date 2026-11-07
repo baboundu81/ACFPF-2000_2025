@@ -2,7 +2,7 @@
 
 # ACFPF — Roadmap V1 : recherche documentaire et analyse IA sourcée
 
-**Statut :** périmètre V1 confronté au code lors de l’étape 0 ; livraison non validée.
+**Statut :** candidate installable `1.0.0rc1` préparée ; recette IA globale non validée.
 **Décision produit :** recentrage sur une première version utilisable et testable.  
 **Périmètre :** application locale Python/Flask, découverte des textes, recherche documentaire live, chat IA et sous-outil finances existant.
 
@@ -62,7 +62,7 @@ Ne pas supprimer du code uniquement pour simplifier l'interface. Ne pas engager 
 
 ## 4. Étapes Codex
 
-**Règle fondamentale : une seule étape par session Codex.** Une fois cette étape traitée, documenter, produire le bilan et **s'arrêter**, même si la suivante semble facile.
+**Règle par défaut : une seule étape par session Codex.** Documenter puis s’arrêter avant la suivante, sauf demande explicite d’enchaînement. Le 7 novembre 2026, l’utilisateur a autorisé les étapes 4 et 5 ensemble, avec maintien de leurs validations distinctes.
 
 ### Étape 0 — Audit et recentrage
 
@@ -144,7 +144,11 @@ Travail attendu :
 
 ### Étape 4 — Recette fonctionnelle et validation réelle
 
-**État :** [ ] Non validée
+**État :** [ ] Recette exécutée le 7 novembre 2026 ; clôture non validée.
+
+Rapport : [V1_STEP4_ACCEPTANCE.md](V1_STEP4_ACCEPTANCE.md). Les essais réels ont
+révélé des blocages Gemini et Groq, notamment sur le multi-documents. Les garde-fous
+passent mais ne remplacent pas une réponse utile ; ne pas annoncer la V1 entièrement validée.
 
 **Objectif :** vérifier les parcours V1 en conditions représentatives, sans confondre mocks et vrai réseau.
 
@@ -168,7 +172,11 @@ Consigner dans un rapport les commandes, résultats, limites, dates et environne
 
 ### Étape 5 — Livraison V1 testable
 
-**État :** [ ] Non validée
+**État :** [x] Candidate installable préparée le 7 novembre 2026 ; publication stable suspendue à l’étape 4.
+
+Rapport : [V1_STEP5_DELIVERY.md](V1_STEP5_DELIVERY.md), [prise en main](QUICKSTART.md).
+Installation wheel hors checkout, distribution source et ressources vérifiées. Aucun
+tag ni release : la disponibilité et la fiabilité de tous les parcours IA restent ouvertes.
 
 **Objectif :** permettre une installation et une prise en main autonomes.
 
@@ -194,7 +202,7 @@ Travail attendu :
 7. Mettre à jour le statut de l'étape uniquement si ses critères sont **effectivement** vérifiés.
 8. Travailler sur une branche dédiée et préparer une PR vers `main` pour une modification significative. Ne pas fusionner une PR rouge.
 9. **Ne pas merger automatiquement sans autorisation explicite.**
-10. Émettre un compte rendu court et **s'arrêter obligatoirement avant l'étape suivante**.
+10. Émettre un compte rendu court et s’arrêter avant l’étape suivante, sauf enchaînement explicitement demandé par l’utilisateur.
 
 ### Compte rendu obligatoire
 

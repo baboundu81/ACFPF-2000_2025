@@ -29,7 +29,9 @@ MAX_EXTRACTED_CHARS = 1_000_000
 STREAM_CHUNK_BYTES = 32_768
 MAX_REDIRECTS = 5
 HTML_CONTENT_TYPES = {"text/html", "application/xhtml+xml"}
-HTML_UNIT_CHARS = 12_000
+# Smaller contiguous units reduce the initial payload on constrained providers.
+# Every subsequent unit remains available via read; no relevance selection or text loss.
+HTML_UNIT_CHARS = 4_000
 PDF_PAGES_PER_UNIT = 4
 REDIRECT_STATUS_CODES = {301, 302, 303, 307, 308}
 
