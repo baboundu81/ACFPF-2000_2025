@@ -25,6 +25,9 @@
         {% if cofog %}<a class="primary-nav__link" href="#functions">Fonctions</a>{% endif %}
         {% if dashboard %}<a class="primary-nav__link" href="#ask">Enquêter</a>{% endif %}
         <a class="primary-nav__link" href="#sources">Sources</a>
+        {% if ai_settings_available %}
+          <a class="primary-nav__link" href="{{ url_for('ai_settings') }}">Configuration IA</a>
+        {% endif %}
       </nav>
     </div>
   </header>

@@ -24,6 +24,9 @@
         <a class="primary-nav__link is-active" href="/" aria-current="page">Textes & décisions</a>
         <a class="primary-nav__link" href="/finances">Finances publiques</a>
         <a class="primary-nav__link" href="#method">Méthode</a>
+        {% if ai_settings_available %}
+          <a class="primary-nav__link" href="{{ url_for('ai_settings') }}">Configuration IA</a>
+        {% endif %}
       </nav>
     </div>
   </header>

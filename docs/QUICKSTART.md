@@ -43,8 +43,20 @@ PyPI ne constitue pas la procédure de cette candidate, qui n’a pas été publ
 ## Configurer l’IA côté serveur
 
 Sans clé, la recherche de dossiers et les finances restent utilisables. La question
-libre et le chat indiquent que l’IA n’est pas configurée. Aucune clé n’est demandée
-au navigateur.
+libre et le chat indiquent que l’IA n’est pas configurée.
+
+Dans l’application locale, ouvrez **Configuration IA**. Choisissez un fournisseur,
+puis sélectionnez ou déposez un fichier texte UTF-8 contenant uniquement sa clé sur
+une ligne (4 Kio maximum). Le modèle par défaut est indiqué dans le formulaire.
+Cliquez sur **Activer l’IA** : le changement est immédiat pour le chat et la recherche
+assistée. L’import ne déclenche aucun appel fournisseur ; la clé sera utilisée quand
+vous lancerez une enquête ou une recherche assistée.
+
+Le fichier n’est pas sauvegardé. La clé reste en mémoire côté serveur pour ce
+lancement d’ACFPF ; **Rétablir le réglage de démarrage** annule l’import. Les variables
+d’environnement servent toujours au démarrage et permettent de choisir un modèle
+explicite. Le menu d’import est disponible sur l’interface locale, pas lorsque le
+lanceur est configuré pour écouter sur le réseau.
 
 Gemini reste le fournisseur par défaut :
 

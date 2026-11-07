@@ -21,11 +21,11 @@
         {% else %}
           <div class="ai-disabled">
             <p><strong>IA non configurée.</strong> La recherche de textes et les sources officielles restent accessibles.</p>
-            <details class="setup-help"><summary>Configurer l’analyse sur cet ordinateur</summary><p>
-              Configurez un provider et une clé côté serveur, par exemple :
-              <code>export ACFPF_LLM_PROVIDER="gemini"</code> puis
-              <code>export ACFPF_LLM_API_KEY="votre_clé"</code>, et relancez <code>acfpf</code>.
-            </p></details>
+            {% if ai_settings_available %}
+              <p><a href="{{ url_for('ai_settings') }}">Configurer l’IA</a></p>
+            {% else %}
+              <p>Définissez <code>ACFPF_LLM_API_KEY</code> côté serveur puis relancez ACFPF.</p>
+            {% endif %}
           </div>
         {% endif %}
 

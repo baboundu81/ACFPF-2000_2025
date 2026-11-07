@@ -16,6 +16,7 @@ Le LLM n'est **jamais** la source de vérité d'ACFPF. Il choisit les recherches
 - Les providers capables de Structured Outputs doivent utiliser le schéma commun `AGENT_ACTION_SCHEMA` plutôt qu'un JSON libre.
 - Claude utilise l'API native Anthropic pour conserver la garantie de schéma ; ne pas basculer silencieusement sur sa couche OpenAI-compatible tant que `response_format` y est ignoré.
 - Les clés API restent côté serveur. Elles ne doivent jamais être envoyées au navigateur, commitées dans Git ou loggées.
+- L’import par l’interface locale remplace le fournisseur et son modèle par défaut uniquement en mémoire pour ce lancement. Il configure ensemble le chat et le planificateur, sans muter les variables d’environnement ni effectuer d’appel réseau à l’import.
 
 ## Agent de recherche live
 

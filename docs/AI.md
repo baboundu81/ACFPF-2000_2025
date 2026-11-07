@@ -118,7 +118,10 @@ Gemini est le provider par défaut. Le modèle par défaut est `gemini-3.8-flash
 
 Gemini et Groq/GPT-OSS utilisent le schéma structuré via leur endpoint compatible OpenAI. Claude utilise l'API native Anthropic, car sa couche OpenAI-compatible ne garantit pas actuellement `response_format` ; l'API native permet d'imposer `output_config.format=json_schema`.
 
-La clé reste exclusivement côté serveur Flask et n'est jamais exposée au navigateur.
+Le menu local **Configuration IA** permet aussi d’importer un fichier de clé. Le
+navigateur transmet le fichier au serveur local lors de l’envoi du formulaire ; le
+serveur garde la clé en mémoire pour ce lancement, sans la renvoyer au navigateur.
+Voir le [guide de prise en main](QUICKSTART.md#configurer-lia-côté-serveur).
 
 ## Streaming vers l'interface
 

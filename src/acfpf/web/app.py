@@ -5,10 +5,11 @@ from __future__ import annotations
 
 import json
 
-from flask import Flask, Response, jsonify, render_template, request, stream_with_context
+from flask import Flask, Response, g, jsonify, render_template, request, stream_with_context
 
 from acfpf.ai import AnswerService
 from acfpf.ai.civic import build_default_civic_answer_service
+from acfpf.ai.configuration import AIConfiguration, AIServices
 from acfpf.ai.legislation_query import (
     LegislativeQueryPlanner,
     build_default_legislative_query_planner,
@@ -30,6 +31,7 @@ from acfpf.legislative_stages import classify_dossier_stage, enrich_dossier_payl
 from acfpf.macro import MacroService
 from acfpf.public_action import public_action_coverage
 from acfpf.source_registry import load_sources
+from acfpf.web.ai_settings import ai_settings_available, register_ai_settings
 from acfpf.web.presentation import dossier_view
 
 MAX_SCOPED_QUESTION_CHARS = 600
@@ -135,24 +137,34 @@ def create_app(
     macro_service = service or MacroService()
     functional_service = cofog_service or CofogService()
     civic_service = legislation_service or LegislationService()
-    ai_service = answer_service or build_default_civic_answer_service(
+    configuration = AIConfiguration(
+        AIServices(
+            answer_service or build_default_civic_answer_service(macro_service, functional_service),
+            legislation_query_planner or build_default_legislative_query_planner(),
+        ),
         macro_service,
         functional_service,
     )
-    query_planner = legislation_query_planner or build_default_legislative_query_planner()
+    register_ai_settings(app, configuration)
     registered_sources = load_sources()
     live_sources = [source for source in registered_sources if source.live_research]
+
+    @app.before_request
+    def snapshot_ai_configuration():
+        g.ai = configuration.current
 
     @app.context_processor
     def research_context():
         return {
-            "ai_enabled": ai_service is not None,
+            "ai_enabled": g.ai.answer is not None,
+            "ai_settings_available": ai_settings_available(),
             "research_sources": [source.as_dict() for source in live_sources],
             "browse_requested": bool(request.args),
         }
 
     @app.get("/")
     def home():
+        query_planner = g.ai.planner
         query = request.args.get("q", "").strip()
         status = request.args.get("status") or None
         fallback_status = parse_legislative_search(query, status=status).status
@@ -246,8 +258,6 @@ def create_app(
                 dossier=None,
                 error=str(exc),
                 legislation_warnings=_legislation_warnings(civic_service),
-                research_sources=[source.as_dict() for source in live_sources],
-                ai_enabled=ai_service is not None,
             ), 503
         if dossier is None:
             return render_template(
@@ -255,8 +265,6 @@ def create_app(
                 dossier=None,
                 error="Dossier législatif introuvable.",
                 legislation_warnings=_legislation_warnings(civic_service),
-                research_sources=[source.as_dict() for source in live_sources],
-                ai_enabled=ai_service is not None,
             ), 404
         return render_template(
             "dossier.html",
@@ -264,8 +272,6 @@ def create_app(
             public_action=public_action_coverage(dossier),
             error=None,
             legislation_warnings=_legislation_warnings(civic_service),
-            research_sources=[source.as_dict() for source in live_sources],
-            ai_enabled=ai_service is not None,
         )
 
     @app.get("/finances")
@@ -289,8 +295,6 @@ def create_app(
                 cofog_error=cofog_error,
                 error=None,
                 sources=payload["sources"],
-                research_sources=[source.as_dict() for source in live_sources],
-                ai_enabled=ai_service is not None,
             )
         except EurostatError as exc:
             return render_template(
@@ -300,12 +304,11 @@ def create_app(
                 cofog_error=cofog_error,
                 error=str(exc),
                 sources=sources,
-                research_sources=[source.as_dict() for source in live_sources],
-                ai_enabled=ai_service is not None,
             ), 503
 
     @app.get("/api/legislation")
     def legislation_api():
+        query_planner = g.ai.planner
         query = request.args.get("q", "").strip()
         status = request.args.get("status") or None
         refresh = request.args.get("refresh") == "1"
@@ -449,13 +452,14 @@ def create_app(
 
     @app.post("/api/ask")
     def ask_api():
+        ai_service = g.ai.answer
         if ai_service is None:
             return jsonify(
                 {
                     "error": "ai_not_configured",
                     "message": (
-                        "La fonction IA n'est pas configurée. Définissez ACFPF_LLM_PROVIDER "
-                        "et ACFPF_LLM_API_KEY côté serveur puis relancez ACFPF."
+                        "La fonction IA n'est pas configurée. Ouvrez Configuration IA dans "
+                        "l'application locale ou définissez ACFPF_LLM_API_KEY côté serveur."
                     ),
                 }
             ), 503
@@ -482,6 +486,7 @@ def create_app(
 
     @app.post("/api/ask/stream")
     def ask_stream_api():
+        ai_service = g.ai.answer
         if ai_service is None:
             return jsonify(
                 {
@@ -524,7 +529,7 @@ def create_app(
     def health():
         return {
             "status": "ok",
-            "ai": "enabled" if ai_service is not None else "disabled",
+            "ai": "enabled" if g.ai.answer is not None else "disabled",
             "research_mode": "live_official_sources",
             "primary_experience": "civic_legislation",
         }

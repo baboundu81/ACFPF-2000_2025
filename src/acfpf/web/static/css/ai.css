@@ -252,14 +252,6 @@
   border-top-color: var(--color-accent);
 }
 
-.setup-help {
-  margin-top: var(--space-3);
-}
-
-.setup-help summary {
-  cursor: pointer;
-}
-
 @media (max-width: 720px) {
   .ask-form button {
     width: 100%;

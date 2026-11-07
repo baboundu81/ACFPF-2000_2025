@@ -30,6 +30,7 @@ def build_parser() -> argparse.ArgumentParser:
 def main() -> None:
     args = build_parser().parse_args()
     app = create_app()
+    app.config["AI_SETTINGS_ENABLED"] = args.host in {"127.0.0.1", "::1", "localhost"}
     url = f"http://{args.host}:{args.port}/"
 
     if not args.no_browser:

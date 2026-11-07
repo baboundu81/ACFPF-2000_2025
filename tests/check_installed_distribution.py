@@ -17,11 +17,14 @@ def main():
     for route in [
         "/",
         "/healthz",
+        "/configuration-ia",
         "/api/evidence",
         "/static/css/tokens.css",
         "/static/css/legislation.css",
         "/static/js/research_stream.js",
         "/static/js/ask.js",
+        "/static/css/ai_settings.css",
+        "/static/js/ai_settings.js",
     ]:
         response = client.get(route)
         assert response.status_code == 200, (route, response.status_code)

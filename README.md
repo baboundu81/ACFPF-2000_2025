@@ -153,6 +153,11 @@ python -m acfpf
 
 L'application reste utilisable sans IA pour ses fonctions déterministes.
 
+Dans le menu local **Configuration IA**, sélectionnez le fournisseur puis importez
+un fichier texte contenant uniquement la clé, via le sélecteur ou par glisser-déposer.
+Le réglage prend effet pour ce lancement ; aucun fichier de clé n’est enregistré.
+Voir le [guide de prise en main](docs/QUICKSTART.md#configurer-lia-côté-serveur).
+
 Gemini est actuellement le provider par défaut :
 
 ```bash

@@ -56,6 +56,7 @@ Ce fichier complète le `AGENTS.md` racine et s'applique à tout `src/acfpf/web/
 ## IA et enquête dans l'interface
 
 - La clé API d'un fournisseur LLM reste exclusivement côté serveur et ne doit jamais apparaître dans le HTML, le JavaScript ou une réponse API.
+- Le menu Configuration IA reçoit un fichier texte borné par formulaire multipart protégé contre les requêtes tierces. Restreindre l’import à l’écoute locale et aux requêtes de boucle locale avec hôte local. Ne jamais réafficher, journaliser ni sauvegarder le contenu ou le nom du fichier. Le JavaScript de glisser-déposer ne lit pas son contenu.
 - `/api/ask` fournit la réponse finale JSON ; `/api/ask/stream` expose la progression de l'enquête en NDJSON.
 - Un chat de dossier peut envoyer l'identifiant du dossier et un historique court, mais le backend reste responsable de reconstruire le contexte de confiance.
 - La progression peut afficher uniquement des actions observables : préparation, recherche, ouverture d'une source, lecture d'une unité, avertissement, réponse.
