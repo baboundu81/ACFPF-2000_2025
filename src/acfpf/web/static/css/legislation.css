@@ -381,3 +381,98 @@
     margin-left: 0;
   }
 }
+
+.home-inquiry {
+  max-width: var(--inquiry-max-width);
+  margin-top: var(--space-7);
+}
+
+.home-inquiry h2 {
+  font-size: var(--text-xl);
+}
+
+.home-inquiry .ask-block__intro {
+  margin-top: var(--space-3);
+}
+
+.legislation-search {
+  margin-block: var(--space-5) var(--space-6);
+}
+
+.search-assist-control {
+  display: grid;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+  max-width: var(--inquiry-max-width);
+}
+
+.search-assist-control select {
+  min-height: var(--size-control-min);
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  font: inherit;
+  padding: var(--space-2) var(--space-3);
+  border: var(--size-border-thin) solid var(--color-border-strong);
+  border-radius: var(--radius-control);
+}
+
+.advanced-heading {
+  padding-block: var(--space-6) var(--space-4);
+}
+
+.dossier-details {
+  border-top: var(--size-border-thin) solid var(--color-border);
+}
+
+.dossier-details > summary {
+  cursor: pointer;
+  min-height: var(--size-control-min);
+  padding-block: var(--space-4);
+  font-weight: var(--weight-strong);
+}
+
+.dossier-details[open] > summary {
+  color: var(--color-accent-strong);
+}
+
+.dossier-details .section-block {
+  padding-block: var(--space-5);
+  border-bottom: 0;
+}
+
+.dossier-chat-block .research-trust {
+  margin-top: var(--space-5);
+}
+
+.chat-message--assistant {
+  border-left-color: var(--color-border-strong);
+}
+
+.chat-message[data-status="insufficient"] {
+  background: var(--color-surface-muted);
+}
+
+@media (min-width: 1000px) {
+  .civic-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+    gap: var(--space-7);
+    align-items: start;
+  }
+
+  .civic-hero > * {
+    min-width: 0;
+  }
+
+  .civic-hero .home-inquiry {
+    margin-top: 0;
+  }
+
+  .home-inquiry .ask-form__row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .home-inquiry .ask-form button {
+    justify-self: start;
+  }
+}

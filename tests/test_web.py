@@ -170,21 +170,18 @@ def make_app(answer_service=None, legislation_service=None):
     )
 
 
-def test_home_is_now_civic_legislation_search() -> None:
+def test_home_offers_free_question_and_explicit_inventory_entry() -> None:
     client = make_app(FakeAnswerService()).test_client()
-
     response = client.get("/")
     html = response.get_data(as_text=True)
-
     assert response.status_code == 200
     assert "Comprendre ce que décide réellement la puissance publique" in html
-    assert "Projet de loi relatif au logement" in html
-    assert "Séance / lecture" in html
-    assert "Libellé source : Première lecture au Sénat" in html
-    assert "Textes & décisions" in html
-    assert "Assemblée nationale + Sénat" in html
-    assert "Ordre des résultats : pertinence lexicale" in html
+    assert 'id="ask-form"' in html
+    assert 'href="#textes"' in html
+    assert "Parcourir les textes en cours" in html
     assert 'href="/finances"' in html
+    # The entry point is usable before downloading a parliamentary inventory.
+    assert "Projet de loi relatif au logement" not in html
 
 
 def test_natural_search_query_is_forwarded_to_legislation_service() -> None:
@@ -360,7 +357,7 @@ def test_legislation_api_rejects_inverted_period() -> None:
 def test_partial_legislation_source_is_visible_but_does_not_break_results() -> None:
     client = make_app(legislation_service=PartialLegislationService()).test_client()
 
-    response = client.get("/")
+    response = client.get("/?status=active")
     html = response.get_data(as_text=True)
 
     assert response.status_code == 200
@@ -432,7 +429,7 @@ def test_legislation_source_failure_is_explicit() -> None:
         cofog_service=FakeCofogService(),
         legislation_service=FailingLegislationService(),
     )
-    response = app.test_client().get("/")
+    response = app.test_client().get("/?status=active")
     html = response.get_data(as_text=True)
 
     assert response.status_code == 503

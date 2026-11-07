@@ -7,10 +7,10 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "acfpf"
-version = "0.3.0"
+dynamic = ["version"]
 description = "Analyse citoyenne de l'action publique française à partir de sources officielles"
 license = "PolyForm-Noncommercial-1.0.0"
-license-files = ["LICENSE"]
+license-files = ["LICENSE", "LICENSES/*.txt", "LICENSES/*.md"]
 requires-python = ">=3.11"
 dependencies = [
   "Flask>=3.1,<4",
@@ -34,10 +34,14 @@ dev = [
   "jupyterlab>=4",
 ]
 
+[tool.setuptools.dynamic]
+version = {attr = "acfpf.__version__"}
+
 [tool.setuptools.packages.find]
 where = ["src"]
 
 [tool.setuptools.package-data]
+"acfpf" = ["resources/*.yml"]
 "acfpf.web" = [
   "templates/*.html",
   "static/css/*.css",

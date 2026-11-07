@@ -17,3 +17,10 @@ data/processed/*
 # Résultats temporaires
 *.log
 .env
+
+# Build artifacts and local provider credentials
+*.egg-info/
+build/
+dist/
+/gemini-key.txt
+/groq-key.txt

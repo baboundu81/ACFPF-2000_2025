@@ -264,5 +264,13 @@
   }
 
   more.addEventListener("click", load);
-  load();
+  const panel = root.closest?.("details");
+  if (panel && !panel.open) {
+    const start = () => {
+      if (!panel.open) return;
+      panel.removeEventListener("toggle", start);
+      load();
+    };
+    panel.addEventListener("toggle", start);
+  } else load();
 })();

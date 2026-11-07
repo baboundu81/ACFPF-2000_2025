@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from importlib.resources import files
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -48,9 +49,14 @@ class Source:
         }
 
 
-def load_sources(path: str | Path = "config/sources.yml") -> list[Source]:
-    """Charge le registre de sources du projet."""
-    with Path(path).open("r", encoding="utf-8") as handle:
+def load_sources(path: str | Path | None = None) -> list[Source]:
+    """Load the bundled allowlist, or an explicitly supplied registry.
+
+    Never trust a registry found incidentally in the current working directory.
+    The bundled file mirrors config/sources.yml; a test prevents divergence.
+    """
+    registry = Path(path) if path is not None else files("acfpf").joinpath("resources/sources.yml")
+    with registry.open("r", encoding="utf-8") as handle:
         payload = yaml.safe_load(handle)
 
     return [
@@ -72,5 +78,5 @@ def load_sources(path: str | Path = "config/sources.yml") -> list[Source]:
     ]
 
 
-def load_source_map(path: str | Path = "config/sources.yml") -> dict[str, Source]:
+def load_source_map(path: str | Path | None = None) -> dict[str, Source]:
     return {source.id: source for source in load_sources(path)}

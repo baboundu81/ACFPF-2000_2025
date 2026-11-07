@@ -19,7 +19,24 @@ Le projet ne cherche pas à confirmer une conclusion politique prédéfinie. Il 
 
 Le LLM n'est jamais utilisé comme source de vérité : il peut piloter une recherche et expliquer des preuves, mais les faits doivent provenir de données ou documents officiels.
 
-## Expérience principale : textes et décisions
+## Candidate V1 et état actuel
+
+La V1 vise deux parcours : **question libre → recherche officielle → lecture → réponse sourcée**,
+et **recherche de texte → dossier → chat sourcé**. Les finances restent un sous-outil.
+L’accueil propose la question libre et la recherche de dossiers. Le chat contextualisé
+précède les outils avancés repliés. La candidate **1.0.0rc1** est installable, mais la
+[recette réelle](docs/V1_STEP4_ACCEPTANCE.md) reste ouverte : Gemini 503, quotas/refus
+Groq et scénario multi-documents non validé. Elle n’est pas une V1 stable publiée.
+
+Pour installer, configurer une clé et essayer les parcours, suivre le
+[guide de prise en main](docs/QUICKSTART.md). Le [rapport de livraison](docs/V1_STEP5_DELIVERY.md)
+distingue l’installation propre, les tests et les limites restantes.
+
+La [roadmap V1](docs/V1_ROADMAP.md) fixe les priorités.
+L’[audit du 6 novembre 2026](docs/V1_STEP0_AUDIT.md) détaille les fonctions réellement
+observées, les tests simulés et les limites réseau. Le projet n’est pas encore une V1 validée.
+
+## Parcours actuel : textes et décisions
 
 La page d'accueil permet de découvrir ou retrouver des dossiers législatifs sans connaître leur nom officiel.
 
@@ -41,7 +58,7 @@ Lorsqu'un dossier est sélectionné, `/textes/<id>` ouvre un espace dédié avec
 
 Le contexte du dossier est reconstruit côté serveur à partir de son identifiant. Les métadonnées servent uniquement à orienter l'enquête : elles ne sont pas traitées comme preuve du contenu juridique. Le moteur doit ouvrir et lire les documents officiels avant d'affirmer ce que prévoit un texte.
 
-Cette première verticale n'est pas encore une couverture exhaustive de tout le Parlement : le connecteur Sénat et la fusion des identifiants des deux chambres font partie des prochaines étapes.
+Le connecteur Sénat DOSLEG et le regroupement conservateur des dossiers des deux chambres sont intégrés. Le regroupement repose sur l’égalité exacte des titres normalisés et conserve les identifiants d’origine ; il ne garantit pas une couverture exhaustive du Parlement. Les notices, amendements, votes, rapports et vues expérimentales existants sont conservés, avec leurs limites.
 
 Voir [docs/CIVIC_ACTION_PLAN.md](docs/CIVIC_ACTION_PLAN.md).
 
@@ -93,12 +110,13 @@ Les documents consultés sont éphémères et isolés par question. La trace de 
 
 ## Installation
 
-Python 3.11 ou supérieur.
+Python 3.11 ou supérieur. Depuis les sources :
 
 ```bash
 python -m venv .venv
 source .venv/bin/activate
-pip install -e ".[dev]"
+python -m pip install .
+# Pour contribuer et exécuter les tests : python -m pip install -e ".[dev]"
 ```
 
 Sous Windows :
@@ -114,6 +132,8 @@ acfpf
 ```
 
 Le serveur local démarre sur `http://127.0.0.1:5000` et le navigateur s'ouvre automatiquement.
+La commande fonctionne depuis tout dossier après installation ; le registre réseau et
+les assets sont embarqués dans le paquet.
 
 Options utiles :
 
@@ -212,14 +232,15 @@ Le registre est dans [config/sources.yml](config/sources.yml). Il comprend notam
 
 ## Prochaines étapes
 
-La trajectoire est détaillée dans [docs/CIVIC_ACTION_PLAN.md](docs/CIVIC_ACTION_PLAN.md). Les prochaines briques prioritaires sont :
+Les développements des étapes 0 à 3 et la préparation de livraison sont réalisés.
+L’étape 4 a été exécutée mais reste ouverte sur les parcours IA réels. Les statuts et
+critères détaillés figurent dans [docs/V1_ROADMAP.md](docs/V1_ROADMAP.md).
+Aucune release stable n’est publiée tant que ces réserves ne sont pas levées.
 
-- consolider les contenus complets de toutes les versions et leur structure juridique ;
-- documenter et consulter les rapports, débats et décisions constitutionnelles ;
-- comparer article par article les versions vérifiées sans imputation approximative ;
-- relier la promulgation, les textes d'application et les publications Légifrance ;
-- établir les liens vérifiables entre décisions, budgets et évaluations ;
-- compléter le sous-outil finances : prélèvements obligatoires, euros constants/par habitant et exécution détaillée.
+Les raccordements parlementaires avancés, la comparaison juridique article par article,
+l’application réglementaire et les liens vers les budgets et résultats restent au
+[backlog post-V1](docs/V1_ROADMAP.md#7-backlog-post-v1).
+[docs/CIVIC_ACTION_PLAN.md](docs/CIVIC_ACTION_PLAN.md) conserve l’historique et la vision longue.
 
 ## Licences
 
